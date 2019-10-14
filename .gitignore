@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Project configuration files that must be ignored.
+.config/docker-compose/*.env

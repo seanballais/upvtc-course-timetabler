@@ -1,0 +1,5 @@
+services:
+    web:
+        command: gunicorn # TODO: Complete this production command.
+        environment:
+            - DEBUG=0
