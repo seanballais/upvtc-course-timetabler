@@ -13,7 +13,7 @@ services:
             - SQL_ENGINE=django.db.backends.postgresql
             - SQL_HOST=db
             - SQL_PORT=5432
-        env_file: .config/docker-compose/web.env
+        env_file: .config/web.env
         depends_on:
             - db
 
@@ -21,7 +21,7 @@ services:
         image: postgres:11.5-alpine
         volumes:
             - postgres_data:/var/lib/postgresql/data/
-        env_file: .config/docker-compose/db.env
+        env_file: .config/db.env
 
 volumes:
     postgres_data:
