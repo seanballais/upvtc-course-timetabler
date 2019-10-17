@@ -6,8 +6,9 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-django = "*"
-gunicorn = "*"
+django = "==2.2.6"
+gunicorn = "==19.9.0"
+psycopg2 = "==2.8.3"
 
 [requires]
 python_version = "3.7"

@@ -18,14 +18,16 @@ def read_env_file(env_file: str):
     for line in content.splitlines():
         line_number += 1
 
-        if line.startswith('#'):
-            # Line is a comment.
+        if line.startswith('#') or not line:
+            # Line is a comment if it starts with '#'.
             continue
 
         try:
             key, value = line.lstrip().split('=', 1)
         except ValueError:
-            print(f"❌ Key-value pair at line {line_number} is invalid.")
+            print(
+                f"❌ Key-value pair at line {line_number} in {env_file}"
+                 " is invalid.")
             sys.exit(-1)
 
         # Remove string definition quotations, if any, from the variable value
