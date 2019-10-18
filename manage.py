@@ -5,13 +5,19 @@ import sys
 
 
 def read_env_file(env_file: str):
-    # Based on `manage.py` in https://gist.github.com/bennylope/2999704, but
-    # with the parser being implemented differently.
+    """
+    Reads an environment file and creates environment variables with their
+    specified values from it.
+
+    Based on `manage.py` in https://gist.github.com/bennylope/2999704, but
+    with the parser being implemented differently. See LICENSE for more
+    information.
+    """
     try:
         with open(env_file) as f:
             content = f.read()
     except IOError as e:
-        print(f"❌ Error reading environment file '{env_file}': {str(e)}")
+        print(f'❌ Error reading environment file \'{env_file}\': {str(e)}')
         sys.exit(-1)
 
     line_number = 0
@@ -26,8 +32,8 @@ def read_env_file(env_file: str):
             key, value = line.lstrip().split('=', 1)
         except ValueError:
             print(
-                f"❌ Key-value pair at line {line_number} in {env_file}"
-                 " is invalid.")
+                f'❌ Key-value pair at line {line_number} in {env_file}'
+                 ' is invalid.')
             sys.exit(-1)
 
         # Remove string definition quotations, if any, from the variable value

@@ -1,0 +1,18 @@
+body {
+	font-family: 'Montserrat', sans-serif;
+}
+
+body > footer {
+	max-width: 640px;
+	text-align: center;
+}
+
+body > footer a {
+	color: #D14144;
+}
+
+body > footer a:hover {
+	text-decoration: none;
+
+	color: #782325;
+}

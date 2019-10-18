@@ -1,0 +1,39 @@
+div#login-card {
+	margin-top: 3%;
+	margin-bottom: 3%;
+	max-width: 540px; /* Max container width of small devices in Bootstrap. */
+	min-width: 540px;
+	padding: 1%;
+
+	border-radius: 10px;
+	box-shadow: 0 0 10px 3px #E6E6E6;
+}
+
+div#login-card div header h1 {
+	font-weight: 900;
+	text-align: center;
+}
+
+div#login-card div article input[type="submit"] {
+	padding-top: 2%;
+	padding-bottom: 2%;
+
+	background: #7B1113;
+	background: linear-gradient(90deg, #7B1113 0%, #B53234 100%);
+	border: none;
+	border-radius: 5px;
+	box-shadow: 0 0 5px 3px #CCCCCC;
+	color: #FFFFFF;
+	width: 100%;
+}
+
+div#login-card div article input[type="submit"]:hover {
+	background: #AC171A;
+	background: linear-gradient(90deg, #AC171A 0%, #D23B3D 100%);
+}
+
+div#login-card div article input[type="submit"]:active {
+	background: #690E10;
+	background: linear-gradient(90deg, #690E10 0%, #9E2D2F 100%);
+	box-shadow: 0 0 5px 7px #9D1515 inset;
+}

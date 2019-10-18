@@ -1,0 +1,24 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>{% block title %}{% endblock %} - UPVTC Course Timetabler</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
+	<link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/utils.css' %}">
+	{% block css_files %}{% endblock %}
+	{% block js_files %}{% endblock %}
+</head>
+<body>
+	<div class="container-fluid h-100">
+		{% block content %}{% endblock %}
+	</div>
+	<footer class="container">
+		<hr>
+		<p>Copyright &copy; 2019 <a href="https://seanballais.github.io/">Sean Ballais</a>. This project is an undergraduate thesis project of Sean Ballais. You may view the project code over at <span class="no-wrap"><a href="https://github.com/seanballais/upvtc-course-timetabler"><i class="fa fa-github"></i> GitHub</a></span>. You may also follow Sean on Twitter via <span class="no-wrap"><a href="https://twitter.com/seanballais"><i class="fa fa-twitter"></i> @seanballais</a></span>.</p>
+	</footer>
+</body>
+</html>

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login{% endblock %}
+{% block css_files %}
+<link rel="stylesheet" type="text/css" href="{% static 'users/css/login.css' %}">
+{% endblock %}
+{% block js_files %}
+{% endblock %}
+
+{% block content %}
+<div id="login-card" class="card mx-auto">
+	<div class="card-body">
+		<header>
+			<h1 class="card-title">Login</h1>
+		</header>
+		<article>
+			<form method="post" action="{% url 'login' %}">
+				{% csrf_token %}
+				<div class="form-group">
+					<label for="username">Username</label>
+					<input id="form-username-textbox" type="text" class="form-control" name="username" autofocus="on" required="true">
+				</div>
+				<div id="login-password" class="form-group">
+					<label for="password">Password</label>
+					<input id="form-password-textbox" type="password" class="form-control" name="password" autofocus="off" required="true">
+				</div>
+				<input type="submit" value="Login">
+				<input type="hidden" name="next" value="{{ next }}">
+			</form>
+		</article>
+	</div>
+</div>
+{% endblock %}
