@@ -9,9 +9,10 @@ from setuptools import setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+exec(open('upvtc_ct/_version.py').read())
 setup(
     name='upvtc_ct',
-    version='0.0.0',
+    version=__version__,
     author='Sean Francis N. Ballais',
     author_email='snballais@up.edu.ph',
     description='An automated timetabler for UPVTC.',
@@ -19,6 +20,11 @@ setup(
     license='GPL',
     keywords='scheduling thesis',
     url='https://github.com/seanballais/upvtc-course-timetabler',
+    install_requires=[
+        'pyqt5',
+        'peewee>=3.0.0',
+        'docopt'
+    ],
     packages=[ 'upvtc_ct' ],
     entry_points={
         'console_scripts': [ 'upvtc_ct=upvtc_ct.app:main' ]

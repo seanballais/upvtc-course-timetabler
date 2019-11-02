@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c1e8a12313b80467de27bed97692af1488b6b0bbdc278cf9b52d5687a4bec61c"
+            "sha256": "8ac7eb31fc67b846a8754b4f9e54ba07203272f90d6fae9b387f0aba3eb30480"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,20 @@
         ]
     },
     "default": {
+        "docopt": {
+            "hashes": [
+                "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"
+            ],
+            "index": "pypi",
+            "version": "==0.6.2"
+        },
+        "peewee": {
+            "hashes": [
+                "sha256:f3f5c80c51b632d031f60454accadd84f166453a471bff63093ca674973f2a4e"
+            ],
+            "index": "pypi",
+            "version": "==3.11.2"
+        },
         "pyqt5": {
             "hashes": [
                 "sha256:6420d8c9de8746917bd2afe24f29b3722aabde36d1e9f8c34354f5b7fb7b987d",
