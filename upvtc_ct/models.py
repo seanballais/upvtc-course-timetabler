@@ -53,12 +53,12 @@ class Division(Base):
 	name = peewee.CharField(
 		default=None,
 		unique=True,
-		null=False,
+		null=True,
 		max_length=128)
 
 	class Meta:
 		indexes = (
-			(( 'name' ), True),
+			(( 'name', ), True),
 		)
 
 
@@ -66,30 +66,30 @@ class Course(Base):
 	name = peewee.CharField(
 		default=None,
 		unique=True,
-		null=False,
+		null=True,
 		max_length=128)
 	division = peewee.ForeignKeyField(
 		Division,
 		backref='courses',
-		on_delete='NULL',
+		on_delete='CASCADE',
 		on_update='CASCADE')
 
 	class Meta:
 		indexes = (
-			(( 'name' ), True),
+			(( 'name', ), True),
 		)
 
 
 class RoomFeature(Base):
 	name = peewee.CharField(
-		default=None,
+		default='',
 		unique=True,
 		null=False,
 		max_length=64)
 
 	class Meta:
 		indexes = (
-			(( 'name' ), True),
+			(( 'name', ), True),
 		)
 
 
@@ -97,7 +97,7 @@ class Room(Base):
 	name = peewee.CharField(
 		default=None,
 		unique=True,
-		null=False,
+		null=True,
 		max_length=128)
 	features = peewee.ManyToManyField(
 		RoomFeature,
@@ -107,7 +107,7 @@ class Room(Base):
 
 	class Meta:
 		indexes = (
-			(( 'name' ), True),
+			(( 'name', ), True),
 		)
 
 
@@ -133,10 +133,10 @@ class TimeSlot(Base):
 
 	class Meta:
 		indexes = (
-			(( 'start_time', 'end_time', 'day' ), True),
-			(( 'start_time' ), False),
-			(( 'end_time' ), False),
-			(( 'day' ), False),
+			(( 'start_time', 'end_time', 'day', ), True),
+			(( 'start_time', ), False),
+			(( 'end_time', ), False),
+			(( 'day', ), False),
 		)
 
 
@@ -158,7 +158,7 @@ class Teacher(Base):
 
 	class Meta:
 		indexes = (
-			(( 'first_name', 'last_name' ), True),
+			(( 'first_name', 'last_name', ), True),
 		)
 
 
@@ -166,18 +166,18 @@ class Subject(Base):
 	name = peewee.CharField(
 		default=None,
 		unique=True,
-		null=False,
+		null=True,
 		max_length=128)
 	units = peewee.DecimalField(
-		default=3.0,
+		default=None,
 		unique=False,
-		null=False,
+		null=True,
 		max_digits=3,
 		decimal_places=2)
 	division = peewee.ForeignKeyField(
 		Division,
 		backref='subjects',
-		on_delete='NULL',
+		on_delete='CASCADE',
 		on_update='CASCADE')
 	candidate_teachers = peewee.ManyToManyField(
 		Teacher,
@@ -187,7 +187,7 @@ class Subject(Base):
 
 	class Meta:
 		indexes = (
-			(( 'name' ), True),
+			(( 'name', ), True),
 		)
 
 
@@ -232,8 +232,8 @@ class Class(Base):
 
 	class Meta:
 		indexes = (
-			(( 'subject' ), False),
-			(( 'capacity' ), False),
+			(( 'subject', ), False),
+			(( 'capacity', ), False),
 		)
 
 
@@ -249,8 +249,8 @@ class ClassTimeSlot(Base):
 
 	class Meta:
 		indexes = (
-			(( 'subject_class' ), False),
-			(( 'timeslot' ), False),
+			(( 'subject_class', ), False),
+			(( 'timeslot', ), False),
 		)
 
 
@@ -281,5 +281,5 @@ class StudyPlan(Base):
 											   # particular year level.
 	class Meta:
 		indexes = (
-			( ( 'course', 'year_level' ), True),
+			( ( 'course', 'year_level', ), True),
 		)
