@@ -1,9 +1,13 @@
+import datetime
+import logging
+
 import peewee
 
 from upvtc_ct import settings, utils
 
 
 db = peewee.SqliteDatabase(None)
+app_logger = logging.getLogger()
 
 
 def setup_models():
@@ -28,7 +32,27 @@ def setup_models():
 		StudyPlan.subjects.get_through_model()
 	])
 
-	# TODO: Populate the time slots table.
+	# Timeslots should only fall within the range of 7AM to 7PM, and with their
+	# day field only set to 0, 1, or 2. Timeslots are only 30 minutes in
+	# length.
+	time_hour = lambda time : time // 100
+	time_min = lambda time : int(((time % 100) / 100) * 60)
+	for day in range(3):
+		# We are using a military 24-hour clock here. However, we will be
+		# representing 30 minutes as 50, instead of 30, since only integers
+		# can be used in range() and the function will, as a result, assume an
+		# interval of 100 units.
+		for start_time in range(700, 1900, 50):
+			app_logger.debug(
+				f'Creating a day {day} timeslot with start time of '
+				f'{time_hour(start_time):02}:{time_min(start_time):02}...')
+			end_time = start_time + 50
+			TimeSlot.create(
+				start_time=datetime.time(
+					time_hour(start_time), time_min(start_time), 0),
+				end_time=datetime.time(
+					time_hour(end_time), time_min(end_time), 0),
+				day=day)
 
 
 class Base(peewee.Model):
@@ -42,7 +66,7 @@ class Base(peewee.Model):
 		unique=False)
 
 	def save(self, *args, **kwargs):
-		self.date_modified = utils.current_datetime
+		self.date_modified = utils.current_datetime()
 		return super(Base, self).save(*args, **kwargs)
 
 	class Meta:
@@ -113,15 +137,15 @@ class Room(Base):
 
 class TimeSlot(Base):
 	start_time = peewee.TimeField(
-		default='00:00:00',
+		default=datetime.time(0, 0, 0),
 		unique=False,
 		null=False,
-		formats=[ '%H:%M:%S' ])
+		formats=[ '%H:%M' ])
 	end_time = peewee.TimeField(
-		default='00:00:00',
+		default=datetime.time(0, 0, 0),
 		unique=False,
 		null=False,
-		formats=[ '%H:%M:%S' ])
+		formats=[ '%H:%M' ])
 	day = peewee.SmallIntegerField(  # Same explanation as the one in `Class`,
 		default=0,					 # but with the reasoning that day will
 		null=False)					 # only have a maximum value of 2. 0

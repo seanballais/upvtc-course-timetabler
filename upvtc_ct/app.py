@@ -9,7 +9,7 @@ from upvtc_ct import __version__, models, settings
 def main():
 	# Set up logging.
 	app_logger = logging.getLogger()
-	log_level = (logging.DEBUG if bool(os.getenv('UPVTC_CT_DEBUG'))
+	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG')))
 							   else logging.INFO)
 	log_formatter = logging.Formatter(
 		'%(asctime)s | [%(levelname)s] %(message)s')
@@ -22,7 +22,7 @@ def main():
 
 	# Set up argument parsing and obtain arguments through docopt.
 	doc_string = (
-		f'Automated Course Timetabler for UPVTC (v{ __version__ })\n'
+		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
 		 '  upvtc_ct\n'
@@ -55,7 +55,7 @@ def main():
 		# TODO: Use a log function instead of print().
 		app_logger.info(
 			 'Application database file non-existent. Creating database '
-			f'file, { settings.DB_FILE }, at { settings.APP_DATA_DIR }, '
+			f'file, {settings.DB_FILE}, at {settings.APP_DATA_DIR}, '
 			 'and populating it with tables...')
 
 		models.setup_models()
