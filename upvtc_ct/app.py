@@ -1,15 +1,17 @@
 import logging
 import os
+import sys
 
+from PyQt5 import QtWidgets
 import docopt
 
-from upvtc_ct import __version__, models, settings
+from upvtc_ct import __version__, gui, models, settings
 
 
 def main():
 	# Set up logging.
 	app_logger = logging.getLogger()
-	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG')))
+	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG', 0)))
 							   else logging.INFO)
 	log_formatter = logging.Formatter(
 		'%(asctime)s | [%(levelname)s] %(message)s')
@@ -25,13 +27,14 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct\n'
+		 '  upvtc_ct [--no-gui]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
 		 'Options:\n'
 		 '  -h --help   Show this help text.\n'
-		 '  --version   Show version.\n')
+		 '  --version   Show version.\n'
+		 '  --no-gui    Run without a GUI.\n')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -59,6 +62,13 @@ def main():
 			 'and populating it with tables...')
 
 		models.setup_models()
+
+	# We got everything setup so we can start the application proper.
+	if not arguments['--no-gui']:
+		app_gui = QtWidgets.QApplication([])
+		main_window = gui.MainWindow()
+		main_window.show()
+		sys.exit(app_gui.exec_())
 
 
 if __name__ == '__main__':
