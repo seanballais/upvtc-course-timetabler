@@ -66,8 +66,10 @@ def main():
 	# We got everything setup so we can start the application proper.
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])
+
 		main_window = gui.MainWindow()
 		main_window.show()
+
 		sys.exit(app_gui.exec_())
 
 
