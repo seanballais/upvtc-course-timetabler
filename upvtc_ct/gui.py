@@ -1,8 +1,8 @@
 import peewee
 from PyQt5.QtCore import QSize, pyqtSlot
 from PyQt5.QtWidgets import (
-	QMainWindow, QDialog, QFrame, QHBoxLayout, QVBoxLayout, QLabel,
-	QListWidget, QPushButton, QSpinBox)
+	QMainWindow, QDialog, QFrame, QHBoxLayout, QVBoxLayout, QComboBox, QLabel,
+	QLineEdit, QListWidget, QPushButton, QSpinBox)
 
 from upvtc_ct import models
 
@@ -11,7 +11,12 @@ class AddRecordDialog():
 	cached_add_record_windows = dict()
 
 	@classmethod
-	def for_model(cls, model: str, attrs=[]):
+	def for_model(cls,
+				  model: str,
+				  attrs=[],
+				  save_func=None,
+				  cancel_func=None,
+				  reset_on_close=True):
 		"""
 		Creates a new dialog for creating new records of a model. If a dialog
 		has already been created beforehand, we use the previously created
@@ -26,32 +31,109 @@ class AddRecordDialog():
 
 			# Add in the GUI equivalents of the fields in the model.
 			dialog_layout = QVBoxLayout(dialog)
-			#dialog.setLayout(dialog_layout)
+			dialog.setLayout(dialog_layout)
 
 			m = getattr(models, model)
+			attr_widgets = dict()  # key -> (widget object, default value,)
 			for attr in attrs:
 				model_attr = getattr(m, attr)
+
 				attr_type = type(model_attr)
 				attr_layout = None
-				if attr_type is peewee.ManyToManyField:
-					raise NotImplementedError()
-				elif attr_type is peewee.ForeignKeyField:
-					raise NotImplementedError()
+				capitalize_func = lambda s: s.capitalize()
+				attr_label = QLabel(
+					' '.join(list(map(capitalize_func, attr.split('_')))))
+				# TODO: Refactor these conditional blocks. Use a design
+				#       pattern. You may refer to the following link:
+				#           https://itnext.io/how-we-avoided-if-else-and-wrote
+				#           -extendable-code-with-strategy-pattern-256e34b90caf
+				if attr_type is peewee.CharField:
+					attr_layout = QHBoxLayout()
+
+					attr_layout.addWidget(attr_label)
+					attr_layout.addStretch(1)
+
+					attr_textfield = QLineEdit()
+					attr_layout.addWidget(attr_textfield)
+
+					attr_widgets[attr] = (attr_textfield, '',)
 				elif attr_type is peewee.SmallIntegerField:
 					attr_layout = QHBoxLayout()
 
-					capitalize_func = lambda s: s.capitalize()
-					attr_label = QLabel(
-						' '.join(list(map(capitalize_func, attr.split('_')))))
 					attr_layout.addWidget(attr_label)
-
 					attr_layout.addStretch(1)
 
 					attr_spinbox = QSpinBox()
 					attr_spinbox.setMinimum(0)
 					attr_layout.addWidget(attr_spinbox)
 
+					attr_widgets[attr] = (attr_spinbox, 0,)
+				elif attr_type is peewee.DecimalField:
+					raise NotImplementedError()
+				elif attr_type is peewee.TimeField:
+					raise NotImplementedError()
+				elif attr_type is peewee.ForeignKeyField:
+					attr_layout = QVBoxLayout()
+
+					attr_layout.addWidget(attr_label)
+
+					attr_options = QComboBox()
+					attr_options.addItem('None', None)
+					linked_model = model_attr.rel_model
+					for record in linked_model.select():
+						attr_options.addItem(str(row), record)
+					attr_layout.addWidget(attr_options)
+
+					attr_widgets[attr] = (attr_options, None,)
+				elif attr_type is peewee.ManyToManyField:
+					raise NotImplementedError()
+
 				dialog_layout.addLayout(attr_layout)
+
+			dialog_action_btn_layout = QHBoxLayout()
+			save_btn = QPushButton('Save')
+			@pyqtSlot()
+			def save_action():
+				if save_func is not None:
+					save_func()
+				dialog.done(QDialog.Accepted)
+
+			cancel_btn = QPushButton('Cancel')
+			@pyqtSlot()
+			def cancel_action():
+				if cancel_func is not None:
+					cancel_func()
+				dialog.done(QDialog.Rejected)
+			cancel_btn.clicked.connect(cancel_action)
+
+			dialog_action_btn_layout.addStretch(1)
+			dialog_action_btn_layout.addWidget(cancel_btn)
+			dialog_action_btn_layout.addWidget(save_btn)
+			dialog_layout.addLayout(dialog_action_btn_layout)
+
+			if reset_on_close:
+				@pyqtSlot()
+				def reset_widgets():
+					# TODO: Refactor these conditional blocks. Use a design
+					#       pattern. You may refer to the following link:
+					#           https://itnext.io/how-we-avoided-if-else-and-
+					#			wrote-extendable-code-with-strategy-pattern-
+					#           256e34b90caf
+					for _, attr_info in attr_widgets.items():
+						widget, default_widget_value = attr_info
+						if type(widget) is QLineEdit:
+							widget.setText(default_widget_value)
+						elif type(widget) is QSpinBox:
+							widget.setValue(default_widget_value)
+						elif type(widget) is QComboBox:
+							widget.setCurrentIndex(0)  # The item with an index
+													   # of 0 will always be
+													   # None.
+				dialog.finished.connect(reset_widgets)
+
+			# Add the model to the cache so that we don't have to keep on
+			# recreating the dialog.
+			cls.cached_add_record_windows[model] = dialog
 
 			return dialog
 
@@ -136,6 +218,6 @@ class MainWindow(QMainWindow):
 	def _add_study_plan_action(self):
 		action_dialog = AddRecordDialog().for_model(
 			'StudyPlan',
-			[ 'year_level', 'num_followers' ])
+			[ 'course', 'year_level', 'num_followers' ])
 		action_dialog.show()
-		action_dialog.exec_()
+		action_dialog.open()

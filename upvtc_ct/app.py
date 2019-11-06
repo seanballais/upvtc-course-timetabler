@@ -40,7 +40,6 @@ def main():
 	# Make sure we have an application folder already. We store our database
 	# file in the application folder.
 	if not os.path.isdir(settings.APP_DATA_DIR):
-		# TODO: Use a log function instead of print().
 		app_logger.info(
 			 'Application folder non-existent. Creating at '
 			f'{ settings.APP_DATA_DIR }... ')
@@ -55,13 +54,17 @@ def main():
 
 	# Make sure we already have the database file.
 	if not os.path.isfile(settings.DB_FILE):
-		# TODO: Use a log function instead of print().
 		app_logger.info(
-			 'Application database file non-existent. Creating database '
-			f'file, {settings.DB_FILE}, at {settings.APP_DATA_DIR}, '
-			 'and populating it with tables...')
+			 'Application database non-existent. Creating database, '
+			f'{settings.DB_FILE} (at {settings.APP_DATA_DIR}) '
+			 'initializing it, and populating it with tables...')
 
 		models.setup_models()
+	else:
+		app_logger.info(
+			f'Application database ({settings.DB_FILE}) already exists. '
+			 'Initializing database...')
+		models.db.init(settings.DB_FILE)
 
 	# We got everything setup so we can start the application proper.
 	if not arguments['--no-gui']:
