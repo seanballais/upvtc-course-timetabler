@@ -1,8 +1,8 @@
 import peewee
-from PyQt5.QtCore import QSize, pyqtSlot
+from PyQt5.QtCore import QSize, QTime, pyqtSlot
 from PyQt5.QtWidgets import (
 	QMainWindow, QDialog, QFrame, QHBoxLayout, QVBoxLayout, QComboBox, QLabel,
-	QLineEdit, QListWidget, QPushButton, QSpinBox)
+	QLineEdit, QListWidget, QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
 
 from upvtc_ct import models
 
@@ -69,9 +69,31 @@ class AddRecordDialog():
 
 					attr_widgets[attr] = (attr_spinbox, 0,)
 				elif attr_type is peewee.DecimalField:
-					raise NotImplementedError()
+					attr_layout = QHBoxLayout()
+
+					attr_layout.addWidget(attr_label)
+					attr_layout.addStretch(1)
+
+					attr_spinbox = QDoubleSpinBox()
+					attr_spinbox.setMinimum(1.0)
+					attr_spinbox.setSingleStep(0.5)
+					attr_layout.addWidget(attr_spinbox)
+
+					attr_widgets[attr] = (attr_spinbox, 1.0,)
 				elif attr_type is peewee.TimeField:
-					raise NotImplementedError()
+					attr_layout = QHBoxLayout()
+
+					attr_layout.addWidget(attr_label)
+					attr_layout.addStretch(1)
+
+					attr_timefield = QTimeEdit(QTime(7, 0))
+					attr_timefield.setMinimumTime(QTime(7, 0))
+					# The time below is the start of the last timeslot
+					# of a day.
+					attr_timefield.setMaximumTime(QTime(18, 30))
+					attr_layout.addWidget(attr_timefield)
+
+					attr_widgets[attr] = (attr_timefield, QTime(7, 0),)
 				elif attr_type is peewee.ForeignKeyField:
 					attr_layout = QVBoxLayout()
 
@@ -123,8 +145,11 @@ class AddRecordDialog():
 						widget, default_widget_value = attr_info
 						if type(widget) is QLineEdit:
 							widget.setText(default_widget_value)
-						elif type(widget) is QSpinBox:
+						elif (type(widget) is QSpinBox
+							  or type(widget) is QDoubleSpinBox):
 							widget.setValue(default_widget_value)
+						elif type(widget) is QTimeEdit:
+							widget.setTime(default_widget_value)
 						elif type(widget) is QComboBox:
 							widget.setCurrentIndex(0)  # The item with an index
 													   # of 0 will always be
