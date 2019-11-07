@@ -14,6 +14,7 @@ class AddRecordDialog():
 	def for_model(cls,
 				  model: str,
 				  attrs=[],
+				  title=None,
 				  save_func=None,
 				  cancel_func=None,
 				  reset_on_close=True):
@@ -27,7 +28,7 @@ class AddRecordDialog():
 		else:
 			dialog = QDialog()
 			dialog.setModal(True)
-			dialog.setWindowTitle(f'Add {model}')
+			dialog.setWindowTitle(title or f'Add {model}')
 
 			# Add in the GUI equivalents of the fields in the model.
 			dialog_layout = QVBoxLayout(dialog)
@@ -36,9 +37,9 @@ class AddRecordDialog():
 			m = getattr(models, model)
 			attr_widgets = dict()  # key -> (widget object, default value,)
 			for attr in attrs:
-				model_attr = getattr(m, attr)
+				attr_field = getattr(m, attr)
 
-				attr_type = type(model_attr)
+				attr_type = type(attr_field)
 				attr_layout = None
 				capitalize_func = lambda s: s.capitalize()
 				attr_label = QLabel(
@@ -101,14 +102,55 @@ class AddRecordDialog():
 
 					attr_options = QComboBox()
 					attr_options.addItem('None', None)
-					linked_model = model_attr.rel_model
+					linked_model = attr_field.rel_model
 					for record in linked_model.select():
-						attr_options.addItem(str(row), record)
+						attr_options.addItem(str(record), record)
 					attr_layout.addWidget(attr_options)
 
 					attr_widgets[attr] = (attr_options, None,)
 				elif attr_type is peewee.ManyToManyField:
-					raise NotImplementedError()
+					attr_layout = QVBoxLayout()
+
+					attr_layout.addWidget(attr_label)
+
+					# Add the panel that lets you select linked model instances
+					# and add them to the instances the new model instance
+					# is linked to.
+					attr_add_options_layout = QHBoxLayout()
+					attr_options = QComboBox()
+					linked_model = attr_field.rel_model
+					for record in linked_model.select():
+						attr_options.addItem(str(record), record)
+
+					attr_add_option_btn = QPushButton('Add')
+
+					attr_add_options_layout.addWidget(attr_options)
+					attr_add_options_layout.addWidget(attr_add_option_btn)
+
+					attr_layout.addLayout(attr_add_options_layout)
+
+					attr_widgets[f'{attr}_options'] = (attr_options, None,)
+
+					# Add the list of linked model instances connected to the
+					# new model instance.
+					attr_linked_models = QListWidget()
+					attr_layout.addWidget(attr_linked_models)
+
+					attr_widgets[f'{attr}_linked_list'] = (
+						attr_linked_models, None,
+					)
+
+					# Add the action buttons for linked model instances.
+					attr_linked_models_action_btn_layout = QHBoxLayout()
+					attr_remove_linked_model_btn = QPushButton('Remove')
+					attr_edit_linked_model_btn = QPushButton('Edit')
+					attr_linked_models_action_btn_layout.addStretch(1)
+					attr_linked_models_action_btn_layout.addWidget(
+						attr_remove_linked_model_btn)
+					attr_linked_models_action_btn_layout.addWidget(
+						attr_edit_linked_model_btn)
+
+					attr_layout.addLayout(attr_linked_models_action_btn_layout)
 
 				dialog_layout.addLayout(attr_layout)
 
@@ -154,6 +196,9 @@ class AddRecordDialog():
 							widget.setCurrentIndex(0)  # The item with an index
 													   # of 0 will always be
 													   # None.
+						elif type(widget) is QListWidget:
+							widget.clear()
+
 				dialog.finished.connect(reset_widgets)
 
 			# Add the model to the cache so that we don't have to keep on
@@ -243,6 +288,7 @@ class MainWindow(QMainWindow):
 	def _add_study_plan_action(self):
 		action_dialog = AddRecordDialog().for_model(
 			'StudyPlan',
-			[ 'course', 'year_level', 'num_followers' ])
+			[ 'course', 'year_level', 'num_followers', 'subjects' ],
+			title='Add a new study plan')
 		action_dialog.show()
 		action_dialog.open()
