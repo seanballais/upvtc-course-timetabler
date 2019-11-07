@@ -1,8 +1,9 @@
 import peewee
 from PyQt5.QtCore import QSize, QTime, pyqtSlot
 from PyQt5.QtWidgets import (
-	QMainWindow, QDialog, QFrame, QHBoxLayout, QVBoxLayout, QComboBox, QLabel,
-	QLineEdit, QListWidget, QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
+	QMainWindow, QDialog, QFrame, QGridLayout, QHBoxLayout, QVBoxLayout,
+	QComboBox, QLabel, QLineEdit, QListWidget, QPushButton, QSpinBox,
+	QDoubleSpinBox, QTimeEdit)
 
 from upvtc_ct import models
 
@@ -250,17 +251,33 @@ class MainWindow(QMainWindow):
 		study_plan_subjects_panel_layout.addWidget(
 			study_plan_subjects_panel_title)
 
+		# Add the panel that will add subjects to a study plan.
+		add_subjects_layout = QGridLayout()
+		add_subjects_layout.setColumnStretch(0, 1)
+
+		subject_options = QComboBox()
+		# TODO: Only show subjects that are offered by the division of the
+		#       course of the selected study plan.
+		for subject in models.Subject.select():
+			subject_options.addItem(str(subject), subject)
+
+		add_subject_btn = QPushButton('Add')
+
+		add_subjects_layout.addWidget(subject_options, 0, 0)
+		add_subjects_layout.addWidget(add_subject_btn, 0, 1)
+
+		study_plan_subjects_panel_layout.addLayout(add_subjects_layout)
+
+		# Add the rest of the study plan subjects panel.
 		subject_list = QListWidget()
 		study_plan_subjects_panel_layout.addWidget(subject_list)
 
 		subject_action_btn_layout = QHBoxLayout()
 		remove_subject_btn = QPushButton('Remove')
 		edit_subject_btn = QPushButton('Edit')
-		add_subject_btn = QPushButton('Add')
 		subject_action_btn_layout.addStretch(1)
 		subject_action_btn_layout.addWidget(remove_subject_btn)
 		subject_action_btn_layout.addWidget(edit_subject_btn)
-		subject_action_btn_layout.addWidget(add_subject_btn)
 		study_plan_subjects_panel_layout.addLayout(subject_action_btn_layout)
 
 		study_plan_ui_layout.addLayout(study_plan_panel_layout)
