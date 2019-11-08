@@ -9,11 +9,13 @@ from PyQt5.QtWidgets import (
 
 from upvtc_ct import models
 
+# We seriously need tests around here.
 
 @dataclass
 class _RecordDialogWidget():
+	attr: str
 	widget: QWidget
-	has_modified: bool = False
+	default: any
 
 
 class _RecordDialog(QDialog):
@@ -25,10 +27,28 @@ class _RecordDialog(QDialog):
 
 class RecordDialogFactory():
 	@classmethod
-	def create_dialog(cls, model, model_instance, attrs=[], title=None):
+	def create_save_dialog(cls, model, attrs=[], title=None):
+		return cls._create_dialog(model, None, attrs, title)
+
+	@classmethod
+	def create_edit_dialog(cls, model_instance, attrs=[], title=None):
+		return cls._create_dialog(None, model_instance, attrs, title)
+
+	@classmethod
+	def _create_dialog(cls, model, model_instance, attrs=[], title=None):
 		"""
 		Creates a new dialog for creating new or editing records of a model.
 		"""
+		# Why still have an `attrs` variable instead of getting the attributes
+		# from the model class? This is to allow us to customize the order in
+		# which the widgets will be shown. As a side effect, this will also 
+		# allow us to specify which attributes to expose. However, originally,
+		# I intended to have such variable to make it quicker for me to
+		# finish an early version of this function and try it out since I
+		# initially did not know how to access the model's fields. The
+		# variable's purpose pretty much transformed over time.
+		#
+		# On hindsight, maybe we should rename `attrs` to fields.
 		dialog = _RecordDialog()
 		dialog.setModal(True)
 		dialog.setWindowTitle(title or f'Add {model}')
@@ -40,9 +60,11 @@ class RecordDialogFactory():
 		m = getattr(models, model)
 		for attr in attrs:
 			attr_field = getattr(m, attr)
-
 			attr_type = type(attr_field)
 			attr_layout = None
+			attr_widget = None
+			attr_default_value = None
+
 			capitalize_func = lambda s: s.capitalize()
 			attr_label = QLabel(
 					' '.join(list(map(capitalize_func, attr.split('_')))))
@@ -59,7 +81,8 @@ class RecordDialogFactory():
 				attr_textfield = QLineEdit()
 				attr_layout.addWidget(attr_textfield)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_textfield)
+				attr_widget = attr_textfield
+				attr_default_value = ''
 			elif attr_type is peewee.SmallIntegerField:
 				attr_layout = QHBoxLayout()
 
@@ -70,7 +93,8 @@ class RecordDialogFactory():
 				attr_spinbox.setMinimum(0)
 				attr_layout.addWidget(attr_spinbox)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_spinbox)
+				attr_widget = attr_spinbox
+				attr_default_value = 0				
 			elif attr_type is peewee.DecimalField:
 				attr_layout = QHBoxLayout()
 
@@ -82,7 +106,8 @@ class RecordDialogFactory():
 				attr_spinbox.setSingleStep(0.5)
 				attr_layout.addWidget(attr_spinbox)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_spinbox)
+				attr_widget = attr_spinbox
+				attr_default_value = 1.0
 			elif attr_type is peewee.TimeField:
 				attr_layout = QHBoxLayout()
 
@@ -96,7 +121,8 @@ class RecordDialogFactory():
 				attr_timefield.setMaximumTime(QTime(18, 30))
 				attr_layout.addWidget(attr_timefield)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_timefield)
+				attr_widget = attr_timefield
+				attr_default_value = QTime(7, 0)
 			elif attr_type is peewee.ForeignKeyField:
 				attr_layout = QVBoxLayout()
 
@@ -109,7 +135,8 @@ class RecordDialogFactory():
 					attr_options.addItem(str(record), record)
 				attr_layout.addWidget(attr_options)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_options)
+				attr_widget = attr_options
+				attr_default_value = None
 			elif attr_type is peewee.ManyToManyField:
 				attr_layout = QVBoxLayout()
 
@@ -151,6 +178,14 @@ class RecordDialogFactory():
 				attr_layout.addLayout(attr_linked_models_action_btn_layout)
 
 				dialog.widgets[attr] = _RecordDialogWidget(attr_linked_models)
+				attr_widget = attr_linked_models
+				attr_default_value = []
+
+			if model_instance is not None:
+				attr_default_value = getattr(model_instance, attr)
+
+			dialog.widgets[attr] = _RecordDialogWidget(
+				attr, attr_textfield, attr_default_value)
 
 			dialog_layout.addLayout(attr_layout)
 
@@ -159,6 +194,35 @@ class RecordDialogFactory():
 		save_btn = QPushButton('Save')
 		@pyqtSlot()
 		def save_action():
+			if model_instance is None:
+				# We're an "Add Record" dialog.
+				new_instance = m()
+				for widget in dialog.widgets:
+					# Maybe I should have checked the widget type instead
+					# the field type of the attribute?
+					attr_type = type(getattr(m, widget.attr))
+					if attr_type is peewee.CharField:
+						setattr(m, widget.attr, widget.widget.text())
+					elif attr_type is peewee.SmallIntegerField:
+						setattr(m, widget.attr, widget.widget.value())
+					elif attr_type is peewee.DecimalField:
+						setattr(m, widget.attr, widget.widget.value())
+					elif attr_type is peewee.TimeField:
+						setattr(m, widget.attr, widget.widget.toPython())
+					elif attr_type is peewee.ForeignKeyField:
+						setattr(m, widget.attr, widget.widget.currentData())
+					elif attr_type is peewee.ManyToManyField:
+						list_widget = widget.widget
+						field = getattr(m, widget.attr)
+						field.add([
+							widget.widget.item(i) for i in list_widget.count()
+						])
+
+				new_instance.save()
+			else:
+				# We're an "Edit Record" dialog
+				pass
+
 			dialog.done(QDialog.Accepted)
 		save_btn.clicked.connect(save_action)
 
@@ -169,7 +233,7 @@ class RecordDialogFactory():
 		cancel_btn.clicked.connect(cancel_action)
 
 		dialog_action_btn_divider = DividerLineFactory.create_divider_line(
-			QFrame.HLine)
+			QFrame.HLine) 
 		dialog_layout.addWidget(dialog_action_btn_divider)
 
 		dialog_action_btn_layout.addStretch(1)

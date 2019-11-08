@@ -5,6 +5,7 @@ import peewee
 
 from upvtc_ct import settings, utils
 
+# We really need tests around here.
 
 db = peewee.SqliteDatabase(None)
 app_logger = logging.getLogger()
@@ -123,6 +124,11 @@ class Room(Base):
 		unique=True,
 		null=True,
 		max_length=128)
+	division = peewee.ForeignKeyField(
+		Division,
+		backref='rooms',
+		on_delete='RESTRICT',
+		on_update='CASCADE')
 	features = peewee.ManyToManyField(
 		RoomFeature,
 		backref='rooms',

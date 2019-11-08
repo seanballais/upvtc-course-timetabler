@@ -56,7 +56,7 @@ def main():
 	if not os.path.isfile(settings.DB_FILE):
 		app_logger.info(
 			 'Application database non-existent. Creating database, '
-			f'{settings.DB_FILE} (at {settings.APP_DATA_DIR}) '
+			f'{settings.DB_FILE} (at {settings.APP_DATA_DIR}), '
 			 'initializing it, and populating it with tables...')
 
 		models.setup_models()
