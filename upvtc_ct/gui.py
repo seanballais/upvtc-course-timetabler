@@ -1,15 +1,18 @@
 from dataclasses import dataclass
+import logging
 
 import peewee
-from PyQt5.QtCore import QSize, QTime, pyqtSlot
+from PyQt5.QtCore import Qt, QSize, QTime, pyqtSlot
 from PyQt5.QtWidgets import (
 	QMainWindow, QDialog, QWidget, QFrame, QGridLayout, QHBoxLayout,
-	QVBoxLayout, QComboBox, QLabel, QLineEdit, QListWidget, QPushButton,
-	QSpinBox, QDoubleSpinBox, QTimeEdit)
+	QVBoxLayout, QComboBox, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+	QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
 
-from upvtc_ct import models
+from upvtc_ct import models, utils
 
 # We seriously need tests around here.
+app_logger = logging.getLogger()
+
 
 @dataclass
 class _RecordDialogWidget():
@@ -23,11 +26,12 @@ class _RecordDialog(QDialog):
 		super().__init__(parent)
 
 		self.widgets = dict()
+		self.has_performed_modifications = False
 
 
 class RecordDialogFactory():
 	@classmethod
-	def create_save_dialog(cls, model, attrs=[], title=None):
+	def create_add_dialog(cls, model, attrs=[], title=None):
 		return cls._create_dialog(model, None, attrs, title)
 
 	@classmethod
@@ -57,9 +61,8 @@ class RecordDialogFactory():
 		dialog_layout = QVBoxLayout(dialog)
 		dialog.setLayout(dialog_layout)
 
-		m = getattr(models, model)
 		for attr in attrs:
-			attr_field = getattr(m, attr)
+			attr_field = getattr(model, attr)
 			attr_type = type(attr_field)
 			attr_layout = None
 			attr_widget = None
@@ -177,6 +180,23 @@ class RecordDialogFactory():
 
 				attr_layout.addLayout(attr_linked_models_action_btn_layout)
 
+				# Add the behaviours.
+				@pyqtSlot()
+				def add_selected_options_item():
+					item_index = attr_options.currentIndex()
+					item = attr_options.itemData(item_index)
+					item_text = attr_options.itemText(item_index)
+
+					attr_options.removeItem(item_index)
+
+					item_list_item = QListWidgetItem(item_text)
+					item_list_item.setData(Qt.UserRole, item)
+
+					attr_linked_models.addItem(item_list_item)
+
+				attr_add_options_layout.clicked.connect(
+					add_selected_options_item)
+
 				dialog.widgets[attr] = _RecordDialogWidget(attr_linked_models)
 				attr_widget = attr_linked_models
 				attr_default_value = []
@@ -192,41 +212,43 @@ class RecordDialogFactory():
 		dialog_action_btn_layout = QHBoxLayout()
 		
 		save_btn = QPushButton('Save')
+		cancel_btn = QPushButton('Cancel')
+
 		@pyqtSlot()
 		def save_action():
 			if model_instance is None:
 				# We're an "Add Record" dialog.
-				new_instance = m()
+				new_instance = model()
 				for widget in dialog.widgets:
 					# Maybe I should have checked the widget type instead
 					# the field type of the attribute?
-					attr_type = type(getattr(m, widget.attr))
+					attr_type = type(getattr(model, widget.attr))
 					if attr_type is peewee.CharField:
-						setattr(m, widget.attr, widget.widget.text())
+						setattr(model, widget.attr, widget.widget.text())
 					elif attr_type is peewee.SmallIntegerField:
-						setattr(m, widget.attr, widget.widget.value())
+						setattr(model, widget.attr, widget.widget.value())
 					elif attr_type is peewee.DecimalField:
-						setattr(m, widget.attr, widget.widget.value())
+						setattr(model, widget.attr, widget.widget.value())
 					elif attr_type is peewee.TimeField:
-						setattr(m, widget.attr, widget.widget.toPython())
+						setattr(model, widget.attr, widget.widget.toPython())
 					elif attr_type is peewee.ForeignKeyField:
-						setattr(m, widget.attr, widget.widget.currentData())
+						setattr(model, widget.attr, widget.widget.currentData())
 					elif attr_type is peewee.ManyToManyField:
 						list_widget = widget.widget
-						field = getattr(m, widget.attr)
-						field.add([
-							widget.widget.item(i) for i in list_widget.count()
-						])
+						field = getattr(model, widget.attr)
+						for index in range(list_widget.count()):
+							field.add(widget.widget.item(i))
 
 				new_instance.save()
 			else:
 				# We're an "Edit Record" dialog
 				pass
 
+			dialog.has_performed_modifications = True
+
 			dialog.done(QDialog.Accepted)
 		save_btn.clicked.connect(save_action)
 
-		cancel_btn = QPushButton('Cancel')
 		@pyqtSlot()
 		def cancel_action():
 			dialog.done(QDialog.Rejected)
@@ -270,18 +292,44 @@ class EditInformationWindow(QMainWindow):
 		model_information_layout = QHBoxLayout()
 
 		# Automatically create the panels for the specified models.
-		information_models = [ 'Division', 'Course', 'Subject', 'Room' ]
+		information_models = [
+			models.Division,
+			models.Course,
+			models.Subject,
+			models.Teacher,
+			models.Room,
+			models.RoomFeature
+		]
+		information_models_titles = [
+			'Division', 'Course', 'Subject', 'Teacher', 'Room', 'Room Feature'
+		]
+		information_model_attrs = [
+			[ 'name' ],
+			[ 'name', 'division' ],
+			[ 'name', 'units', 'division', 'candidate_teachers' ],
+			[ 'first_name', 'last_name', 'preferred_timeslots' ],
+			[ 'name', 'division', 'features' ],
+			[ 'name' ]
+		]
 		ctr = 0
-		for information_model in information_models:
+		for model, title, attrs in zip(
+				information_models,
+				information_models_titles,
+				information_model_attrs):
 			model_layout = QVBoxLayout()
 
 			# Let's start with the label.
-			panel_title = QLabel(f'{information_model}s')
+			panel_title = QLabel(f'{title}s')
 			model_layout.addWidget(panel_title)
 
 			# And, of course, the list.
 			model_instances_list = QListWidget()
 			model_layout.addWidget(model_instances_list)
+			for instance in model.select():
+				list_item = QListWidgetItem(str(instance))
+				list_item.setData(Qt.UserRole, instance)
+
+				model_instances_list.addItem(list_item)
 
 			# And then the action buttons.
 			action_btn_layout = QHBoxLayout()
@@ -296,6 +344,36 @@ class EditInformationWindow(QMainWindow):
 			model_layout.addLayout(action_btn_layout)
 
 			model_information_layout.addLayout(model_layout)
+
+			# Add the behaviours.
+			@pyqtSlot()
+			def add_model_instance():
+				add_dialog = RecordDialogFactory.create_add_dialog(
+					model, attrs, f'Add a new {title.lower()}')
+
+				add_dialog.show()
+				add_dialog.exec_()  # Makes sure that the dialog blocks
+									# execution of the code below until 
+									# the dialog is closed.
+
+				if add_dialog.has_performed_modifications:
+					new_instance = (model
+									.select()
+									.order_by(model.id.desc())
+									.get())
+					new_list_item = QListWidgetItem(str(new_instance))
+					new_list_item.setData(Qt.UserRole, new_instance)
+
+					model_instances_list.addItem(new_list_item)
+
+			# Function names can be thought of pointers/reference to the
+			# function definitions. As such, we are performing a
+			# pass-by-reference (and not a pass-by-value) when passing the
+			# function as an argument to a function. However, technically,
+			# everything is pass-by-reference in Python.
+			add_model_instance_fn = utils.copy_func(add_model_instance)
+
+			add_btn.clicked.connect(add_model_instance_fn)
 
 			if ctr < len(information_models) - 1:
 				model_information_layout.addWidget(
@@ -413,9 +491,8 @@ class MainWindow(QMainWindow):
 
 	@pyqtSlot()
 	def _add_study_plan_action(self):
-		action_dialog = RecordDialogFactory.create_dialog(
-			'StudyPlan',
-			None,
+		action_dialog = RecordDialogFactory.create_add_dialog(
+			StudyPlan,
 			[ 'course', 'year_level', 'num_followers', 'subjects' ],
 			title='Add a new study plan')
 		action_dialog.show()
