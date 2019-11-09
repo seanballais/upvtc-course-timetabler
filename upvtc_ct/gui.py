@@ -217,6 +217,9 @@ class RecordDialogFactory():
 
 		@pyqtSlot()
 		def save_action():
+			# TODO: Fix issue where creating an instance model with a
+			#       non-nullable field set to null causes a crash. To fix this,
+			#       do not show a "None" option to a non-nullable field.
 			if model_instance is None:
 				# We're an "Add Record" dialog.
 				new_instance = model()
