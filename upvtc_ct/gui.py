@@ -440,52 +440,13 @@ class MainWindow(QMainWindow):
 		remove_study_plan_btn = QPushButton('Remove')
 		edit_study_plan_btn = QPushButton('Edit')
 		add_study_plan_btn = QPushButton('Add')
-		study_plan_action_btn_layout.addStretch(1)
 		study_plan_action_btn_layout.addWidget(remove_study_plan_btn)
+		study_plan_action_btn_layout.addStretch(1)
 		study_plan_action_btn_layout.addWidget(edit_study_plan_btn)
 		study_plan_action_btn_layout.addWidget(add_study_plan_btn)
 		study_plan_panel_layout.addLayout(study_plan_action_btn_layout)
 
-		# Create the panel that will display the subjects required in a
-		# selected study plan, and expose action buttons that will add or
-		# remove subjects from the selected study plan.
-		study_plan_subjects_panel_layout = QVBoxLayout()
-
-		study_plan_subjects_panel_title = QLabel('Subjects')
-		study_plan_subjects_panel_layout.addWidget(
-			study_plan_subjects_panel_title)
-
-		# Add the panel that will add subjects to a study plan.
-		add_subjects_layout = QGridLayout()
-		add_subjects_layout.setColumnStretch(0, 1)
-
-		subject_options = QComboBox()
-		# TODO: Only show subjects that are offered by the division of the
-		#       course of the selected study plan.
-		for subject in models.Subject.select():
-			subject_options.addItem(str(subject), subject)
-
-		add_subject_btn = QPushButton('Add')
-
-		add_subjects_layout.addWidget(subject_options, 0, 0)
-		add_subjects_layout.addWidget(add_subject_btn, 0, 1)
-
-		study_plan_subjects_panel_layout.addLayout(add_subjects_layout)
-
-		# Add the rest of the study plan subjects panel.
-		subject_list = QListWidget()
-		study_plan_subjects_panel_layout.addWidget(subject_list)
-
-		subject_action_btn_layout = QHBoxLayout()
-		remove_subject_btn = QPushButton('Remove')
-		edit_subject_btn = QPushButton('Edit')
-		subject_action_btn_layout.addStretch(1)
-		subject_action_btn_layout.addWidget(remove_subject_btn)
-		subject_action_btn_layout.addWidget(edit_subject_btn)
-		study_plan_subjects_panel_layout.addLayout(subject_action_btn_layout)
-
 		study_plan_ui_layout.addLayout(study_plan_panel_layout)
-		study_plan_ui_layout.addLayout(study_plan_subjects_panel_layout)
 
 		# Create the top-level action buttons that will allow for adding,
 		# editing, and removing information of divisions, courses, etc., and
