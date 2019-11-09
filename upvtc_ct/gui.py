@@ -158,6 +158,9 @@ class RecordDialogFactory():
 
 				attr_add_option_btn = QPushButton('Add')
 
+				if attr_options.count() == 0:  # No items in the combo box.
+					attr_add_option_btn.setEnabled(False)
+
 				attr_add_options_layout.addWidget(attr_options, 0, 0)
 				attr_add_options_layout.addWidget(attr_add_option_btn, 0, 1)
 
@@ -194,10 +197,8 @@ class RecordDialogFactory():
 
 					attr_linked_models.addItem(item_list_item)
 
-				attr_add_options_layout.clicked.connect(
-					add_selected_options_item)
+				attr_add_option_btn.clicked.connect(add_selected_options_item)
 
-				dialog.widgets[attr] = _RecordDialogWidget(attr_linked_models)
 				attr_widget = attr_linked_models
 				attr_default_value = []
 
@@ -205,7 +206,7 @@ class RecordDialogFactory():
 				attr_default_value = getattr(model_instance, attr)
 
 			dialog.widgets[attr] = _RecordDialogWidget(
-				attr, attr_textfield, attr_default_value)
+				attr, attr_widget, attr_default_value)
 
 			dialog_layout.addLayout(attr_layout)
 
@@ -219,7 +220,7 @@ class RecordDialogFactory():
 			if model_instance is None:
 				# We're an "Add Record" dialog.
 				new_instance = model()
-				for widget in dialog.widgets:
+				for widget in dialog.widgets.values():
 					# Maybe I should have checked the widget type instead
 					# the field type of the attribute?
 					attr_type = type(getattr(model, widget.attr))
@@ -346,34 +347,18 @@ class EditInformationWindow(QMainWindow):
 			model_information_layout.addLayout(model_layout)
 
 			# Add the behaviours.
-			@pyqtSlot()
-			def add_model_instance():
-				add_dialog = RecordDialogFactory.create_add_dialog(
-					model, attrs, f'Add a new {title.lower()}')
-
-				add_dialog.show()
-				add_dialog.exec_()  # Makes sure that the dialog blocks
-									# execution of the code below until 
-									# the dialog is closed.
-
-				if add_dialog.has_performed_modifications:
-					new_instance = (model
-									.select()
-									.order_by(model.id.desc())
-									.get())
-					new_list_item = QListWidgetItem(str(new_instance))
-					new_list_item.setData(Qt.UserRole, new_instance)
-
-					model_instances_list.addItem(new_list_item)
-
-			# Function names can be thought of pointers/reference to the
-			# function definitions. As such, we are performing a
-			# pass-by-reference (and not a pass-by-value) when passing the
-			# function as an argument to a function. However, technically,
-			# everything is pass-by-reference in Python.
-			add_model_instance_fn = utils.copy_func(add_model_instance)
-
-			add_btn.clicked.connect(add_model_instance_fn)
+			# This connection might pose a problem when working with multiple
+			# threads.
+			add_btn.clicked.connect(
+				# Why do we need to create arguments to the lambda function
+				# below? 
+				(lambda checked,
+						model=model,
+						attrs=attrs,
+						title=title,
+						model_instances_list = model_instances_list :
+					self._add_model_instance_action(
+						model, attrs, title, model_instances_list)))
 
 			if ctr < len(information_models) - 1:
 				model_information_layout.addWidget(
@@ -389,6 +374,29 @@ class EditInformationWindow(QMainWindow):
 			EditInformationWindow._instance = EditInformationWindow()
 
 		return EditInformationWindow._instance
+
+	@pyqtSlot()
+	def _add_model_instance_action(self,
+								   model,
+		 						   attrs,
+								   title,
+		 						   model_instances_list):
+		add_dialog = RecordDialogFactory.create_add_dialog(
+			model, attrs, f'Add a new {title.lower()}')
+
+		add_dialog.show()
+		add_dialog.exec_()  # Must do this to Block execution of the
+							# code below until the dialog is closed.
+
+		if add_dialog.has_performed_modifications:
+			new_instance = (model
+							.select()
+							.order_by(model.id.desc())
+							.get())
+			new_list_item = QListWidgetItem(str(new_instance))
+			new_list_item.setData(Qt.UserRole, new_instance)
+
+			model_instances_list.addItem(new_list_item)
 
 
 class MainWindow(QMainWindow):
@@ -492,7 +500,7 @@ class MainWindow(QMainWindow):
 	@pyqtSlot()
 	def _add_study_plan_action(self):
 		action_dialog = RecordDialogFactory.create_add_dialog(
-			StudyPlan,
+			models.StudyPlan,
 			[ 'course', 'year_level', 'num_followers', 'subjects' ],
 			title='Add a new study plan')
 		action_dialog.show()

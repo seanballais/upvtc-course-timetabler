@@ -86,6 +86,9 @@ class Division(Base):
 			(( 'name', ), True),
 		)
 
+	def __str__(self):
+		return str(self.name)
+
 
 class Course(Base):
 	name = peewee.CharField(
@@ -104,6 +107,9 @@ class Course(Base):
 			(( 'name', ), True),
 		)
 
+	def __str__(self):
+		return str(self.name)
+
 
 class RoomFeature(Base):
 	name = peewee.CharField(
@@ -116,6 +122,9 @@ class RoomFeature(Base):
 		indexes = (
 			(( 'name', ), True),
 		)
+
+	def __str__(self):
+		return str(self.name)
 
 
 class Room(Base):
@@ -139,6 +148,9 @@ class Room(Base):
 		indexes = (
 			(( 'name', ), True),
 		)
+
+	def __str__(self):
+		return str(self.name)
 
 
 class TimeSlot(Base):
@@ -169,6 +181,9 @@ class TimeSlot(Base):
 			(( 'day', ), False),
 		)
 
+	def __str__(self):
+		return f'{str(self.start_time)} - {str(self.end_time)}'
+
 
 class Teacher(Base):
 	first_name = peewee.CharField(
@@ -190,6 +205,9 @@ class Teacher(Base):
 		indexes = (
 			(( 'first_name', 'last_name', ), True),
 		)
+
+	def __str__(self):
+		return f'{str(self.last_name)}, {str(self.first_name)}'
 
 
 class Subject(Base):
@@ -219,6 +237,9 @@ class Subject(Base):
 		indexes = (
 			(( 'name', ), True),
 		)
+
+	def __str__(self):
+		return str(self.name)
 
 
 # We have to use a deferred through model since we would have a circular
@@ -265,6 +286,9 @@ class Class(Base):
 			(( 'subject', ), False),
 			(( 'capacity', ), False),
 		)
+
+	def __str__(self):
+		return str(self.subject)
 
 
 class ClassTimeSlot(Base):
@@ -313,3 +337,6 @@ class StudyPlan(Base):
 		indexes = (
 			( ( 'course', 'year_level', ), True),
 		)
+
+	def __str__(self):
+		return f'{str(self.course)} {str(self.year_level)}'
