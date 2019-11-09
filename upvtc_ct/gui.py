@@ -225,18 +225,27 @@ class RecordDialogFactory():
 					# the field type of the attribute?
 					attr_type = type(getattr(model, widget.attr))
 					if attr_type is peewee.CharField:
-						setattr(model, widget.attr, widget.widget.text())
+						setattr(
+							new_instance, widget.attr, widget.widget.text())
 					elif attr_type is peewee.SmallIntegerField:
-						setattr(model, widget.attr, widget.widget.value())
+						setattr(
+							new_instance, widget.attr, widget.widget.value())
 					elif attr_type is peewee.DecimalField:
-						setattr(model, widget.attr, widget.widget.value())
+						setattr(
+							new_instance, widget.attr, widget.widget.value())
 					elif attr_type is peewee.TimeField:
-						setattr(model, widget.attr, widget.widget.toPython())
+						setattr(
+							new_instance,
+							widget.attr,
+							widget.widget.toPython())
 					elif attr_type is peewee.ForeignKeyField:
-						setattr(model, widget.attr, widget.widget.currentData())
+						setattr(
+							new_instance,
+							widget.attr,
+							widget.widget.currentData())
 					elif attr_type is peewee.ManyToManyField:
 						list_widget = widget.widget
-						field = getattr(model, widget.attr)
+						field = getattr(new_instance, widget.attr)
 						for index in range(list_widget.count()):
 							field.add(widget.widget.item(i))
 
