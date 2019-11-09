@@ -216,56 +216,60 @@ class RecordDialogFactory():
 		cancel_btn = QPushButton('Cancel')
 
 		@pyqtSlot()
-		def save_action():
+		def _save_action():
 			# TODO: Fix issue where creating an instance model with a
 			#       non-nullable field set to null causes a crash. To fix this,
 			#       do not show a "None" option to a non-nullable field.
+			# We're an "Add Record" dialog. Otherwise, we're an "Edit Record"
+			# dialog.
 			if model_instance is None:
-				# We're an "Add Record" dialog.
-				new_instance = model()
-				for widget in dialog.widgets.values():
-					# Maybe I should have checked the widget type instead
-					# the field type of the attribute?
-					attr_type = type(getattr(model, widget.attr))
-					if attr_type is peewee.CharField:
-						setattr(
-							new_instance, widget.attr, widget.widget.text())
-					elif attr_type is peewee.SmallIntegerField:
-						setattr(
-							new_instance, widget.attr, widget.widget.value())
-					elif attr_type is peewee.DecimalField:
-						setattr(
-							new_instance, widget.attr, widget.widget.value())
-					elif attr_type is peewee.TimeField:
-						setattr(
-							new_instance,
-							widget.attr,
-							widget.widget.toPython())
-					elif attr_type is peewee.ForeignKeyField:
-						setattr(
-							new_instance,
-							widget.attr,
-							widget.widget.currentData())
-					elif attr_type is peewee.ManyToManyField:
-						list_widget = widget.widget
-						field = getattr(new_instance, widget.attr)
-						for index in range(list_widget.count()):
-							field.add(widget.widget.item(i))
+				model_instance = model()
 
-				new_instance.save()
-			else:
-				# We're an "Edit Record" dialog
-				pass
+			for widget in dialog.widgets.values():
+				# Maybe I should have checked the widget type instead
+				# the field type of the attribute?
+				attr_type = type(getattr(model, widget.attr))
+				if attr_type is peewee.CharField:
+					setattr(model_instance, widget.attr, widget.widget.text())
+				elif attr_type is peewee.SmallIntegerField:
+					setattr(model_instance, widget.attr, widget.widget.value())
+				elif attr_type is peewee.DecimalField:
+					setattr(model_instance, widget.attr, widget.widget.value())
+				elif attr_type is peewee.TimeField:
+					setattr(
+						model_instance,
+						widget.attr,
+						widget.widget.toPython())
+				elif attr_type is peewee.ForeignKeyField:
+					setattr(
+						instance,
+						widget.attr,
+						widget.widget.currentData())
+				elif attr_type is peewee.ManyToManyField:
+					# Clearing away all associated objects then adding them
+					# back in is pretty much a nuclear method for editing an
+					# instance's many-to-many field. But, it is the easiest
+					# to implement anyway. No need to optimize for now.
+					list_widget = widget.widget
+
+					list_widget.clear()  # This only *technically* matters
+										 # when we're an "Edit Record" dialog.
+					
+					field = getattr(instance, widget.attr)
+					for index in range(list_widget.count()):
+						field.add(widget.widget.item(i))
+
+			new_instance.save()
 
 			dialog.has_performed_modifications = True
 
 			dialog.done(QDialog.Accepted)
-		save_btn.clicked.connect(save_action)
+		save_btn.clicked.connect(_save_action)
 
 		@pyqtSlot()
-		def cancel_action():
+		def _cancel_action():
 			dialog.done(QDialog.Rejected)
-		cancel_btn.clicked.connect(cancel_action)
+		cancel_btn.clicked.connect(_cancel_action)
 
 		dialog_action_btn_divider = DividerLineFactory.create_divider_line(
 			QFrame.HLine) 
