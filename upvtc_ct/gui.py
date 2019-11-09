@@ -340,6 +340,7 @@ class EditInformationWindow(QMainWindow):
 				list_item.setData(Qt.UserRole, instance)
 
 				model_instances_list.addItem(list_item)
+			model_instances_list.sortItems()
 
 			# And then the action buttons.
 			action_btn_layout = QHBoxLayout()
@@ -406,6 +407,7 @@ class EditInformationWindow(QMainWindow):
 			new_list_item.setData(Qt.UserRole, new_instance)
 
 			model_instances_list.addItem(new_list_item)
+			model_instances_list.sortItems()
 
 
 class MainWindow(QMainWindow):
