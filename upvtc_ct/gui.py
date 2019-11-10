@@ -29,7 +29,7 @@ class _RecordDialog(QDialog):
 		self.has_performed_modifications = False
 
 
-class RecordDialogFactory():
+class _RecordDialogFactory():
 	@classmethod
 	def create_add_dialog(cls, model, attrs=[], title=None):
 		return cls._create_dialog(model, None, attrs, title)
@@ -345,7 +345,7 @@ class RecordDialogFactory():
 			dialog.done(QDialog.Rejected)
 		cancel_btn.clicked.connect(_cancel_action)
 
-		dialog_action_btn_divider = DividerLineFactory.create_divider_line(
+		dialog_action_btn_divider = _DividerLineFactory.create_divider_line(
 			QFrame.HLine) 
 		dialog_layout.addWidget(dialog_action_btn_divider)
 
@@ -357,7 +357,7 @@ class RecordDialogFactory():
 		return dialog
 
 
-class DividerLineFactory():
+class _DividerLineFactory():
 	@classmethod
 	def create_divider_line(cls, line_orientation):
 		line = QFrame()
@@ -366,6 +366,89 @@ class DividerLineFactory():
 		line.setFrameShadow(QFrame.Raised)
 
 		return line
+
+
+class WindowActions():
+	@classmethod
+	@pyqtSlot()
+	def add_model_instance_action(self,
+								  model,
+		 						  attrs,
+								  title,
+		 						  model_instances_list):
+		add_dialog = _RecordDialogFactory.create_add_dialog(
+			model, attrs, f'Add a new {title.lower()}')
+
+		add_dialog.show()
+		add_dialog.exec_()  # Must do this to Block execution of the
+							# code below until the dialog is closed.
+
+		if add_dialog.has_performed_modifications:
+			new_instance = (model
+							.select()
+							.order_by(model.id.desc())
+							.get())
+			new_list_item = QListWidgetItem(str(new_instance))
+			new_list_item.setData(Qt.UserRole, new_instance)
+
+			model_instances_list.addItem(new_list_item)
+			model_instances_list.sortItems()
+
+	@classmethod
+	@pyqtSlot()
+	def edit_model_instance_action(self,
+								   model_instances_list,
+		 						   attrs):
+		selectedItem = model_instances_list.currentItem()
+		if selectedItem is None:
+			# Nothing got selected yet, so don't do anything.z
+			return
+		else:
+			instance = selectedItem.data(Qt.UserRole)
+		
+		edit_dialog = _RecordDialogFactory.create_edit_dialog(
+			instance, attrs, f'Edit "{str(instance)}"')
+
+		edit_dialog.show()
+		edit_dialog.exec_()  # Must do this to Block execution of the
+							 # code below until the dialog is closed.
+
+		if edit_dialog.has_performed_modifications:
+			# Refresh the list to reflect changes.
+			model_instances_list.clear()
+
+			instance_model = type(instance)
+			for model_instance in instance_model.select():
+				list_item = QListWidgetItem(str(model_instance))
+				list_item.setData(Qt.UserRole, model_instance)
+
+				model_instances_list.addItem(list_item)
+			model_instances_list.sortItems()
+
+	@classmethod
+	@pyqtSlot()
+	def remove_model_instance_action(self,
+									 model_instances_list,
+									 model_instances_lists):
+		selectedItem = model_instances_list.currentItem()
+		if selectedItem is None:
+			# Nothing got selected yet, so don't do anything.
+			return
+		else:
+			instance = selectedItem.data(Qt.UserRole)
+
+		instance.delete_instance()
+
+		# Refresh the lists to reflect changes.
+		for instances_list, model in model_instances_lists:
+			instances_list.clear()
+
+			for instance in model.select():
+				list_item = QListWidgetItem(str(instance))
+				list_item.setData(Qt.UserRole, instance)
+
+				instances_list.addItem(list_item)
+			instances_list.sortItems()
 
 
 class EditInformationWindow(QMainWindow):
@@ -461,7 +544,7 @@ class EditInformationWindow(QMainWindow):
 
 			if ctr < len(information_models) - 1:
 				model_information_layout.addWidget(
-					DividerLineFactory().create_divider_line(QFrame.VLine))
+					_DividerLineFactory().create_divider_line(QFrame.VLine))
 
 			# Add the behaviours.
 			# These connections might pose a problem when working with multiple
@@ -479,21 +562,19 @@ class EditInformationWindow(QMainWindow):
 						attrs=attrs,
 						title=title,
 						model_instances_list = model_instances_list :
-					self._add_model_instance_action(
+					WindowActions.add_model_instance_action(
 						model, attrs, title, model_instances_list)))
 			edit_btn.clicked.connect(
 				(lambda checked,
 						model_instances_list=model_instances_list,
-						attrs=attrs,
-						title=title :
-					self._edit_model_instance_action(
+						attrs=attrs :
+					WindowActions.edit_model_instance_action(
 						model_instances_list,
-						attrs,
-						title)))
+						attrs)))
 			remove_btn.clicked.connect(
 				(lambda checked,
 					    model_instances_list=model_instances_list :
-					self._remove_model_instance_action(
+					WindowActions.remove_model_instance_action(
 						model_instances_list, model_instances_lists)))
 
 			ctr += 1
@@ -506,85 +587,6 @@ class EditInformationWindow(QMainWindow):
 			EditInformationWindow._instance = EditInformationWindow()
 
 		return EditInformationWindow._instance
-
-	@pyqtSlot()
-	def _add_model_instance_action(self,
-								   model,
-		 						   attrs,
-								   title,
-		 						   model_instances_list):
-		add_dialog = RecordDialogFactory.create_add_dialog(
-			model, attrs, f'Add a new {title.lower()}')
-
-		add_dialog.show()
-		add_dialog.exec_()  # Must do this to Block execution of the
-							# code below until the dialog is closed.
-
-		if add_dialog.has_performed_modifications:
-			new_instance = (model
-							.select()
-							.order_by(model.id.desc())
-							.get())
-			new_list_item = QListWidgetItem(str(new_instance))
-			new_list_item.setData(Qt.UserRole, new_instance)
-
-			model_instances_list.addItem(new_list_item)
-			model_instances_list.sortItems()
-
-	@pyqtSlot()
-	def _edit_model_instance_action(self,
-								    model_instances_list,
-		 						    attrs,
-  								    title):
-		selectedItem = model_instances_list.currentItem()
-		if selectedItem is None:
-			# Nothing got selected yet, so don't do anything.z
-			return
-		else:
-			instance = selectedItem.data(Qt.UserRole)
-		
-		edit_dialog = RecordDialogFactory.create_edit_dialog(
-			instance, attrs, f'Edit {str(instance)}')
-
-		edit_dialog.show()
-		edit_dialog.exec_()  # Must do this to Block execution of the
-							 # code below until the dialog is closed.
-
-		if edit_dialog.has_performed_modifications:
-			# Refresh the list to reflect changes.
-			model_instances_list.clear()
-
-			instance_model = type(instance)
-			for model_instance in instance_model.select():
-				list_item = QListWidgetItem(str(model_instance))
-				list_item.setData(Qt.UserRole, model_instance)
-
-				model_instances_list.addItem(list_item)
-			model_instances_list.sortItems()
-
-	@pyqtSlot()
-	def _remove_model_instance_action(self,
-									  model_instances_list,
-									  model_instances_lists):
-		selectedItem = model_instances_list.currentItem()
-		if selectedItem is None:
-			# Nothing got selected yet, so don't do anything.
-			return
-		else:
-			instance = selectedItem.data(Qt.UserRole)
-
-		instance.delete_instance()
-
-		# Refresh the lists to reflect changes.
-		for instances_list, model in model_instances_lists:
-			instances_list.clear()
-
-			for instance in model.select():
-				list_item = QListWidgetItem(str(instance))
-				list_item.setData(Qt.UserRole, instance)
-
-				instances_list.addItem(list_item)
-			instances_list.sortItems()
 
 
 class MainWindow(QMainWindow):
@@ -638,18 +640,37 @@ class MainWindow(QMainWindow):
 		frame.setLayout(main_layout)
 
 		# Connect the buttons to actions.
-		add_study_plan_btn.clicked.connect(self._add_study_plan_action)
+		add_study_plan_btn.clicked.connect(
+			(lambda checked,
+					model=models.StudyPlan,
+					attrs=[
+						'course', 'year_level', 'num_followers', 'subjects'
+					],
+					title='Add a new study plan',
+					model_instances_list=study_plan_list :
+				WindowActions.add_model_instance_action(
+					model, attrs, title, model_instances_list)))
+		edit_study_plan_btn.clicked.connect(
+			(lambda checked,
+					model_instances_list=study_plan_list,
+					attrs=[
+						'course', 'year_level', 'num_followers', 'subjects'
+					] :
+				WindowActions.edit_model_instance_action(
+					model_instances_list,
+					attrs)))
+		remove_study_plan_btn.clicked.connect(
+			(lambda checked,
+					model_instances_list=study_plan_list,
+					model_instances_lists=[
+						(study_plan_list, models.StudyPlan,)
+					] :
+				WindowActions.remove_model_instance_action(
+					model_instances_list, model_instances_lists)))
+
 		edit_information_btn.clicked.connect(
 			self._show_edit_information_window)
 
 	@pyqtSlot()
 	def _show_edit_information_window(self):
 		EditInformationWindow.get_instance().show()
-
-	@pyqtSlot()
-	def _add_study_plan_action(self):
-		action_dialog = RecordDialogFactory.create_add_dialog(
-			models.StudyPlan,
-			[ 'course', 'year_level', 'num_followers', 'subjects' ],
-			title='Add a new study plan')
-		action_dialog.show()
