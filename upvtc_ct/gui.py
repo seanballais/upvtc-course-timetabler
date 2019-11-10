@@ -516,6 +516,18 @@ class EditInformationWindow(QMainWindow):
 		edit_dialog.exec_()  # Must do this to Block execution of the
 							 # code below until the dialog is closed.
 
+		if edit_dialog.has_performed_modifications:
+			# Refresh the list to reflect changes.
+			model_instances_list.clear()
+
+			instance_model = type(instance)
+			for model_instance in instance_model.select():
+				list_item = QListWidgetItem(str(model_instance))
+				list_item.setData(Qt.UserRole, model_instance)
+
+				model_instances_list.addItem(list_item)
+			model_instances_list.sortItems()
+
 	@pyqtSlot()
 	def _remove_model_instance_action(self,
 									  model_instances_list,
