@@ -250,8 +250,20 @@ class RecordDialogFactory():
 					item_list_item.setData(Qt.UserRole, item)
 
 					attr_linked_models.addItem(item_list_item)
-
 				attr_add_option_btn.clicked.connect(add_selected_options_item)
+
+				@pyqtSlot()
+				def remove_selected_list_item():
+					selected_item = attr_linked_models.currentItem()
+					selected_item_index = attr_linked_models.currentRow()
+					if selected_item is not None:
+						attr_linked_models.takeItem(selected_item_index)
+
+						item_instance = selected_item.data(Qt.UserRole)
+						attr_options.addItem(str(item_instance), item_instance)
+						attr_options.model().sort(0)
+				attr_remove_linked_model_btn.clicked.connect(
+					remove_selected_list_item)
 
 				attr_widget = attr_linked_models
 				attr_default_value = []
