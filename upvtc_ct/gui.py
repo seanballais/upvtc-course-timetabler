@@ -455,8 +455,12 @@ class EditInformationWindow(QMainWindow):
 					self._edit_model_instance_action(
 						model_instances_list,
 						attrs,
-						title,
-						model_instances_lists)))
+						title)))
+			remove_btn.clicked.connect(
+				(lambda checked,
+					    model_instances_list=model_instances_list :
+					self._remove_model_instance_action(
+						model_instances_list, model_instances_lists)))
 
 			ctr += 1
 
@@ -497,11 +501,10 @@ class EditInformationWindow(QMainWindow):
 	def _edit_model_instance_action(self,
 								    model_instances_list,
 		 						    attrs,
-  								    title,
-		 						    model_instances_lists):
+  								    title):
 		selectedItem = model_instances_list.currentItem()
 		if selectedItem is None:
-			# Nothing got selected yet.
+			# Nothing got selected yet, so don't do anything.z
 			return
 		else:
 			instance = selectedItem.data(Qt.UserRole)
@@ -513,20 +516,29 @@ class EditInformationWindow(QMainWindow):
 		edit_dialog.exec_()  # Must do this to Block execution of the
 							 # code below until the dialog is closed.
 
-		if edit_dialog.has_performed_modifications:
-			# Refresh the lists to reflect changes.
-			for instances_list, model in model_instances_lists:
-				instances_list.clear()
+	@pyqtSlot()
+	def _remove_model_instance_action(self,
+									  model_instances_list,
+									  model_instances_lists):
+		selectedItem = model_instances_list.currentItem()
+		if selectedItem is None:
+			# Nothing got selected yet, so don't do anything.
+			return
+		else:
+			instance = selectedItem.data(Qt.UserRole)
 
-				for instance in model.select():
-					list_item = QListWidgetItem(str(instance))
-					list_item.setData(Qt.UserRole, instance)
+		instance.delete_instance()
 
-					instances_list.addItem(list_item)
-				instances_list.sortItems()
+		# Refresh the lists to reflect changes.
+		for instances_list, model in model_instances_lists:
+			instances_list.clear()
 
-	# TODO: Complete thiis. Also note in the git commit that the edit button in
-	#       the dialogs have been removed to speed up development.
+			for instance in model.select():
+				list_item = QListWidgetItem(str(instance))
+				list_item.setData(Qt.UserRole, instance)
+
+				instances_list.addItem(list_item)
+			instances_list.sortItems()
 
 
 class MainWindow(QMainWindow):

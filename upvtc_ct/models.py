@@ -7,7 +7,7 @@ from upvtc_ct import settings, utils
 
 # We really need tests around here.
 
-db = peewee.SqliteDatabase(None)
+db = peewee.SqliteDatabase(None, pragmas=(('foreign_keys', 'on',),))
 app_logger = logging.getLogger()
 
 
