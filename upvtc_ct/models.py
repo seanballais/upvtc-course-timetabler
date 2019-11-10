@@ -136,7 +136,8 @@ class Room(Base):
 	division = peewee.ForeignKeyField(
 		Division,
 		backref='rooms',
-		on_delete='RESTRICT',
+		null=True,
+		on_delete='SET NULL',
 		on_update='CASCADE')
 	features = peewee.ManyToManyField(
 		RoomFeature,
@@ -182,7 +183,9 @@ class TimeSlot(Base):
 		)
 
 	def __str__(self):
-		return f'{str(self.start_time)} - {str(self.end_time)}'
+		return (
+			f'(Day {str(self.day)} '
+			f'{str(self.start_time)} - {str(self.end_time)}')
 
 
 class Teacher(Base):
