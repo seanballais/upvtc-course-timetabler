@@ -5,8 +5,8 @@ import peewee
 from PyQt5.QtCore import Qt, QSize, QTime, pyqtSlot
 from PyQt5.QtWidgets import (
 	QMainWindow, QDialog, QWidget, QFrame, QGridLayout, QHBoxLayout,
-	QVBoxLayout, QComboBox, QLabel, QLineEdit, QListWidget, QListWidgetItem,
-	QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
+	QVBoxLayout, QComboBox, QLabel, QLineEdit, QListWidget, QAbstractItemView,
+	QListWidgetItem, QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
 
 from upvtc_ct import models, utils
 
@@ -55,11 +55,16 @@ class RecordDialogFactory():
 		# On hindsight, maybe we should rename `attrs` to fields.
 		dialog = _RecordDialog()
 		dialog.setModal(True)
-		dialog.setWindowTitle(title or f'Add {model}')
+		dialog.setWindowTitle((title or 
+							   f'Add {str(model) or str(model_instance)}'))
 
 		# Add in the GUI equivalents of the fields in the model.
 		dialog_layout = QVBoxLayout(dialog)
 		dialog.setLayout(dialog_layout)
+
+		if model_instance is not None:
+			# We're an "Edit Record" dialog.
+			model = type(model_instance)
 
 		for attr in attrs:
 			attr_field = getattr(model, attr)
@@ -75,7 +80,7 @@ class RecordDialogFactory():
 			#       pattern. You may refer to the following link:
 			#           https://itnext.io/how-we-avoided-if-else-and-wrote
 			#           -extendable-code-with-strategy-pattern-256e34b90caf
-			if attr_type is peewee.CharField:
+			if attr_type is peewee.CharField or attr_type is str:
 				attr_layout = QHBoxLayout()
 
 				attr_layout.addWidget(attr_label)
@@ -83,6 +88,10 @@ class RecordDialogFactory():
 
 				attr_textfield = QLineEdit()
 				attr_layout.addWidget(attr_textfield)
+
+				if model_instance is not None:
+					# We're an "Edit Record" dialog.
+					attr_textfield.setText(getattr(model_instance, attr))
 
 				attr_widget = attr_textfield
 				attr_default_value = ''
@@ -95,6 +104,10 @@ class RecordDialogFactory():
 				attr_spinbox = QSpinBox()
 				attr_spinbox.setMinimum(0)
 				attr_layout.addWidget(attr_spinbox)
+
+				if model_instance is not None:
+					# We're an "Edit Record" dialog.
+					attr_spinbox.setValue(getattr(model_instance, attr))
 
 				attr_widget = attr_spinbox
 				attr_default_value = 0				
@@ -109,6 +122,10 @@ class RecordDialogFactory():
 				attr_spinbox.setSingleStep(0.5)
 				attr_layout.addWidget(attr_spinbox)
 
+				if model_instance is not None:
+					# We're an "Edit Record" dialog.
+					attr_spinbox.setValue(getattr(model_instance, attr))
+
 				attr_widget = attr_spinbox
 				attr_default_value = 1.0
 			elif attr_type is peewee.TimeField:
@@ -119,10 +136,15 @@ class RecordDialogFactory():
 
 				attr_timefield = QTimeEdit(QTime(7, 0))
 				attr_timefield.setMinimumTime(QTime(7, 0))
-				# The time below is the start of the last timeslot
+				# The maximum time is the start of the last timeslot
 				# of a day.
 				attr_timefield.setMaximumTime(QTime(18, 30))
 				attr_layout.addWidget(attr_timefield)
+
+				if model_instance is not None:
+					# We're an "Edit Record" dialog.
+					time = getattr(model_instance, attr)
+					attr_timefield.setTime(QTime(time.hour, time.minute))
 
 				attr_widget = attr_timefield
 				attr_default_value = QTime(7, 0)
@@ -132,15 +154,27 @@ class RecordDialogFactory():
 				attr_layout.addWidget(attr_label)
 
 				attr_options = QComboBox()
-				attr_options.addItem('None', None)
 				linked_model = attr_field.rel_model
 				for record in linked_model.select():
 					attr_options.addItem(str(record), record)
+
+				attr_options.model().sort(0)
+				attr_options.insertItem(0, 'None', None)
+
+				if model_instance is not None:
+					# We're an "Edit Record" dialog so we need to set the 
+					# combo box's item to the value of the instance field.
+					attr_default_value = getattr(model_instance, attr)
+
+					item_index = attr_options.findText(str(attr_default_value))
+					attr_options.setCurrentIndex(item_index)
+
 				attr_layout.addWidget(attr_options)
 
 				attr_widget = attr_options
 				attr_default_value = None
 			elif attr_type is peewee.ManyToManyField:
+				# TODO: Implement the remove button.
 				attr_layout = QVBoxLayout()
 
 				attr_layout.addWidget(attr_label)
@@ -151,10 +185,34 @@ class RecordDialogFactory():
 				attr_add_options_layout = QGridLayout()
 				attr_add_options_layout.setColumnStretch(0, 1)
 
+				attr_linked_models = QListWidget()
+				attr_linked_models.setSelectionMode(
+					QAbstractItemView.SingleSelection)
+				attr_linked_models.setSelectionBehavior(
+					QAbstractItemView.SelectItems)
+				linked_models = set()
+
+				if model_instance is not None:
+					# We're an "Edit Record" dialog, so we must populate the
+					# list widget with the instances of the model, if any,
+					# this model instance is linked with.
+					for record in getattr(model_instance, attr):
+						list_item = QListWidgetItem(str(record))
+						list_item.setData(Qt.UserRole, record)
+
+						attr_linked_models.addItem(list_item)
+						linked_models.add(record)
+
+					attr_linked_models.sortItems()
+
 				attr_options = QComboBox()
 				linked_model = attr_field.rel_model
 				for record in linked_model.select():
-					attr_options.addItem(str(record), record)
+					# Do not show instances that are already in the list. This
+					# is only relevant when we're an "Edit Record" dialog.
+					if record not in linked_models:
+						attr_options.addItem(str(record), record)
+				attr_options.model().sort(0)
 
 				attr_add_option_btn = QPushButton('Add')
 
@@ -168,18 +226,14 @@ class RecordDialogFactory():
 
 				# Add the list of linked model instances connected to the
 				# new model instance.
-				attr_linked_models = QListWidget()
 				attr_layout.addWidget(attr_linked_models)
 
 				# Add the action buttons for linked model instances.
 				attr_linked_models_action_btn_layout = QHBoxLayout()
 				attr_remove_linked_model_btn = QPushButton('Remove')
-				attr_edit_linked_model_btn = QPushButton('Edit')
 				attr_linked_models_action_btn_layout.addStretch(1)
 				attr_linked_models_action_btn_layout.addWidget(
 					attr_remove_linked_model_btn)
-				attr_linked_models_action_btn_layout.addWidget(
-					attr_edit_linked_model_btn)
 
 				attr_layout.addLayout(attr_linked_models_action_btn_layout)
 
@@ -222,6 +276,7 @@ class RecordDialogFactory():
 			#       do not show a "None" option to a non-nullable field.
 			# We're an "Add Record" dialog. Otherwise, we're an "Edit Record"
 			# dialog.
+			nonlocal model_instance
 			if model_instance is None:
 				model_instance = model()
 
@@ -242,7 +297,7 @@ class RecordDialogFactory():
 						widget.widget.toPython())
 				elif attr_type is peewee.ForeignKeyField:
 					setattr(
-						instance,
+						model_instance,
 						widget.attr,
 						widget.widget.currentData())
 				elif attr_type is peewee.ManyToManyField:
@@ -255,11 +310,11 @@ class RecordDialogFactory():
 					list_widget.clear()  # This only *technically* matters
 										 # when we're an "Edit Record" dialog.
 					
-					field = getattr(instance, widget.attr)
+					field = getattr(model_instance, widget.attr)
 					for index in range(list_widget.count()):
 						field.add(widget.widget.item(i))
 
-			new_instance.save()
+			model_instance.save()
 
 			dialog.has_performed_modifications = True
 
@@ -329,6 +384,7 @@ class EditInformationWindow(QMainWindow):
 			[ 'name' ]
 		]
 		ctr = 0
+		model_instances_lists = []
 		for model, title, attrs in zip(
 				information_models,
 				information_models_titles,
@@ -341,6 +397,10 @@ class EditInformationWindow(QMainWindow):
 
 			# And, of course, the list.
 			model_instances_list = QListWidget()
+			model_instances_list.setSelectionMode(
+				QAbstractItemView.SingleSelection)
+			model_instances_list.setSelectionBehavior(
+				QAbstractItemView.SelectItems)
 			model_layout.addWidget(model_instances_list)
 			for instance in model.select():
 				list_item = QListWidgetItem(str(instance))
@@ -348,6 +408,8 @@ class EditInformationWindow(QMainWindow):
 
 				model_instances_list.addItem(list_item)
 			model_instances_list.sortItems()
+
+			model_instances_lists.append((model_instances_list, model,))
 
 			# And then the action buttons.
 			action_btn_layout = QHBoxLayout()
@@ -363,12 +425,21 @@ class EditInformationWindow(QMainWindow):
 
 			model_information_layout.addLayout(model_layout)
 
+			if ctr < len(information_models) - 1:
+				model_information_layout.addWidget(
+					DividerLineFactory().create_divider_line(QFrame.VLine))
+
 			# Add the behaviours.
-			# This connection might pose a problem when working with multiple
+			# These connections might pose a problem when working with multiple
 			# threads.
+			#
+			# Please refer to the following to get the answer why we need
+			# to put in lambda arguments.
+			#     - https://stackoverflow.com/questions/19837486/
+			#		python-lambda-in-a-loop
+			#	  - https://stackoverflow.com/questions/2295290/
+			#		what-do-lambda-function-closures-capture
 			add_btn.clicked.connect(
-				# Why do we need to create arguments to the lambda function
-				# below? 
 				(lambda checked,
 						model=model,
 						attrs=attrs,
@@ -376,10 +447,16 @@ class EditInformationWindow(QMainWindow):
 						model_instances_list = model_instances_list :
 					self._add_model_instance_action(
 						model, attrs, title, model_instances_list)))
-
-			if ctr < len(information_models) - 1:
-				model_information_layout.addWidget(
-					DividerLineFactory().create_divider_line(QFrame.VLine))
+			edit_btn.clicked.connect(
+				(lambda checked,
+						model_instances_list=model_instances_list,
+						attrs=attrs,
+						title=title :
+					self._edit_model_instance_action(
+						model_instances_list,
+						attrs,
+						title,
+						model_instances_lists)))
 
 			ctr += 1
 
@@ -415,6 +492,41 @@ class EditInformationWindow(QMainWindow):
 
 			model_instances_list.addItem(new_list_item)
 			model_instances_list.sortItems()
+
+	@pyqtSlot()
+	def _edit_model_instance_action(self,
+								    model_instances_list,
+		 						    attrs,
+  								    title,
+		 						    model_instances_lists):
+		selectedItem = model_instances_list.currentItem()
+		if selectedItem is None:
+			# Nothing got selected yet.
+			return
+		else:
+			instance = selectedItem.data(Qt.UserRole)
+		
+		edit_dialog = RecordDialogFactory.create_edit_dialog(
+			instance, attrs, f'Edit {str(instance)}')
+
+		edit_dialog.show()
+		edit_dialog.exec_()  # Must do this to Block execution of the
+							 # code below until the dialog is closed.
+
+		if edit_dialog.has_performed_modifications:
+			# Refresh the lists to reflect changes.
+			for instances_list, model in model_instances_lists:
+				instances_list.clear()
+
+				for instance in model.select():
+					list_item = QListWidgetItem(str(instance))
+					list_item.setData(Qt.UserRole, instance)
+
+					instances_list.addItem(list_item)
+				instances_list.sortItems()
+
+	# TODO: Complete thiis. Also note in the git commit that the edit button in
+	#       the dialogs have been removed to speed up development.
 
 
 class MainWindow(QMainWindow):
