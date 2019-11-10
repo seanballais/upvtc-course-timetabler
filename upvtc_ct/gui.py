@@ -301,18 +301,25 @@ class RecordDialogFactory():
 						widget.attr,
 						widget.widget.currentData())
 				elif attr_type is peewee.ManyToManyField:
+					# Before dealing with a many-to-many field, we have to make
+					# sure that we have already created our instance.
+					# Otherwise, we won't have an ID that we can use in the
+					# through model to connect this model instance with
+					# whatever model is in the many-to-many field.
+					model_instance.save()
+
 					# Clearing away all associated objects then adding them
 					# back in is pretty much a nuclear method for editing an
 					# instance's many-to-many field. But, it is the easiest
 					# to implement anyway. No need to optimize for now.
-					list_widget = widget.widget
-
-					list_widget.clear()  # This only *technically* matters
-										 # when we're an "Edit Record" dialog.
-					
 					field = getattr(model_instance, widget.attr)
+					field.clear()  # This only *technically* matters
+										 # when we're an "Edit Record" dialog.
+
+					list_widget = widget.widget					
 					for index in range(list_widget.count()):
-						field.add(widget.widget.item(i))
+						item_data = widget.widget.item(index).data(Qt.UserRole)
+						field.add(item_data)
 
 			model_instance.save()
 
