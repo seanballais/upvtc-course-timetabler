@@ -376,6 +376,7 @@ class EditInformationWindow(QMainWindow):
 
 		self.setMinimumSize(QSize(1280, 480))
 		self.setWindowTitle('Edit school information')
+		self.setWindowModality(Qt.ApplicationModal)
 
 		frame = QFrame(self)
 		self.setCentralWidget(frame)
