@@ -387,17 +387,31 @@ class EditInformationWindow(QMainWindow):
 			models.Division,
 			models.Course,
 			models.Subject,
+			models.Class,
 			models.Teacher,
 			models.Room,
 			models.RoomFeature
 		]
 		information_models_titles = [
-			'Division', 'Course', 'Subject', 'Teacher', 'Room', 'Room Feature'
+			'Division',
+			'Course',
+			'Subject',
+			'Class',
+			'Teacher',
+			'Room',
+			'Room Feature'
 		]
 		information_model_attrs = [
 			[ 'name' ],
 			[ 'name', 'division' ],
 			[ 'name', 'units', 'division', 'candidate_teachers' ],
+			[
+				'subject',
+				'assigned_teacher',
+				'capacity',
+				'required_features',
+				'timeslots'
+			],
 			[ 'first_name', 'last_name', 'preferred_timeslots' ],
 			[ 'name', 'division', 'features' ],
 			[ 'name' ]
