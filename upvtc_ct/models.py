@@ -184,7 +184,7 @@ class TimeSlot(Base):
 
 	def __str__(self):
 		return (
-			f'(Day {str(self.day)} '
+			f'(Day {str(self.day)}) '
 			f'{str(self.start_time)} - {str(self.end_time)}')
 
 
@@ -262,7 +262,7 @@ class Class(Base):
 	assigned_teacher = peewee.ForeignKeyField(
 		Teacher,
 		backref='classes',
-		null=True,
+		null=False,
 		on_delete='CASCADE',
 		on_update='CASCADE')
 	capacity = peewee.SmallIntegerField(  # SQLite does not have support for
