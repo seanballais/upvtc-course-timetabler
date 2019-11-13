@@ -239,7 +239,8 @@ class _RecordDialogFactory():
 
 				# Add the behaviours.
 				@pyqtSlot()
-				def add_selected_options_item():
+				def add_selected_options_item(attr_options,
+											  attr_linked_models):
 					item_index = attr_options.currentIndex()
 					item = attr_options.itemData(item_index)
 					item_text = attr_options.itemText(item_index)
@@ -250,10 +251,16 @@ class _RecordDialogFactory():
 					item_list_item.setData(Qt.UserRole, item)
 
 					attr_linked_models.addItem(item_list_item)
-				attr_add_option_btn.clicked.connect(add_selected_options_item)
+				attr_add_option_btn.clicked.connect(
+					(lambda checked,
+							attr_options=attr_options,
+							attr_linked_models=attr_linked_models :
+						add_selected_options_item(
+							attr_options, attr_linked_models)))
 
 				@pyqtSlot()
-				def remove_selected_list_item():
+				def remove_selected_list_item(attr_options,
+											  attr_linked_models):
 					selected_item = attr_linked_models.currentItem()
 					selected_item_index = attr_linked_models.currentRow()
 					if selected_item is not None:
@@ -263,7 +270,11 @@ class _RecordDialogFactory():
 						attr_options.addItem(str(item_instance), item_instance)
 						attr_options.model().sort(0)
 				attr_remove_linked_model_btn.clicked.connect(
-					remove_selected_list_item)
+					(lambda checked,
+							attr_options=attr_options,
+							attr_linked_models=attr_linked_models :
+						remove_selected_list_item(
+							attr_options, attr_linked_models)))
 
 				attr_widget = attr_linked_models
 				attr_default_value = []
