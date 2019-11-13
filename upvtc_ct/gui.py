@@ -251,6 +251,9 @@ class _RecordDialogFactory():
 					item_list_item.setData(Qt.UserRole, item)
 
 					attr_linked_models.addItem(item_list_item)
+
+					attr_options.model().sort(0)
+					attr_linked_models.sortItems()
 				attr_add_option_btn.clicked.connect(
 					(lambda checked,
 							attr_options=attr_options,
@@ -264,10 +267,16 @@ class _RecordDialogFactory():
 					selected_item = attr_linked_models.currentItem()
 					selected_item_index = attr_linked_models.currentRow()
 					if selected_item is not None:
+						# Make sure we selected an item before we try to
+						# remove an item.
 						attr_linked_models.takeItem(selected_item_index)
 
 						item_instance = selected_item.data(Qt.UserRole)
 						attr_options.addItem(str(item_instance), item_instance)
+
+						# Note: No need to sort attr_linked_models (which is
+						#       a list widget) since removing an item from a
+						#       list does not change the overall order.
 						attr_options.model().sort(0)
 				attr_remove_linked_model_btn.clicked.connect(
 					(lambda checked,
