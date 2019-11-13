@@ -53,6 +53,10 @@ class _RecordDialogFactory():
 		# variable's purpose pretty much transformed over time.
 		#
 		# On hindsight, maybe we should rename `attrs` to fields.
+		# TODO: Rename "[..]_models" to "[...]_instances" or "[...]_records"
+		# 		since an object that is an instance of a model is an, well,
+		#       instance or record of that model. Its improper to use "models"
+		#		for the aforementioned reason.
 		dialog = _RecordDialog()
 		dialog.setModal(True)
 		dialog.setWindowTitle((title or 
