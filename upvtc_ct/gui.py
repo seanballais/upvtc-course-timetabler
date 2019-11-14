@@ -346,11 +346,11 @@ class _RecordDialogFactory():
 					# to implement anyway. No need to optimize for now.
 					field = getattr(model_instance, widget.attr)
 					field.clear()  # This only *technically* matters
-										 # when we're an "Edit Record" dialog.
+								   # when we're an "Edit Record" dialog.
 
 					list_widget = widget.widget					
 					for index in range(list_widget.count()):
-						item_data = widget.widget.item(index).data(Qt.UserRole)
+						item_data = list_widget.item(index).data(Qt.UserRole)
 						field.add(item_data)
 
 			model_instance.save()
