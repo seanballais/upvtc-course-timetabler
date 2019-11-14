@@ -12,8 +12,6 @@ app_logger = logging.getLogger()
 
 
 def setup_models():
-	ClassTimeSlotThroughDeferred.set_model(ClassTimeSlot)
-
 	db.init(settings.DB_FILE)
 	db.create_tables([
 		Division,
@@ -310,6 +308,9 @@ class ClassTimeSlot(Base):
 			(( 'subject_class', ), False),
 			(( 'timeslot', ), False),
 		)
+
+
+ClassTimeSlotThroughDeferred.set_model(ClassTimeSlot)
 
 
 class StudyPlan(Base):
