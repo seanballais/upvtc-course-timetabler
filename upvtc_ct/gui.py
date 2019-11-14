@@ -348,13 +348,14 @@ class _RecordDialogFactory():
 					# back in is pretty much a nuclear method for editing an
 					# instance's many-to-many field. But, it is the easiest
 					# to implement anyway. No need to optimize for now.
-					list_widget = widget.widget
-					list_widget.clear()  # This only *technically* matters
-								         # when we're an "Edit Record" dialog.
+					field = getattr(model_instance, widget.attr)
+					field.clear()  # This only *technically* matters
+								   # when we're an "Edit Record" dialog.
 
+					list_widget = widget.widget
 					field = getattr(model_instance, widget.attr)
 					for index in range(list_widget.count()):
-						item_data = widget.widget.item(index).data(Qt.UserRole)
+						item_data = list_widget.item(index).data(Qt.UserRole)
 						field.add(item_data)
 
 			model_instance.save()
