@@ -353,7 +353,6 @@ class _RecordDialogFactory():
 								   # when we're an "Edit Record" dialog.
 
 					list_widget = widget.widget
-					field = getattr(model_instance, widget.attr)
 					for index in range(list_widget.count()):
 						item_data = list_widget.item(index).data(Qt.UserRole)
 						field.add(item_data)
