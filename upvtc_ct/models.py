@@ -260,7 +260,7 @@ class Class(Base):
 	assigned_teacher = peewee.ForeignKeyField(
 		Teacher,
 		backref='classes',
-		null=False,
+		null=True,
 		on_delete='CASCADE',
 		on_update='CASCADE')
 	capacity = peewee.SmallIntegerField(  # SQLite does not have support for
