@@ -27,7 +27,8 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct [--no-gui] [--assign-teachers-to-classes]\n'
+		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
+		 '[--assign-teachers-to-classes]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -35,9 +36,10 @@ def main():
 		 '  -h --help                     Show this help text.\n'
 		 '  --version                     Show version.\n'
 		 '  --no-gui                      Run without a GUI.\n'
-		 '  --assign-teachers-to-classes  Assign teachers to classes before\n'
-		 '                                before performing any further\n'
-		 '                                actions.\n')
+		 '  --reset-teacher-assignments   Reset the class assignments of '
+		 'teachers.\n'
+		 '  --assign-teachers-to-classes  Assign teachers to classes before '
+		 'before performing any further actions.\n')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -71,6 +73,9 @@ def main():
 
 	# We got everything setup so we can start the application proper based on
 	# the passed arguments.
+	if arguments['--reset-teacher-assignments']:
+		scheduler.reset_teacher_assignments()
+
 	if arguments['--assign-teachers-to-classes']:
 		scheduler.assign_teachers_to_classes()
 
