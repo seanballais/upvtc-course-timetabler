@@ -5,7 +5,7 @@ import sys
 from PyQt5 import QtWidgets
 import docopt
 
-from upvtc_ct import __version__, gui, models, settings
+from upvtc_ct import __version__, gui, models, scheduler, settings
 
 
 def main():
@@ -27,14 +27,17 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct [--no-gui]\n'
+		 '  upvtc_ct [--no-gui] [--assign-teachers-to-classes]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
 		 'Options:\n'
-		 '  -h --help   Show this help text.\n'
-		 '  --version   Show version.\n'
-		 '  --no-gui    Run without a GUI.\n')
+		 '  -h --help                     Show this help text.\n'
+		 '  --version                     Show version.\n'
+		 '  --no-gui                      Run without a GUI.\n'
+		 '  --assign-teachers-to-classes  Assign teachers to classes before\n'
+		 '                                before performing any further\n'
+		 '                                actions.\n')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -66,7 +69,11 @@ def main():
 			 'Initializing database...')
 		models.db.init(settings.DB_FILE)
 
-	# We got everything setup so we can start the application proper.
+	# We got everything setup so we can start the application proper based on
+	# the passed arguments.
+	if arguments['--assign-teachers-to-classes']:
+		scheduler.assign_teachers_to_classes()
+
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])
 
