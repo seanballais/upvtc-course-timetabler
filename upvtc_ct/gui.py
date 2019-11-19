@@ -634,7 +634,14 @@ class MainWindow(QMainWindow):
 		study_plan_panel_layout.addWidget(study_plan_panel_title)
 
 		study_plan_list = QListWidget()
+		study_plan_list.setSelectionMode(QAbstractItemView.SingleSelection)
+		study_plan_list.setSelectionBehavior(QAbstractItemView.SelectItems)
 		study_plan_panel_layout.addWidget(study_plan_list)
+		for study_plan in models.StudyPlan.select():
+			list_item = QListWidgetItem(str(study_plan))
+			list_item.setData(Qt.UserRole, study_plan)
+
+			study_plan_list.addItem(list_item)
 
 		study_plan_action_btn_layout = QHBoxLayout()
 		remove_study_plan_btn = QPushButton('Remove')
