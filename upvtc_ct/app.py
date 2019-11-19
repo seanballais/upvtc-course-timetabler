@@ -82,12 +82,18 @@ def main():
 		scheduler.assign_teachers_to_classes()
 
 	if arguments['--print-class-conflicts']:
+		try:
+			class_conflicts = scheduler.get_class_conflicts()
+		except scheduler.UnschedulableException as e:
+			app_logger.error(
+				 'Oh no! It is impossible to create an feasible schedule'
+				f' because {e}')
+			return
 		print('-' * 60)
 		print(f'| {"CLASS CONFLICTS":57}|')
 		print('-' * 60)
 		print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
 		print('-' * 60)
-		class_conflicts = scheduler.get_class_conflicts()
 		for subject_class, conflicting_classes in class_conflicts.items():
 			print(
 				f'| {subject_class:19}| '
