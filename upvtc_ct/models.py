@@ -290,7 +290,7 @@ class Class(Base):
 		)
 
 	def __str__(self):
-		return str(self.subject)
+		return f'{self.subject} (ID: {self.id})'
 
 
 class ClassTimeSlot(Base):
