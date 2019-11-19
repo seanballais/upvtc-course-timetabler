@@ -28,7 +28,7 @@ def main():
 		 '\n'
 		 'Usage:\n'
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
-		 '[--assign-teachers-to-classes]\n'
+		 '[--assign-teachers-to-classes] [--print-class-conflicts]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -39,7 +39,9 @@ def main():
 		 '  --reset-teacher-assignments   Reset the class assignments of '
 		 'teachers.\n'
 		 '  --assign-teachers-to-classes  Assign teachers to classes before '
-		 'before performing any further actions.\n')
+		 'before performing any further actions.\n'
+		 '  --print-class-conflicts       Show the classes that conflict '
+		 'or share students for each class.')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -78,6 +80,19 @@ def main():
 
 	if arguments['--assign-teachers-to-classes']:
 		scheduler.assign_teachers_to_classes()
+
+	if arguments['--print-class-conflicts']:
+		print('-' * 60)
+		print(f'| {"CLASS CONFLICTS":57}|')
+		print('-' * 60)
+		print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
+		print('-' * 60)
+		class_conflicts = scheduler.get_class_conflicts()
+		for subject_class, conflicting_classes in class_conflicts.items():
+			print(
+				f'| {subject_class:19}| '
+				f'{", ".join([ str(c) for c in conflicting_classes ]):36}|')
+			print('-' * 60)
 
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])

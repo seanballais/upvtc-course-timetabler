@@ -1,8 +1,69 @@
+from dataclasses import dataclass
 import random
 
 from peewee import fn, Select, JOIN
 
 from upvtc_ct import models
+
+
+class UnschedulableException(Exception):
+	pass
+
+
+class _Student():
+	def __init__(self):
+		self._classes = set()
+
+	@property
+	def classes(self):
+		return self._classes			
+
+	def add_class(self, new_class):
+		self._classes.add(new_class)
+
+
+def get_class_conflicts():
+	class_conflicts = dict()
+	class_capacity = dict()
+
+	for study_plan in models.StudyPlan.select():
+		students = [ _Student() for _ in range(study_plan.num_followers) ]
+
+		for subject in study_plan.subjects:
+			subject_classes = list(subject.classes)
+			student_idx = 0
+
+			for subject_class in subject_classes:
+				class_capacity[str(subject_class)] = subject_class.capacity
+
+				while (class_capacity[str(subject_class)] > 0
+						and student_idx < study_plan.num_followers):
+					students[student_idx].add_class(subject_class)
+
+					student_idx += 1					
+					class_capacity[str(subject_class)] -= 1
+
+			if student_idx != study_plan.num_followers:
+				raise UnschedulableException(
+					f'{str(subject)} does not have enough classes to handle'
+					 ' all the students that needs to take it up.')
+
+		# Compute now for the conflict weights.
+		# Oh god, this code block disgusts me, and I'm the one who wrote it.
+		# Got a deadline so better have something than coming up with a
+		# more optimal but run out of time while doing so.
+		# - Sean Ballais
+		for student in students:
+			for curr_class in student.classes:
+				for student_class in student.classes:
+					if student_class is not curr_class:
+						if str(curr_class) not in class_conflicts:
+							class_conflicts[str(curr_class)] = set()
+
+						class_conflicts[str(curr_class)].add(
+							student_class)
+
+	return class_conflicts
 
 
 def reset_teacher_assignments():
