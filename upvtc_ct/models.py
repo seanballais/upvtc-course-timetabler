@@ -283,6 +283,8 @@ class Class(Base):
 		backref='classes',
 		through_model=ClassTimeSlotThroughDeferred)
 
+	# TODO: Add assigned_room field.
+
 	class Meta:
 		indexes = (
 			(( 'subject', ), False),

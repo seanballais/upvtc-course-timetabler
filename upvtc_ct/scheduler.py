@@ -1,9 +1,13 @@
+from collections import OrderedDict
 from dataclasses import dataclass
 import random
 
 from peewee import fn, Select, JOIN
 
 from upvtc_ct import models
+
+
+cached_class_conflicts = None
 
 
 class UnschedulableException(Exception):
@@ -22,8 +26,123 @@ class _Student():
 		self._classes.add(new_class)
 
 
-def get_class_conflicts():
-	class_conflicts = dict()
+class _Timetable():
+	def __init__(self):
+		unpreferrable_timeslots = list()
+
+		# 7AM - 8AM and 5:30PM - 7:00PM timeslots are unpreferrable.
+		unpreferrable_timeslot_indexes = set([
+			 0,  1, 21, 22, 23,  # Day 0 unpreferrable timeslots.
+			24, 25, 45, 46, 47,  # Day 1 unpreferrable timeslots.
+			48, 49, 69, 70, 71   # Day 2 unpreferrable timeslots.
+		])
+
+		timetable = OrderedDict()
+		timeslot_index = 0
+		for timeslot in models.TimeSlot.select():
+			timetable_timeslot = OrderedDict()
+			for room in models.Room.select():
+				timetable_timeslot[room] = None
+
+			timetable[timeslot] = timetable_timeslot
+
+			# Let's mark timeslots that are unpreferrable so that we know
+			# which timeslots are unpreferrable.		
+			if timeslot_index in unpreferrable_timeslot_indexes:
+				unpreferrable_timeslots.append(timeslot)
+
+			timeslot_index += 1
+
+		# Move the first and last one hour periods of the timetable to the end
+		# so that it would be easier for us to schedule classes to more
+		# desirable timeslots.
+		for timeslot in unpreferrable_timeslots:
+			timetable.move_to_end(timeslot)
+
+		self._timetable = timetable
+		self._timeslots = self._timetable.items()
+
+		self._timeslot_classes = dict()
+
+	@property
+	def timeslots(self):
+		return self._timeslots
+
+	def get_classes_in_timeslot(self, timeslot):
+		if timeslot not in self._timeslot_classes:
+			self._timeslot_classes[timeslot] = set()
+
+		return self._timeslot_classes[timeslot]
+
+	def add_class_to_timeslot(self, subject_class, timeslot, room):
+		self._timetable[timeslot][room] = subject_class
+
+		if timeslot not in self._timeslot_classes:
+			self._timeslot_classes[timeslot] = set()
+
+		self._timeslot_classes[timeslot].add(subject_class)
+
+		# !!! TEMPORARY !!! WE SHOULD NOT SAVE TO THE DB AT THIS POINT.
+		subject_class.timeslots.add(timeslot)
+		subject_class.save()
+
+	def get_class(self, timeslot, room):
+		return self._timetable[timeslot][room]
+
+	def has_class(self, timeslot, room):
+		return self.get_class(timeslot, room) is not None
+
+
+def create_schedule():
+	timetable = _create_initial_timetable()
+
+
+def _create_initial_timetable():
+	timetable = _Timetable()
+	class_conflicts = get_class_conflicts()
+
+	for subject_class, conflicting_classes in class_conflicts.items():
+		# Assume 1.5 hr classes for now.
+		# TODO: Support 1hr classes.
+		remaining_timeslot_jumps = 0
+		room_assignment = None
+		for timeslot, _ in timetable.timeslots:
+			if remaining_timeslot_jumps > 0:
+				# We should still moving to the next period.
+				if room_assignment is not None:
+					# This means we are assigning timeslots to classes.
+					timetable.add_class_to_timeslot(
+						subject_class, timeslot, room)
+
+				remaining_timeslot_jumps -= 1
+				continue
+
+			# Check if a conflicting class has been scheduled in the same
+			# timeslot.
+			timeslot_classes = timetable.get_classes_in_timeslot(timeslot)
+			if conflicting_classes.issubset(timeslot_classes):
+				# Let's move to the next period, which is two timeslots away.
+				remaining_timeslot_jumps = 2
+				continue
+
+			# Okay. No conflicting classes so let's look for a room.
+			for room in subject_class.subject.division.rooms.select():
+				# Show rooms that match the subject class's room requirements.
+				if not timetable.has_class(timeslot, room):
+					room_assignment = room
+
+					timetable.add_class_to_timeslot(
+						subject_class, timeslot, room)
+
+					continue
+
+
+def get_class_conflicts(invalid_cache=False):
+	global cached_class_conflicts
+	if cached_class_conflicts is not None:
+		return cached_class_conflicts
+
+	class_conflicts = OrderedDict()
 	class_capacity = dict()
 
 	for study_plan in models.StudyPlan.select():
@@ -34,14 +153,14 @@ def get_class_conflicts():
 			student_idx = 0
 
 			for subject_class in subject_classes:
-				class_capacity[str(subject_class)] = subject_class.capacity
+				class_capacity[subject_class] = subject_class.capacity
 
-				while (class_capacity[str(subject_class)] > 0
+				while (class_capacity[subject_class] > 0
 						and student_idx < study_plan.num_followers):
 					students[student_idx].add_class(subject_class)
 
 					student_idx += 1					
-					class_capacity[str(subject_class)] -= 1
+					class_capacity[subject_class] -= 1
 
 			if student_idx != study_plan.num_followers:
 				raise UnschedulableException(
@@ -57,11 +176,17 @@ def get_class_conflicts():
 			for curr_class in student.classes:
 				for student_class in student.classes:
 					if student_class is not curr_class:
-						if str(curr_class) not in class_conflicts:
-							class_conflicts[str(curr_class)] = set()
+						if curr_class not in class_conflicts:
+							class_conflicts[curr_class] = set()
 
-						class_conflicts[str(curr_class)].add(
-							student_class)
+						class_conflicts[curr_class].add(student_class)
+
+	# Sort the class conflicts in such a way that the class with the most
+	# number of conflicts get to be the first item in the dictionary.
+	class_conflicts = OrderedDict(
+		sorted(class_conflicts.items(), key=lambda c: len(c[1])))
+
+	cached_class_conflicts = class_conflicts
 
 	return class_conflicts
 
