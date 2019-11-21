@@ -93,6 +93,19 @@ class _Timetable():
 		return self.get_class(timeslot, room) is not None
 
 
+def reset_schedule():
+	models.Class.timeslots.get_through_model().delete().execute(models.db)
+
+
+def view_text_form_schedule():
+	print('-' * 64)
+	for timeslot in models.TimeSlot.select():
+		print(
+			f'{str(timeslot):31} |'
+			f' {", ".join([ str(c) for c in timeslot.classes ])}')
+		print('-' * 64)
+
+
 def create_schedule():
 	timetable = _create_initial_timetable()
 
@@ -134,7 +147,7 @@ def _create_initial_timetable():
 					timetable.add_class_to_timeslot(
 						subject_class, timeslot, room)
 
-					continue
+					break
 
 
 def get_class_conflicts(invalid_cache=False):

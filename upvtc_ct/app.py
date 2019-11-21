@@ -29,7 +29,8 @@ def main():
 		 'Usage:\n'
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
 		 '[--assign-teachers-to-classes] [--print-class-conflicts] '
-		 '[--schedule]\n'
+		 '[--reset-schedule]\n'
+		 '           [--schedule] [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -43,7 +44,9 @@ def main():
 		 'before performing any further actions.\n'
 		 '  --print-class-conflicts       Show the classes that conflict '
 		 'or share students for each class.\n'
-		 '  --schedule                    Create a schedule.')
+		 '  --schedule                    Create a schedule.\n'
+		 '  --reset-schedule              Resets the schedule.\n'
+		 '  --view-text-form-schedule     View the schedule in text form.')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -102,8 +105,14 @@ def main():
 				f'{", ".join([ str(c) for c in conflicting_classes ]):36}|')
 			print('-' * 60)
 
+	if arguments['--reset-schedule']:
+		scheduler.reset_schedule()
+
 	if arguments['--schedule']:
 		scheduler.create_schedule()
+
+	if arguments['--view-text-form-schedule']:
+		scheduler.view_text_form_schedule()
 
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])
