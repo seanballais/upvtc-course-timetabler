@@ -129,11 +129,16 @@ def _create_initial_timetable():
 
 				remaining_timeslot_jumps -= 1
 				continue
+			else:
+				if room_assignment is not None:
+					# We just finished assigning a room to a class, so let's
+					# schedule the next class.
+					break
 
 			# Check if a conflicting class has been scheduled in the same
 			# timeslot.
 			timeslot_classes = timetable.get_classes_in_timeslot(timeslot)
-			if conflicting_classes.issubset(timeslot_classes):
+			if not conflicting_classes.isdisjoint(timeslot_classes):
 				# Let's move to the next period, which is two timeslots away.
 				remaining_timeslot_jumps = 2
 				continue
@@ -143,6 +148,9 @@ def _create_initial_timetable():
 				# Show rooms that match the subject class's room requirements.
 				if not timetable.has_class(timeslot, room):
 					room_assignment = room
+					remaining_timeslot_jumps = 2  # Let's start assigning 
+												  # timeslots to classes and
+												  # jumping timeslots.
 
 					timetable.add_class_to_timeslot(
 						subject_class, timeslot, room)
