@@ -512,12 +512,18 @@ class EditInformationWindow(QMainWindow):
 		information_model_attrs = [
 			[ 'name' ],
 			[ 'name', 'division' ],
-			[ 'name', 'units', 'division', 'candidate_teachers' ],
+			[ 
+				'name',
+				'units',
+				'division',
+				'num_required_timeslots',
+				'required_features',
+				'candidate_teachers',
+			],
 			[
 				'subject',
 				'assigned_teacher',
 				'capacity',
-				'required_features',
 				'timeslots'
 			],
 			[ 'first_name', 'last_name', 'preferred_timeslots' ],

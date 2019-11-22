@@ -23,9 +23,9 @@ def setup_models():
 		Teacher,
 		Teacher.preferred_timeslots.get_through_model(),
 		Subject,
+		Subject.required_features.get_through_model(),
 		Subject.candidate_teachers.get_through_model(),
 		Class,
-		Class.required_features.get_through_model(),
 		Class.timeslots.get_through_model(),
 		StudyPlan,
 		StudyPlan.subjects.get_through_model()
@@ -233,6 +233,15 @@ class Subject(Base):
 		backref='candidate_subjects',
 		on_delete='CASCADE',
 		on_update='CASCADE')
+	required_features = peewee.ManyToManyField(
+		RoomFeature,
+		backref=None,         # No need for the room features to know what
+							  # classes require them.
+		on_delete='CASCADE',
+		on_update='CASCADE')
+	num_required_timeslots = peewee.SmallIntegerField(
+		default=3,
+		null=True)
 
 	class Meta:
 		indexes = (
@@ -272,18 +281,16 @@ class Class(Base):
 										  # is usually less than the maximum
 										  # value of a small integer field in
 										  # RDBMSes.
-	required_features = peewee.ManyToManyField(
-		RoomFeature,
-		backref=None,         # No need for the room features to know what
-							  # classes require them.
-		on_delete='CASCADE',
-		on_update='CASCADE')
 	timeslots = peewee.ManyToManyField(
 		TimeSlot,
 		backref='classes',
 		through_model=ClassTimeSlotThroughDeferred)
-
-	# TODO: Add assigned_room field.
+	room = peewee.ForeignKeyField(
+		Room,
+		backref='classes',
+		null=True,
+		on_delete='SET NULL',
+		on_update='CASCADE')
 
 	class Meta:
 		indexes = (

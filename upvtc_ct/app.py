@@ -28,25 +28,25 @@ def main():
 		 '\n'
 		 'Usage:\n'
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
-		 '[--assign-teachers-to-classes] [--print-class-conflicts] '
+		 '[--assign-teachers-to-classes] [--view-text-form-class-conflicts] '
 		 '[--reset-schedule]\n'
 		 '           [--schedule] [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
 		 'Options:\n'
-		 '  -h --help                     Show this help text.\n'
-		 '  --version                     Show version.\n'
-		 '  --no-gui                      Run without a GUI.\n'
-		 '  --reset-teacher-assignments   Reset the class assignments of '
+		 '  -h --help                         Show this help text.\n'
+		 '  --version                         Show version.\n'
+		 '  --no-gui                          Run without a GUI.\n'
+		 '  --reset-teacher-assignments       Reset the class assignments of '
 		 'teachers.\n'
-		 '  --assign-teachers-to-classes  Assign teachers to classes before '
+		 '  --assign-teachers-to-classes      Assign teachers to classes '
 		 'before performing any further actions.\n'
-		 '  --print-class-conflicts       Show the classes that conflict '
+		 '  --view-text-form-class-conflicts  Show the classes that conflict '
 		 'or share students for each class.\n'
-		 '  --schedule                    Create a schedule.\n'
-		 '  --reset-schedule              Resets the schedule.\n'
-		 '  --view-text-form-schedule     View the schedule in text form.')
+		 '  --schedule                        Create a schedule.\n'
+		 '  --reset-schedule                  Resets the schedule.\n'
+		 '  --view-text-form-schedule         View the schedule in text form.')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -86,24 +86,8 @@ def main():
 	if arguments['--assign-teachers-to-classes']:
 		scheduler.assign_teachers_to_classes()
 
-	if arguments['--print-class-conflicts']:
-		try:
-			class_conflicts = scheduler.get_class_conflicts()
-		except scheduler.UnschedulableException as e:
-			app_logger.error(
-				 'Oh no! It is impossible to create an feasible schedule'
-				f' because {e}')
-			return
-		print('-' * 60)
-		print(f'| {"CLASS CONFLICTS":57}|')
-		print('-' * 60)
-		print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
-		print('-' * 60)
-		for subject_class, conflicting_classes in class_conflicts.items():
-			print(
-				f'| {subject_class:19}| '
-				f'{", ".join([ str(c) for c in conflicting_classes ]):36}|')
-			print('-' * 60)
+	if arguments['--view-text-form-class-conflicts']:
+		scheduler.view_text_form_class_conflicts()
 
 	if arguments['--reset-schedule']:
 		scheduler.reset_schedule()

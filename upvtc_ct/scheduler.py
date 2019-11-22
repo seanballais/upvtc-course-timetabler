@@ -34,7 +34,10 @@ class _Timetable():
 		unpreferrable_timeslot_indexes = set([
 			 0,  1, 21, 22, 23,  # Day 0 unpreferrable timeslots.
 			24, 25, 45, 46, 47,  # Day 1 unpreferrable timeslots.
-			48, 49, 69, 70, 71   # Day 2 unpreferrable timeslots.
+			48, 49, 69, 70, 71,  # Day 2 unpreferrable timeslots.
+			 9, 10, 11,          # Day 0 lunch time (and unpreferrable).
+			33, 34, 35,          # Day 1 lunch time (and unpreferrable).
+			57, 58, 59 			 # Day 2 lunch time (and unpreferrable).
 		])
 
 		timetable = OrderedDict()
@@ -84,6 +87,7 @@ class _Timetable():
 
 		# !!! TEMPORARY !!! WE SHOULD NOT SAVE TO THE DB AT THIS POINT.
 		subject_class.timeslots.add(timeslot)
+		subject_class.room = room
 		subject_class.save()
 
 	def get_class(self, timeslot, room):
@@ -96,13 +100,42 @@ class _Timetable():
 def reset_schedule():
 	models.Class.timeslots.get_through_model().delete().execute(models.db)
 
+	for subject_class in models.Class.select():
+		subject_class.room = None
+		subject_class.save()
+
+
+def view_text_form_class_conflicts():
+	try:
+		class_conflicts = get_class_conflicts()
+	except UnschedulableException as e:
+		app_logger.error(
+			'Oh no! It is impossible to create an feasible schedule'
+			f' because {e}')
+
+		return
+
+	print('-' * 60)
+	print(f'| {"CLASS CONFLICTS":57}|')
+	print('-' * 60)
+	print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
+	print('-' * 60)
+	for subject_class, conflicting_classes in class_conflicts.items():
+		classes = [
+			f'{str(c)}' for c in conflicting_classes
+		]
+		print(f'| {str(subject_class):19}| {", ".join(classes):36}|')
+		print('-' * 60)
+
 
 def view_text_form_schedule():
 	print('-' * 64)
 	for timeslot in models.TimeSlot.select():
+		timeslot_classes = [
+			f'[{str(c.room)}] {str(c)}' for c in timeslot.classes
+		]
 		print(
-			f'{str(timeslot):31} |'
-			f' {", ".join([ str(c) for c in timeslot.classes ])}')
+			f'{str(timeslot):31} | {", ".join(timeslot_classes)}')
 		print('-' * 64)
 
 
@@ -115,11 +148,13 @@ def _create_initial_timetable():
 	class_conflicts = get_class_conflicts()
 
 	for subject_class, conflicting_classes in class_conflicts.items():
-		# Assume 1.5 hr classes for now.
-		# TODO: Support 1hr classes.
+		room_requirements = set(subject_class.subject.required_features)
+
 		remaining_timeslot_jumps = 0
 		room_assignment = None
-		for timeslot, _ in timetable.timeslots:
+		timeslots = list(timetable.timeslots)
+		for timeslot_index, timeslot_item in enumerate(timeslots):
+			timeslot = timeslot_item[0]
 			if remaining_timeslot_jumps > 0:
 				# We should still moving to the next period.
 				if room_assignment is not None:
@@ -135,27 +170,102 @@ def _create_initial_timetable():
 					# schedule the next class.
 					break
 
+			# Don't schedule 1.5hr classes at 8AM. So, skip if we're at 8AM
+			# and scheduling a 1.5hr class.
+			if (subject_class.subject.num_required_timeslots > 2
+					and timeslot.start_time == '08:00:00'):
+				continue
+
 			# Check if a conflicting class has been scheduled in the same
 			# timeslot.
 			timeslot_classes = timetable.get_classes_in_timeslot(timeslot)
 			if not conflicting_classes.isdisjoint(timeslot_classes):
-				# Let's move to the next period, which is two timeslots away.
-				remaining_timeslot_jumps = 2
+				# Let's move to the next period, which is two timeslots away,
+				# since we have a conflicting class in the current timeslot.
+				remaining_timeslot_jumps = _get_class_timeslot_jumps(
+					subject_class, timeslot)
 				continue
 
+			# Make sure that the rooms with lesser features are used more by
+			# subjects that don't require a lot of features.
+			division_rooms = list(subject_class
+									.subject
+									.division
+									.rooms
+									.select())
+			division_rooms.sort(key=lambda r : len(r.features))
 			# Okay. No conflicting classes so let's look for a room.
-			for room in subject_class.subject.division.rooms.select():
+			for room in division_rooms:
+				# Check if the room has the required features the subject
+				# needs.
+				room_features = set(room.features)
+				if not room_requirements.issubset(room_features):
+					# Room does not have the features the subject requires. So,
+					# find a new room.
+					continue
+
 				# Show rooms that match the subject class's room requirements.
 				if not timetable.has_class(timeslot, room):
-					room_assignment = room
-					remaining_timeslot_jumps = 2  # Let's start assigning 
-												  # timeslots to classes and
-												  # jumping timeslots.
+					period_length = _get_class_timeslot_jumps(
+						subject_class, timeslot)
 
-					timetable.add_class_to_timeslot(
-						subject_class, timeslot, room)
+					if _are_item_timeslots_free(
+							subject_class,
+							conflicting_classes,
+							timeslot_index + 1,
+							period_length,
+							timetable,
+							room):
+						# Let's start assigning timeslots to classes and
+						# jumping timeslots, since the timeslots in the period
+						# for the class are free.
+						room_assignment = room
+
+						timetable.add_class_to_timeslot(
+							subject_class, timeslot, room)
+
+					# If the period timeslots are not free, then let's just
+					# jump to the next period for the subject.
+
+					remaining_timeslot_jumps = period_length
 
 					break
+
+
+def _are_item_timeslots_free(subject_class,
+							 conflicting_classes,
+							 starting_index,
+							 period_length,
+							 timetable,
+							 room):
+	timeslots = list(timetable.timeslots)
+	for i in range(starting_index, starting_index + period_length):
+		try:
+			timeslot = timeslots[i][0]
+		except IndexError:
+			return False
+
+		# Check if a conflicting class has been scheduled in the same
+		# timeslot.
+		timeslot_classes = timetable.get_classes_in_timeslot(timeslot)
+		if (not conflicting_classes.isdisjoint(timeslot_classes)
+				or timetable.has_class(timeslot, room)):
+			# We have a conflicting class in the current timeslot.
+			return False
+
+	return True
+
+
+def _get_class_timeslot_jumps(subject_class, timeslot):
+	subject = subject_class.subject
+	num_jumps = subject.num_required_timeslots - 1
+
+	if timeslot.day == 2:
+		num_jumps = (num_jumps * 2) + 1  # Plus 1 since we need to do N - 1
+										 # jumps. Not adding 1 means that we
+										 # will miss one required jump.
+
+	return num_jumps
 
 
 def get_class_conflicts(invalid_cache=False):
