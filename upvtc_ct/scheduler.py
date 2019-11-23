@@ -30,14 +30,24 @@ class _Timetable():
 	def __init__(self):
 		unpreferrable_timeslots = list()
 
-		# 7AM - 8AM and 5:30PM - 7:00PM timeslots are unpreferrable.
+		# 7AM - 8AM, 11:30AM - 1PM, and 5:30PM - 7:00PM timeslots are
+		# unpreferrable.
+		#
+		# In consideration for money, according to Sir Dakila Yee,
+		# lunch timeslots get scheduled with classes if there are no
+		# more free slots. The 7AM timeslots get filled next, then the
+		# evening timeslots (5:30 onwards). The orodering below reflects
+		# such consideration.
 		unpreferrable_timeslot_indexes = set([
-			 0,  1, 21, 22, 23,  # Day 0 unpreferrable timeslots.
-			24, 25, 45, 46, 47,  # Day 1 unpreferrable timeslots.
-			48, 49, 69, 70, 71,  # Day 2 unpreferrable timeslots.
 			 9, 10, 11,          # Day 0 lunch time (and unpreferrable).
 			33, 34, 35,          # Day 1 lunch time (and unpreferrable).
 			57, 58, 59 			 # Day 2 lunch time (and unpreferrable).
+			 0,  1,  			 # Day 0 unpreferrable morning timeslots.
+			24, 25,              # Day 1 unpreferrable morning timeslots.
+			48, 49,              # Day 2 unpreferrable morning timeslots.
+			21, 22, 23,          # Day 0 unpreferrable evening timeslots.
+			45, 46, 47,			 # Day 1 unpreferrable evening timeslots.
+			69, 70, 71			 # Day 2 unpreferrable evening timeslots.
 		])
 
 		timetable = OrderedDict()
@@ -56,9 +66,12 @@ class _Timetable():
 
 			timeslot_index += 1
 
-		# Move the first and last one hour periods of the timetable to the end
-		# so that it would be easier for us to schedule classes to more
-		# desirable timeslots.
+		# Move the unpreferrable timeslots to the end so that it would be
+		# easier for us to schedule classes to more desirable timeslots.
+		# Note that the last timeslot in the list will be the last timeslot
+		# a class will be scheduled to, and the first timeslot will be placed
+		# right behind the last preferrable timeslot (which is in Wednesday/
+		# Day 2).
 		for timeslot in unpreferrable_timeslots:
 			timetable.move_to_end(timeslot)
 
