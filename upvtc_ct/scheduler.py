@@ -102,6 +102,7 @@ def reset_schedule():
 
 	for subject_class in models.Class.select():
 		subject_class.room = None
+		subject_class.assigned_teacher = None
 		subject_class.save()
 
 
@@ -155,8 +156,15 @@ def _create_initial_timetable():
 		timeslots = list(timetable.timeslots)
 		for timeslot_index, timeslot_item in enumerate(timeslots):
 			timeslot = timeslot_item[0]
+
+			if subject_class.subject.is_wednesday_class and timeslot.day != 2:
+				# Wednesday-only classes should only be scheduled on
+				# Wednesdays, so let's skip the current timeslot until we are
+				# in a Wednesday timeslot.
+				continue
+
 			if remaining_timeslot_jumps > 0:
-				# We should still moving to the next period.
+				# We should still be moving to the next period.
 				if room_assignment is not None:
 					# This means we are assigning timeslots to classes.
 					timetable.add_class_to_timeslot(
@@ -270,6 +278,7 @@ def _get_class_timeslot_jumps(subject_class, timeslot):
 
 def get_class_conflicts(invalid_cache=False):
 	global cached_class_conflicts
+
 	if cached_class_conflicts is not None:
 		return cached_class_conflicts
 

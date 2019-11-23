@@ -242,6 +242,7 @@ class Subject(Base):
 	num_required_timeslots = peewee.SmallIntegerField(
 		default=3,
 		null=True)
+	is_wednesday_class = peewee.BooleanField(default=False)
 
 	class Meta:
 		indexes = (

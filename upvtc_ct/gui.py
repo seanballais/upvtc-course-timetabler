@@ -5,8 +5,9 @@ import peewee
 from PyQt5.QtCore import Qt, QSize, QTime, pyqtSlot
 from PyQt5.QtWidgets import (
 	QMainWindow, QDialog, QWidget, QFrame, QGridLayout, QHBoxLayout,
-	QVBoxLayout, QComboBox, QLabel, QLineEdit, QListWidget, QAbstractItemView,
-	QListWidgetItem, QPushButton, QSpinBox, QDoubleSpinBox, QTimeEdit)
+	QVBoxLayout, QCheckBox, QComboBox, QLabel, QLineEdit, QListWidget,
+	QAbstractItemView, QListWidgetItem, QPushButton, QSpinBox, QDoubleSpinBox,
+	QTimeEdit)
 
 from upvtc_ct import models, utils
 
@@ -152,6 +153,23 @@ class _RecordDialogFactory():
 
 				attr_widget = attr_timefield
 				attr_default_value = QTime(7, 0)
+			elif attr_type is peewee.BooleanField:
+				attr_layout = QHBoxLayout()
+
+				attr_layout.addWidget(attr_label)
+				attr_layout.addStretch(1)
+
+				attr_checkbox = QCheckBox('')
+
+				attr_layout.addWidget(attr_checkbox)
+
+				if model_instance is not None:
+					is_checkbox_checked = getattr(model_instance, attr)
+					if is_checkbox_checked:
+						attr_checkbox.toggle()
+
+				attr_widget = attr_checkbox
+				attr_default_value = False
 			elif attr_type is peewee.ForeignKeyField:
 				attr_layout = QVBoxLayout()
 
@@ -331,6 +349,11 @@ class _RecordDialogFactory():
 						model_instance,
 						widget.attr,
 						widget.widget.toPython())
+				elif attr_type is peewee.BooleanField:
+					setattr(
+						model_instance,
+						widget.attr,
+						widget.widget.isChecked())
 				elif attr_type is peewee.ForeignKeyField:
 					setattr(
 						model_instance,
@@ -517,6 +540,7 @@ class EditInformationWindow(QMainWindow):
 				'units',
 				'division',
 				'num_required_timeslots',
+				'is_wednesday_class',
 				'required_features',
 				'candidate_teachers',
 			],
