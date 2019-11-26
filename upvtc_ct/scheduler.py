@@ -272,7 +272,47 @@ def _compute_timetable_cost(timetable):
 	class_conflicts = get_class_conflicts()
 
 	# Compute penalty for hard constraints (HCs).
-	# Compute penalty for hard constraint 2.
+	cost += _compute_hc1_constraint(timetable, hc_penalty)
+	cost += _compute_hc2_constraint(timetable, hc_penalty)
+	cost += _compute_hc3_constraint(timetable, hc_penalty)
+	cost += _compute_hc4_constraint(timetable, hc_penalty)
+	cost += _compute_hc5_constraint(timetable, hc_penalty)
+	cost += _compute_hc6_constraint(timetable, hc_penalty)
+
+	return cost
+
+
+def _compute_hc1_constraint(timetable, hc_penalty):
+	cost = 0
+	class_conflicts = get_class_conflicts()
+
+	for timeslot, rooms in timetable.timeslots:
+		# Check for student conflicts.
+		timeslot_classes = timetable.get_classes_in_timeslot(timeslot)
+		for subject_class in timeslot_classes:
+			conflicting_classes = class_conflicts[subject_class]
+			if not conflicting_classes.isdisjoint(timeslot_classes):
+				# Oh no. We have a conflicting class here.
+				cost += hc_penalty
+
+		# Check for teacher conflicts.
+		num_teacher_assignments = dict()
+		for subject_class in timeslot_classes:
+			if subject_class.assigned_teacher not in num_teacher_assignments:
+				num_teacher_assignments[subject_class.assigned_teacher] = 1
+			else:
+				num_teacher_assignments[subject_class.assigned_teacher] += 1
+
+		penalty_condition = lambda n: hc_penalty * n if n > 1 else 0
+		penalty = sum(list(map(
+			penalty_condition, num_teacher_assignments.values())))
+		cost += penalty
+
+	return cost
+
+
+def _compute_hc2_constraint(timetable, hc_penalty):
+	cost = 0
 	for _, rooms in timetable.timeslots:
 		# If two or more classes have been scheduled to the same
 		# room and timeslot, then apply a penalty.
@@ -280,21 +320,20 @@ def _compute_timetable_cost(timetable):
 		penalty = sum(list(map(penalty_condition, rooms.values())))
 		cost += penalty
 
-	print(cost)
+	return cost
 
-	classes = list(models.Class.select())
 
-	# Compute penalty for hard constraint 3.
+def _compute_hc3_constraint(timetable, hc_penalty):
 	# Not yet checking for room since, for now, being scheduled a timeslot
 	# would also mean being scheduled a room. TBA rooms not yet considered.
-	penalty_condition = (
-		lambda c: hc_penalty if not timetable.has_class(c) else 0)
-	penalty = sum(list(map(penalty_condition, classes)))
-	cost += penalty
+	classes = models.Class.select()
+	return sum(list(map(
+		lambda c: hc_penalty if not timetable.has_class(c) else 0, classes)))
 
-	print(cost)
 
-	# Compute penalty for hard constraint 4.
+def _compute_hc4_constraint(timetable, hc_penalty):
+	cost = 0
+	classes = models.Class.select()
 	for subject_class in classes:
 		num_required_timeslots = subject_class.subject.num_required_timeslots
 		timeslots = timetable.get_class_timeslots(subject_class)
@@ -302,9 +341,12 @@ def _compute_timetable_cost(timetable):
 				and len(timeslots) != num_required_timeslots * 2):
 			cost += hc_penalty
 
-	print(cost)
+	return cost
 
-	# Compute penalty for hard constraint 5.
+
+def _compute_hc5_constraint(timetable, hc_penalty):
+	cost = 0
+	classes = models.Class.select()
 	for subject_class in classes:
 		room = timetable.get_class_room(subject_class)
 		room_features = set(room.features)
@@ -313,9 +355,12 @@ def _compute_timetable_cost(timetable):
 			# Room does not have the features the subject requires.
 			cost += hc_penalty
 
-	print(cost)
+	return cost
 
-	# Compute penalty for hard constraint 6.
+
+def _compute_hc6_constraint(timetable, hc_penalty):
+	cost = 0
+	classes = models.Class.select()
 	for subject_class in classes:
 		num_required_timeslots = subject_class.subject.num_required_timeslots
 
@@ -425,6 +470,8 @@ def _shuffle_teachers_with_same_units(candidate_teachers, teacher_units):
 
 
 def _get_sorted_classes_query():
+	# Sort classes based on the number of candidate teachers a subject
+	# has ascendingly.
 	subject_teachers = models.Subject.candidate_teachers.get_through_model()
 	num_candidate_teachers = fn.COUNT(subject_teachers.teacher)
 	query = (subject_teachers
