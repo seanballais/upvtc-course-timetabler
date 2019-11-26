@@ -29,46 +29,64 @@ class _Student():
 class _Timetable():
 	def __init__(self):
 		timetable = OrderedDict()
+		self._timeslot_classes = dict()
 		for timeslot in models.TimeSlot.select():
+			self._timeslot_classes[timeslot] = set()
+
 			timetable_timeslot = OrderedDict()
 			for room in models.Room.select():
-				timetable_timeslot[room] = None
+				timetable_timeslot[room] = set()
 
 			timetable[timeslot] = timetable_timeslot
 
 		self._timetable = timetable
 		self._timeslots = self._timetable.items()
 
-		self._timeslot_classes = dict()
+		self._classes = set()
+		self._class_timeslots = dict()
+		self._class_room = dict()
 
 	@property
 	def timeslots(self):
 		return self._timeslots
 
 	def get_classes_in_timeslot(self, timeslot):
-		if timeslot not in self._timeslot_classes:
-			self._timeslot_classes[timeslot] = set()
-
 		return self._timeslot_classes[timeslot]
 
 	def add_class_to_timeslot(self, subject_class, timeslot, room):
-		self._timetable[timeslot][room] = subject_class
+		self._timetable[timeslot][room].add(subject_class)
+		self._classes.add(subject_class)
+		self._class_room[subject_class] = room
 
 		if timeslot not in self._timeslot_classes:
 			self._timeslot_classes[timeslot] = set()
 
 		self._timeslot_classes[timeslot].add(subject_class)
 
-		# !!! TEMPORARY !!! WE SHOULD NOT SAVE TO THE DB AT THIS POINT.
+		if subject_class not in self._class_timeslots:
+			self._class_timeslots[subject_class] = list()
+
+		self._class_timeslots[subject_class].append(timeslot)
+
 		subject_class.timeslots.add(timeslot)
 		subject_class.room = room
+		# !!! TEMPORARY !!! WE SHOULD NOT SAVE TO THE DB AT THIS POINT.
 		subject_class.save()
 
-	def get_class(self, timeslot, room):
+	def get_class_at_timeslot_room(self, timeslot, room):
 		return self._timetable[timeslot][room]
 
-	def has_class(self, timeslot, room):
+	def has_class_at_timeslot_room(self, timeslot, room):
 		return self.get_class(timeslot, room) is not None
+
+	def has_class(self, subject_class):
+		return subject_class in self._classes
+
+	def get_class_room(self, subject_class):
+		return self._class_room.get(subject_class, None)
+
+	def get_class_timeslots(self, subject_class):
+		return self._class_timeslots.get(subject_class, [])
 
 
 def reset_schedule():
@@ -119,6 +137,7 @@ def create_schedule():
 	assign_teachers_to_classes()
 
 	timetable = _create_initial_timetable()
+	print(_compute_timetable_cost(timetable))
 
 
 def get_class_conflicts(invalid_cache=False):
@@ -243,6 +262,72 @@ def _create_initial_timetable():
 		for i in range(start_timeslot_index, end_timeslot_index + 1):
 			timeslot = timeslots[i][0]
 			timetable.add_class_to_timeslot(subject_class, timeslot, room)
+
+	return timetable
+
+
+def _compute_timetable_cost(timetable):
+	cost = 0
+	hc_penalty = 10000
+	class_conflicts = get_class_conflicts()
+
+	# Compute penalty for hard constraints (HCs).
+	# Compute penalty for hard constraint 2.
+	for _, rooms in timetable.timeslots:
+		# If two or more classes have been scheduled to the same
+		# room and timeslot, then apply a penalty.
+		penalty_condition = lambda c: hc_penalty if len(c) > 1 else 0
+		penalty = sum(list(map(penalty_condition, rooms.values())))
+		cost += penalty
+
+	print(cost)
+
+	classes = list(models.Class.select())
+
+	# Compute penalty for hard constraint 3.
+	# Not yet checking for room since, for now, being scheduled a timeslot
+	# would also mean being scheduled a room. TBA rooms not yet considered.
+	penalty_condition = (
+		lambda c: hc_penalty if not timetable.has_class(c) else 0)
+	penalty = sum(list(map(penalty_condition, classes)))
+	cost += penalty
+
+	print(cost)
+
+	# Compute penalty for hard constraint 4.
+	for subject_class in classes:
+		num_required_timeslots = subject_class.subject.num_required_timeslots
+		timeslots = timetable.get_class_timeslots(subject_class)
+		if (timeslots[0].day == 2
+				and len(timeslots) != num_required_timeslots * 2):
+			cost += hc_penalty
+
+	print(cost)
+
+	# Compute penalty for hard constraint 5.
+	for subject_class in classes:
+		room = timetable.get_class_room(subject_class)
+		room_features = set(room.features)
+		room_requirements = set(subject_class.subject.required_features)
+		if not room_requirements.issubset(room_features):
+			# Room does not have the features the subject requires.
+			cost += hc_penalty
+
+	print(cost)
+
+	# Compute penalty for hard constraint 6.
+	for subject_class in classes:
+		num_required_timeslots = subject_class.subject.num_required_timeslots
+
+		# Note that the classes are given time slots that are in the same day.
+		# So, we only need to check the first timeslot to confirm whether or
+		# not the hard constraint is violated.
+		timeslots = timetable.get_class_timeslots(subject_class)
+		if (subject_class.subject.is_wednesday_class
+				and timeslots[0].day != 2):
+			cost += hc_penalty
+
+	return cost
 
 
 def _get_starting_timeslot_indexes(num_required_timeslots):
