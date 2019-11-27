@@ -496,7 +496,7 @@ def _compute_sc3_constraint(timetable, sc_penalty):
 def _gpu_compute_hc3_constraint(timetable, hc_penalty):
 	# Not yet checking for room since, for now, being scheduled a timeslot
 	# would also mean being scheduled a room. TBA rooms not yet considered.
-	return _gpu_compute_hc3_constraint_func(timetable.classes, hc_penalty):
+	return _gpu_compute_hc3_constraint_func(timetable.classes, hc_penalty)
 
 
 @cuda.jit
