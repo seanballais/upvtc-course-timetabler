@@ -196,9 +196,11 @@ class Teacher(Base):
 		default=None,
 		unique=False,
 		null=True)
-	preferred_timeslots = peewee.ManyToManyField(
+	# TODO: Maybe use a custom through model so that the table name of said
+	#       model accurately represents the contents it is holding.
+	unpreferred_timeslots = peewee.ManyToManyField(
 		TimeSlot,
-		backref='preferring_teachers',
+		backref='unpreferring_teachers',
 		on_delete='CASCADE',
 		on_update='CASCADE')
 

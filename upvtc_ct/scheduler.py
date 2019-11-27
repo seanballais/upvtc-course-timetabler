@@ -40,7 +40,6 @@ class _Timetable():
 			timetable[timeslot] = timetable_timeslot
 
 		self._timetable = timetable
-		self._timeslots = self._timetable.items()
 
 		self._classes = set()
 		self._class_timeslots = dict()
@@ -48,7 +47,7 @@ class _Timetable():
 
 	@property
 	def timeslots(self):
-		return self._timeslots
+		return self._timetable.items()
 
 	def get_classes_in_timeslot(self, timeslot):
 		return self._timeslot_classes[timeslot]
@@ -259,6 +258,7 @@ def _create_initial_timetable():
 		start_timeslot = timeslots[start_timeslot_index][0]
 		num_timeslots = _get_num_class_timeslots(subject_class, start_timeslot)
 		end_timeslot_index = start_timeslot_index + num_timeslots - 1
+
 		for i in range(start_timeslot_index, end_timeslot_index + 1):
 			timeslot = timeslots[i][0]
 			timetable.add_class_to_timeslot(subject_class, timeslot, room)
@@ -269,6 +269,7 @@ def _create_initial_timetable():
 def _compute_timetable_cost(timetable):
 	cost = 0
 	hc_penalty = 10000
+	sc_penalty = 1
 	class_conflicts = get_class_conflicts()
 
 	# Compute penalty for hard constraints (HCs).
@@ -278,6 +279,13 @@ def _compute_timetable_cost(timetable):
 	cost += _compute_hc4_constraint(timetable, hc_penalty)
 	cost += _compute_hc5_constraint(timetable, hc_penalty)
 	cost += _compute_hc6_constraint(timetable, hc_penalty)
+	print(cost)
+	cost += _compute_hc7_constraint(timetable, hc_penalty)
+
+	# Compute penalty for soft constraints (SCs).
+	cost += _compute_sc1_constraint(timetable, sc_penalty)
+	cost += _compute_sc2_constraint(timetable, sc_penalty)
+	cost += _compute_sc3_constraint(timetable, sc_penalty)
 
 	return cost
 
@@ -371,6 +379,82 @@ def _compute_hc6_constraint(timetable, hc_penalty):
 		if (subject_class.subject.is_wednesday_class
 				and timeslots[0].day != 2):
 			cost += hc_penalty
+
+	return cost
+
+
+def _compute_hc7_constraint(timetable, hc_penalty):
+	cost = 0
+
+	for subject_class in models.Class.select():
+		timeslots = timetable.get_class_timeslots(subject_class)
+		# Make sure that the end time and start time of two adjacent
+		# timeslots respectively must be the same. There is a penalty
+		# for every timeslot if it is not.
+		for i in range(len(timeslots) - 1):
+			t1 = timeslots[i]
+			t2 = timeslots[i + 1]
+			if t1.end_time != t2.start_time:
+				# The timeslots are disconnected and there is a hole
+				# in between.
+				cost += hc_penalty
+
+	return cost
+
+
+def _compute_sc1_constraint(timetable, sc_penalty):
+	cost = 0
+	for _, rooms in timetable.timeslots:
+		for room, classes in rooms.items():
+			for subject_class in classes:
+				if subject_class.subject.division != room.division:
+					# Class is scheduled in a room that is not under the
+					# division the class is offered by.
+					cost += sc_penalty
+
+	return cost
+
+
+def _compute_sc2_constraint(timetable, sc_penalty):
+	cost = 0
+	unpreferred_timeslots_indexes = set([
+		9, 10, 11,          # Day 0 lunch time (and unpreferrable).
+		33, 34, 35,          # Day 1 lunch time (and unpreferrable).
+		57, 58, 59,			 # Day 2 lunch time (and unpreferrable).
+		0,  1,  			 # Day 0 unpreferrable morning timeslots.
+		24, 25,              # Day 1 unpreferrable morning timeslots.
+		48, 49,              # Day 2 unpreferrable morning timeslots.
+		21, 22, 23,          # Day 0 unpreferrable evening timeslots.
+		45, 46, 47,			 # Day 1 unpreferrable evening timeslots.
+		69, 70, 71			 # Day 2 unpreferrable evening timeslots.
+	])
+	index = 0
+	for timeslot, _ in timetable.timeslots:
+		if index in unpreferred_timeslots_indexes:
+			# If there are classes scheduled in the unpreferrable timeslot,
+			# increase the cost by the soft constraint penalty cost for each
+			# class.
+			classes = timetable.get_classes_in_timeslot(timeslot)
+			cost += len(classes) * sc_penalty
+
+		index += 1
+
+	return cost
+
+
+def _compute_sc3_constraint(timetable, sc_penalty):
+	cost = 0
+	unpreferred_timeslots = dict()
+
+	for teacher in models.Teacher.select():
+		unpreferred_timeslots[teacher] = set(teacher.unpreferred_timeslots)
+
+	for timeslot, _ in timetable.timeslots:
+		classes = timetable.get_classes_in_timeslot(timeslot)
+		for subject_class in classes:
+			teacher = subject_class.assigned_teacher
+			if timeslot in unpreferred_timeslots[teacher]:
+				cost += sc_penalty
 
 	return cost
 
