@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from dataclasses import dataclass
+from numba import cuda
 import random
 
 from peewee import fn, Select, JOIN
@@ -20,7 +21,7 @@ class _Student():
 
 	@property
 	def classes(self):
-		return self._classes			
+		return self._classes
 
 	def add_class(self, new_class):
 		self._classes.add(new_class)
@@ -131,12 +132,16 @@ def view_text_form_schedule():
 		print('-' * 64)
 
 
-def create_schedule():
+def create_schedule(use_gpu=False):
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
 	timetable = _create_initial_timetable()
-	print(_compute_timetable_cost(timetable))
+
+	if use_gpu:
+		print(_gpu_compute_timetable_cost(timetable))
+	else:
+		print(_compute_timetable_cost(timetable))
 
 
 def get_class_conflicts(invalid_cache=False):
@@ -276,6 +281,30 @@ def _compute_timetable_cost(timetable):
 	cost += _compute_hc1_constraint(timetable, hc_penalty)
 	cost += _compute_hc2_constraint(timetable, hc_penalty)
 	cost += _compute_hc3_constraint(timetable, hc_penalty)
+	cost += _compute_hc4_constraint(timetable, hc_penalty)
+	cost += _compute_hc5_constraint(timetable, hc_penalty)
+	cost += _compute_hc6_constraint(timetable, hc_penalty)
+	print(cost)
+	cost += _compute_hc7_constraint(timetable, hc_penalty)
+
+	# Compute penalty for soft constraints (SCs).
+	cost += _compute_sc1_constraint(timetable, sc_penalty)
+	cost += _compute_sc2_constraint(timetable, sc_penalty)
+	cost += _compute_sc3_constraint(timetable, sc_penalty)
+
+	return cost
+
+
+def _gpu_compute_timetable_cost(timetable):
+	cost = 0
+	hc_penalty = 10000
+	sc_penalty = 1
+	class_conflicts = get_class_conflicts()
+
+	# Compute penalty for hard constraints (HCs).
+	cost += _compute_hc1_constraint(timetable, hc_penalty)
+	cost += _compute_hc2_constraint(timetable, hc_penalty)
+	cost += _gpu_compute_hc3_constraint(timetable, hc_penalty)
 	cost += _compute_hc4_constraint(timetable, hc_penalty)
 	cost += _compute_hc5_constraint(timetable, hc_penalty)
 	cost += _compute_hc6_constraint(timetable, hc_penalty)
@@ -457,6 +486,15 @@ def _compute_sc3_constraint(timetable, sc_penalty):
 				cost += sc_penalty
 
 	return cost
+
+
+@cuda.jit
+def _gpu_compute_hc3_constraint(timetable, hc_penalty):
+	# Not yet checking for room since, for now, being scheduled a timeslot
+	# would also mean being scheduled a room. TBA rooms not yet considered.
+	classes = models.Class.select()
+	return sum(list(map(
+		lambda c: hc_penalty if not timetable.has_class(c) else 0, classes)))
 
 
 def _get_starting_timeslot_indexes(num_required_timeslots):

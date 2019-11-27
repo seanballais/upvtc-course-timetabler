@@ -9,6 +9,7 @@ verify_ssl = true
 pyqt5 = "*"
 peewee = ">=3.*.*"
 docopt = "*"
+numba = "*"
 
 [requires]
 python_version = "3.7"

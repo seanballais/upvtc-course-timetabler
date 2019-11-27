@@ -30,7 +30,7 @@ def main():
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
 		 '[--assign-teachers-to-classes] [--view-text-form-class-conflicts] '
 		 '[--reset-schedule]\n'
-		 '           [--schedule] [--view-text-form-schedule]\n'
+		 '           [--schedule [--use-gpu]] [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -45,6 +45,9 @@ def main():
 		 '  --view-text-form-class-conflicts  Show the classes that conflict '
 		 'or share students for each class.\n'
 		 '  --schedule                        Create a schedule.\n'
+		 '  --use-gpu                         When scheduling, use the GPU ( '
+		 'only supports NVIDIA GPUs for '
+		 'now).\n'
 		 '  --reset-schedule                  Resets the schedule.\n'
 		 '  --view-text-form-schedule         View the schedule in text form.')
 	arguments = docopt.docopt(doc_string, version=__version__)
@@ -93,7 +96,7 @@ def main():
 		scheduler.reset_schedule()
 
 	if arguments['--schedule']:
-		scheduler.create_schedule()
+		scheduler.create_schedule(use_gpu=arguments['--use-gpu'])
 
 	if arguments['--view-text-form-schedule']:
 		scheduler.view_text_form_schedule()
