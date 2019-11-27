@@ -21,7 +21,7 @@ def setup_models():
 		Room.features.get_through_model(),
 		TimeSlot,
 		Teacher,
-		Teacher.preferred_timeslots.get_through_model(),
+		Teacher.unpreferred_timeslots.get_through_model(),
 		Subject,
 		Subject.required_features.get_through_model(),
 		Subject.candidate_teachers.get_through_model(),
