@@ -502,7 +502,8 @@ def _gpu_compute_hc3_constraint(timetable, hc_penalty):
 
 	classes = set(map(lambda c: str(c), list(models.Class.select())))
 
-	return _gpu_compute_hc3_constraint_func(timetable.classes, hc_penalty)
+	return _gpu_compute_hc3_constraint_func(
+		timetable_classes, classes, hc_penalty)
 
 
 @cuda.jit
