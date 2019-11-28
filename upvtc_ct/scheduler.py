@@ -502,20 +502,24 @@ def _gpu_compute_hc3_constraint(timetable, hc_penalty):
 
 	classes = set(map(lambda c: id(c), list(models.Class.select())))
 
-	return _gpu_compute_hc3_constraint_func(
-		timetable_classes, classes, hc_penalty)
+	cost = [ 0 ]
+
+	_gpu_compute_hc3_constraint_kernel(
+		timetable_classes, classes, hc_penalty, cost)
+	return cost[0]
 
 
 @cuda.jit
-def _gpu_compute_hc3_constraint_func(timetable_classes, classes, hc_penalty):
+def _gpu_compute_hc3_constraint_kernel(timetable_classes,
+    								   classes,
+									   hc_penalty,
+									   cost):
 	# Not yet checking for room since, for now, being scheduled a timeslot
 	# would also mean being scheduled a room. TBA rooms not yet considered.
-	cost = 0
+	cost[0] = 0
 	for c in classes:
 		if not c in timetable_classes:
-			cost += hc_penalty
-
-	return cost
+			cost[0] += hc_penalty
 
 
 def _get_starting_timeslot_indexes(num_required_timeslots):
