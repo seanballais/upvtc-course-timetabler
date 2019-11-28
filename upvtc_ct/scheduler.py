@@ -510,8 +510,12 @@ def _gpu_compute_hc3_constraint(timetable, hc_penalty):
 def _gpu_compute_hc3_constraint_func(timetable_classes, classes, hc_penalty):
 	# Not yet checking for room since, for now, being scheduled a timeslot
 	# would also mean being scheduled a room. TBA rooms not yet considered.
-	return sum(list(map(
-		lambda c: hc_penalty if not c in timetable_classes else 0, classes)))
+	cost = 0
+	for c in classes:
+		if not c in timetable_classes:
+			cost += hc_penalty
+
+	return cost
 
 
 def _get_starting_timeslot_indexes(num_required_timeslots):
