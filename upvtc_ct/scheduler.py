@@ -498,9 +498,9 @@ def _gpu_compute_hc3_constraint(timetable, hc_penalty):
 	# would also mean being scheduled a room. TBA rooms not yet considered.
 	timetable_classes = set()
 	for c in timetable.classes:
-		timetable_classes.add(str(c))
+		timetable_classes.add(id(c))
 
-	classes = set(map(lambda c: str(c), list(models.Class.select())))
+	classes = set(map(lambda c: id(c), list(models.Class.select())))
 
 	return _gpu_compute_hc3_constraint_func(
 		timetable_classes, classes, hc_penalty)
