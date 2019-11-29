@@ -88,55 +88,40 @@ class _Timetable():
 		return self._class_timeslots.get(subject_class, [])
 
 
-def reset_schedule():
-	models.Class.timeslots.get_through_model().delete().execute(models.db)
-
-	for subject_class in models.Class.select():
-		subject_class.room = None
-		subject_class.assigned_teacher = None
-		subject_class.save()
-
-
-def view_text_form_class_conflicts():
-	try:
-		class_conflicts = get_class_conflicts()
-	except UnschedulableException as e:
-		app_logger.error(
-			 'Oh no! It is impossible to create an feasible schedule'
-			f' because {e}')
-
-		return
-
-	print('-' * 60)
-	print(f'| {"CLASS CONFLICTS":57}|')
-	print('-' * 60)
-	print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
-	print('-' * 60)
-	for subject_class, conflicting_classes in class_conflicts.items():
-		classes = [
-			f'{str(c)}' for c in conflicting_classes
-		]
-		print(f'| {str(subject_class):19}| {", ".join(classes):36}|')
-		print('-' * 60)
-
-
-def view_text_form_schedule():
-	print('-' * 64)
-	for timeslot in models.TimeSlot.select():
-		timeslot_classes = [
-			f'[{str(c.room)}] {str(c)}' for c in timeslot.classes
-		]
-		print(
-			f'{str(timeslot):31} | {", ".join(timeslot_classes)}')
-		print('-' * 64)
-
-
 def create_schedule():
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
 	timetable = _create_initial_timetable()
 	print(_compute_timetable_cost(timetable))
+
+
+def reset_teacher_assignments():
+	for subject_class in models.Class.select():
+		subject_class.assigned_teacher = None
+		subject_class.save()
+
+
+def assign_teachers_to_classes():
+	# Classes will tend to be assigned to teachers with fewer units. This is to
+	# reduce the chances of teachers being overloaded. Additionally, subjects
+	# with fewer number of candidate teachers will have their classes assigned
+	# teachers first to assign the class a teacher who is not likely overloaded
+	# from other subjects.
+	for subject_class in _get_sorted_classes_query():
+		# Let's compile the rows of teacher units into an easier to use
+		# data structure.
+		teacher_units = dict()
+		for teacher in _get_teacher_units_query().execute(models.db):
+			teacher_units[teacher['assigned_teacher']] = teacher['units']
+
+		# Assign teachers to classes now.
+		candidate_teachers = list(subject_class.subject.candidate_teachers)
+		candidate_teachers.sort(key=lambda t : teacher_units[t.id])
+		_shuffle_teachers_with_same_units(candidate_teachers, teacher_units)
+
+		subject_class.assigned_teacher = candidate_teachers[0]
+		subject_class.save()
 
 
 def get_class_conflicts(invalid_cache=False):
@@ -194,32 +179,47 @@ def get_class_conflicts(invalid_cache=False):
 	return class_conflicts
 
 
-def reset_teacher_assignments():
+def reset_schedule():
+	models.Class.timeslots.get_through_model().delete().execute(models.db)
+
 	for subject_class in models.Class.select():
+		subject_class.room = None
 		subject_class.assigned_teacher = None
 		subject_class.save()
 
 
-def assign_teachers_to_classes():
-	# Classes will tend to be assigned to teachers with fewer units. This is to
-	# reduce the chances of teachers being overloaded. Additionally, subjects
-	# with fewer number of candidate teachers will have their classes assigned
-	# teachers first to assign the class a teacher who is not likely overloaded
-	# from other subjects.
-	for subject_class in _get_sorted_classes_query():
-		# Let's compile the rows of teacher units into an easier to use
-		# data structure.
-		teacher_units = dict()
-		for teacher in _get_teacher_units_query().execute(models.db):
-			teacher_units[teacher['assigned_teacher']] = teacher['units']
+def view_text_form_class_conflicts():
+	try:
+		class_conflicts = get_class_conflicts()
+	except UnschedulableException as e:
+		app_logger.error(
+			 'Oh no! It is impossible to create an feasible schedule'
+			f' because {e}')
 
-		# Assign teachers to classes now.
-		candidate_teachers = list(subject_class.subject.candidate_teachers)
-		candidate_teachers.sort(key=lambda t : teacher_units[t.id])
-		_shuffle_teachers_with_same_units(candidate_teachers, teacher_units)
+		return
 
-		subject_class.assigned_teacher = candidate_teachers[0]
-		subject_class.save()
+	print('-' * 60)
+	print(f'| {"CLASS CONFLICTS":57}|')
+	print('-' * 60)
+	print(f'| :: {"Class":16}| :: {"Conflicting Classes":33}|')
+	print('-' * 60)
+	for subject_class, conflicting_classes in class_conflicts.items():
+		classes = [
+			f'{str(c)}' for c in conflicting_classes
+		]
+		print(f'| {str(subject_class):19}| {", ".join(classes):36}|')
+		print('-' * 60)
+
+
+def view_text_form_schedule():
+	print('-' * 64)
+	for timeslot in models.TimeSlot.select():
+		timeslot_classes = [
+			f'[{str(c.room)}] {str(c)}' for c in timeslot.classes
+		]
+		print(
+			f'{str(timeslot):31} | {", ".join(timeslot_classes)}')
+		print('-' * 64)
 
 
 def _create_initial_timetable():
