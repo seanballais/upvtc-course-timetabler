@@ -279,7 +279,6 @@ def _compute_timetable_cost(timetable):
 	cost += _compute_hc4_constraint(timetable, hc_penalty)
 	cost += _compute_hc5_constraint(timetable, hc_penalty)
 	cost += _compute_hc6_constraint(timetable, hc_penalty)
-	print(cost)
 	cost += _compute_hc7_constraint(timetable, hc_penalty)
 
 	# Compute penalty for soft constraints (SCs).
