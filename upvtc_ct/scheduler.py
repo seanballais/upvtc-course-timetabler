@@ -289,6 +289,10 @@ def _compute_timetable_cost(timetable):
 	return cost
 
 
+def _timetable_move1(timetable):
+	pass
+
+
 def _compute_hc1_constraint(timetable, hc_penalty):
 	cost = 0
 	class_conflicts = get_class_conflicts()
