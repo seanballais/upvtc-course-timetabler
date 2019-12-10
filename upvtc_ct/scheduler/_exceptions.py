@@ -1,0 +1,2 @@
+class UnschedulableException(Exception):
+	pass
