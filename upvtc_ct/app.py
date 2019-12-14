@@ -11,13 +11,13 @@ from upvtc_ct import __version__, gui, models, scheduler, settings
 def main():
 	# Set up logging.
 	if not bool(int(os.getenv('UPVTC_CT_DB_DEBUG', 0))):
-		# Disable Peewee logging when the environment variable is not set to a
+		# Disable Peewee logging since the environment variable is not set to a
 		# non-zero value, since Peewee should only log when we need it to, to
 		# reduce noise in the console logs. By default, whenever the logging
 		# level of the root logger is set to DEBUG (which happens whenever
 		# UPVTC_CT_DEBUG is set to a non-zero value), Peewee logs.
 		peewee_logger = logging.getLogger('peewee')
-		peewee_logger.disabled = False
+		peewee_logger.propagate = False
 
 	app_logger = logging.getLogger()
 	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG', 0)))
