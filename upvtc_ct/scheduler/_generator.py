@@ -1,7 +1,7 @@
 import random
 
 from ._ds import _Timetable
-from ._scheduler import get_class_conflicts
+from ._utils import get_class_conflicts
 
 
 def _create_initial_timetable():

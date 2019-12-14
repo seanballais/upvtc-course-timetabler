@@ -1,12 +1,11 @@
 from upvtc_ct import models
 
-from ._scheduler import get_class_conflicts
+from ._utils import get_class_conflicts
 
 def _compute_timetable_cost(timetable):
 	cost = 0
 	hc_penalty = 10000
 	sc_penalty = 1
-	class_conflicts = get_class_conflicts()
 
 	# Compute penalty for hard constraints (HCs).
 	cost += _compute_hc1_constraint(timetable, hc_penalty)
