@@ -34,16 +34,14 @@ def _create_initial_timetable():
 		room = random.choice(
 			_get_acceptable_rooms_for_subject(subject_class.subject))
 
-		# Assign class to room and the timeslots (number of timeslots needed
-		# depends on the number of timeslots required by the class and the
-		# day the starting timeslot is in.
 		start_timeslot = timeslots[start_timeslot_index][0]
 		num_timeslots = _get_num_class_timeslots(subject_class, start_timeslot)
 		end_timeslot_index = start_timeslot_index + num_timeslots - 1
 
-		for i in range(start_timeslot_index, end_timeslot_index + 1):
-			timeslot = timeslots[i][0]
-			timetable.add_class_to_timeslot(subject_class, timeslot, room)
+		timetable.add_class(subject_class,
+							start_timeslot_index,
+							num_timeslots,
+							room)
 
 	return timetable
 

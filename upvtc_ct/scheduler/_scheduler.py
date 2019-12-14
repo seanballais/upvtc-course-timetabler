@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import heapq
 import logging
 
 from peewee import fn, Select, JOIN
@@ -16,14 +17,28 @@ app_logger = logging.getLogger()
 
 
 def create_schedule(population_size=25):
+	app_logger.info(':: Creating a new schedule...')
+	app_logger.info('    Parameters:')
+	app_logger.info(f'    - Population Size: {population_size}')
+
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
-	app_logger.debug('Popsize = 25')
-
 	solutions = list()
-	for _ in range(population_size):
+	for i in range(population_size):
+		app_logger.debug(f'Generating candidate timetable #{i + 1}...')
+		
 		timetable = _create_initial_timetable()
+		timetable_cost = _compute_timetable_cost(timetable)
+
+		# NOTE: heapq sorts ascendingly.
+		heapq.heappush(solutions, (timetable_cost, timetable,))
+
+	# Permanently apply the assignments of the timetable with the best cost
+	# to the database.
+	best_timetable = heapq.heappop(solutions)[1]
+	for c in best_timetable.classes:
+		c.save()
 
 
 def assign_teachers_to_classes():
