@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import logging
 
 from peewee import fn, Select, JOIN
 
@@ -11,12 +12,18 @@ from ._generator import _create_initial_timetable
 from ._utils import _shuffle_slice, get_class_conflicts
 
 
-def create_schedule():
+app_logger = logging.getLogger()
+
+
+def create_schedule(population_size=25):
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
-	timetable = _create_initial_timetable()
-	print(_compute_timetable_cost(timetable))
+	app_logger.debug('Popsize = 25')
+
+	solutions = list()
+	for _ in range(population_size):
+		timetable = _create_initial_timetable()
 
 
 def assign_teachers_to_classes():

@@ -10,6 +10,15 @@ from upvtc_ct import __version__, gui, models, scheduler, settings
 
 def main():
 	# Set up logging.
+	if not bool(int(os.getenv('UPVTC_CT_DB_DEBUG', 0))):
+		# Disable Peewee logging when the environment variable is not set to a
+		# non-zero value, since Peewee should only log when we need it to, to
+		# reduce noise in the console logs. By default, whenever the logging
+		# level of the root logger is set to DEBUG (which happens whenever
+		# UPVTC_CT_DEBUG is set to a non-zero value), Peewee logs.
+		peewee_logger = logging.getLogger('peewee')
+		peewee_logger.disabled = False
+
 	app_logger = logging.getLogger()
 	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG', 0)))
 							   else logging.INFO)
@@ -30,7 +39,8 @@ def main():
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
 		 '[--assign-teachers-to-classes] [--view-text-form-class-conflicts] '
 		 '[--reset-schedule]\n'
-		 '           [--schedule] [--view-text-form-schedule]\n'
+		 '           [--schedule (--population-size=<ps>)]'
+		 ' [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -45,6 +55,8 @@ def main():
 		 '  --view-text-form-class-conflicts  Show the classes that conflict '
 		 'or share students for each class.\n'
 		 '  --schedule                        Create a schedule.\n'
+		 '  --population-size=<ps>            Sets the population size '
+		 '[default: 25].\n'
 		 '  --reset-schedule                  Resets the schedule.\n'
 		 '  --view-text-form-schedule         View the schedule in text form.')
 	arguments = docopt.docopt(doc_string, version=__version__)
@@ -93,7 +105,7 @@ def main():
 		scheduler.reset_schedule()
 
 	if arguments['--schedule']:
-		scheduler.create_schedule()
+		scheduler.create_schedule(int(arguments['--population-size']))
 
 	if arguments['--view-text-form-schedule']:
 		scheduler.view_text_form_schedule()
