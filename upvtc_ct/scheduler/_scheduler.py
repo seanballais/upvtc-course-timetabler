@@ -9,30 +9,54 @@ from upvtc_ct import models
 from ._cost_computation import _compute_timetable_cost
 from ._ds import _Student
 from ._exceptions import UnschedulableException
-from ._generator import _create_initial_timetable
+from ._generator import (
+	_create_initial_timetable, _create_initial_timetable_generation,
+	_create_new_timetable_generation)
 from ._utils import _shuffle_slice, get_class_conflicts
 
 
 app_logger = logging.getLogger()
 
 
-def create_schedule(population_size=25):
+def create_schedule(population_size=25,
+					num_generations=10,
+					mutation_chance=0.2):
 	app_logger.info(':: Creating a new schedule...')
 	app_logger.info('    Parameters:')
 	app_logger.info(f'    - Population Size: {population_size}')
+	app_logger.info(f'    - Number of Generations: {num_generations}')
+	app_logger.info(f'    - Mutation Chance: {mutation_chance}')
 
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
-	solutions = _create_initial_timetable_generation(population_size)
-
 	# Start the genetic algorithm.
+	for i in range(num_generations):
+		app_logger.info(f'|| Creating Generation #{i + 1}...')
+		if i == 0:
+			# First generation of solutions, so we generate randomly.
+			solutions = _create_initial_timetable_generation(population_size)
+			continue
+		
+		parent1_cost, _, parent1 = heapq.heappop(solutions)
+		parent2_cost, _, parent2 = heapq.heappop(solutions)
+
+		app_logger.debug(
+			f'Selected parents with costs, {parent1_cost} and {parent2_cost}.')
+
+		solutions = _create_new_timetable_generation(
+			parent1, parent2, population_size, mutation_chance)
 
 	# Permanently apply the assignments of the timetable with the best cost
 	# to the database.
-	best_timetable = heapq.heappop(solutions)[1]
+	best_solution = heapq.heappop(solutions)
+	best_cost = best_solution[0]
+	best_timetable = best_solution[2]
 	for c in best_timetable.classes:
 		c.save()
+
+	app_logger.info('Done creating timetable.')
+	app_logger.debug(f'Best solution has a cost of {best_cost}.')
 
 
 def assign_teachers_to_classes():
@@ -104,24 +128,6 @@ def view_text_form_schedule():
 		print(
 			f'{str(timeslot):31} | {", ".join(timeslot_classes)}')
 		print('-' * 64)
-
-
-def _create_initial_timetable_generation(population_size):
-	solutions = list()
-	for i in range(population_size):
-		app_logger.debug(f'Generating candidate timetable #{i + 1}...')
-		
-		timetable = _create_initial_timetable()
-		timetable_cost = _compute_timetable_cost(timetable)
-
-		# NOTE: heapq sorts ascendingly.
-		heapq.heappush(solutions, (timetable_cost, timetable,))
-
-	return solutions
-
-
-def _create_new_timetable_generation(parent_timetables, population_size=25):
-	pass
 
 
 def _shuffle_teachers_with_same_units(candidate_teachers, teacher_units):

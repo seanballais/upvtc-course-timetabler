@@ -39,7 +39,8 @@ def main():
 		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
 		 '[--assign-teachers-to-classes] [--view-text-form-class-conflicts] '
 		 '[--reset-schedule]\n'
-		 '           [--schedule (--population-size=<ps>)]'
+		 '           [--schedule [--population-size=<ps> '
+		 '--num-generations=<ng> --mutation-chance=<mc>]]'
 		 ' [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
@@ -57,6 +58,10 @@ def main():
 		 '  --schedule                        Create a schedule.\n'
 		 '  --population-size=<ps>            Sets the population size '
 		 '[default: 25].\n'
+		 '  --num-generations=<ng>            Sets the number of generations '
+		 'to generate [default: 10].\n'
+		 '  --mutation-chance=<mc>            Sets the mutation chance of '
+		 'offsprings in each generation [default: 0.2].\n'
 		 '  --reset-schedule                  Resets the schedule.\n'
 		 '  --view-text-form-schedule         View the schedule in text form.')
 	arguments = docopt.docopt(doc_string, version=__version__)
@@ -105,7 +110,10 @@ def main():
 		scheduler.reset_schedule()
 
 	if arguments['--schedule']:
-		scheduler.create_schedule(int(arguments['--population-size']))
+		scheduler.create_schedule(
+			int(arguments['--population-size']),
+			int(arguments['--num-generations']),
+			float(arguments['--mutation-chance']))
 
 	if arguments['--view-text-form-schedule']:
 		scheduler.view_text_form_schedule()
