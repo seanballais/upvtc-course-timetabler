@@ -1,7 +1,9 @@
 import random
 
 from ._ds import _Timetable
-from ._utils import get_class_conflicts
+from ._utils import (
+	get_class_conflicts, _get_starting_timeslot_indexes,
+	_get_num_class_timeslots)
 
 
 def _create_initial_timetable():
@@ -31,41 +33,39 @@ def _create_initial_timetable():
 		start_timeslot_index = random.choice(start_timeslot_indexes)
 
 		# Randomly select a room.
-		room = random.choice(
-			_get_acceptable_rooms_for_subject(subject_class.subject))
+		room = _get_new_random_room_for_class(subject_class)
 
 		start_timeslot = timeslots[start_timeslot_index][0]
 		num_timeslots = _get_num_class_timeslots(subject_class, start_timeslot)
 		end_timeslot_index = start_timeslot_index + num_timeslots - 1
 
-		timetable.add_class(subject_class,
-							start_timeslot_index,
-							num_timeslots,
-							room)
+		timetable.add_class(
+			subject_class, start_timeslot_index, num_timeslots, room)
 
 	return timetable
 
 
-def _timetable_move1(timetable):
-	pass
+def _timetable_move1(timetable, subject_class):
+	num_session_slots = len(timetable.get_class_timeslots(subject_class))
+	if num_session_slots > 3:
+		# Oh, so we assigned the class on a Wednesday. Divide! We're sure
+		# that num_session_sltos will always be divisible by 2.
+		num_session_slots /= 2
+
+	starting_timeslot_indexes = _get_starting_timeslot_indexes(
+		num_session_slots)
+	new_starting_timeslot_index = random.choice(starting_timeslot_indexes)
+
+	new_room = _get_new_random_room_for_class(subject_class)
+
+	timetable.move_class_to_timeslot(
+		subject_class, new_starting_timeslot_index)
+	timetable.change_class_room(subject_class, new_room)
 
 
-def _get_starting_timeslot_indexes(num_required_timeslots):
-	starting_timeslot_indexes = list(
-		range(0, 46, num_required_timeslots))
-
-	end_timeslot_index = 0
-	if num_required_timeslots == 2:
-		# The last starting timeslot should be 5:00PM - 5:30PM.
-		end_timeslot_index = 68
-	else:
-		# The last starting timeslot should be 4:00PM - 4:30PM.
-		end_timeslot_index = 66
-
-	starting_timeslot_indexes.extend(
-		list(range(48, end_timeslot_index + 1, num_required_timeslots)))
-
-	return starting_timeslot_indexes
+def _get_new_random_room_for_class(subject_class):
+	return random.choice(
+		_get_acceptable_rooms_for_subject(subject_class.subject))
 
 
 def _get_acceptable_rooms_for_subject(subject):
@@ -84,13 +84,3 @@ def _get_acceptable_rooms_for_subject(subject):
 			acceptable_rooms.append(room)
 
 	return acceptable_rooms
-
-
-def _get_num_class_timeslots(subject_class, starting_timeslot):
-	subject = subject_class.subject
-	num_jumps = subject.num_required_timeslots
-
-	if starting_timeslot.day == 2:
-		num_jumps = num_jumps * 2
-
-	return num_jumps

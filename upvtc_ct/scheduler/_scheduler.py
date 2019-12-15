@@ -24,15 +24,9 @@ def create_schedule(population_size=25):
 	reset_teacher_assignments()
 	assign_teachers_to_classes()
 
-	solutions = list()
-	for i in range(population_size):
-		app_logger.debug(f'Generating candidate timetable #{i + 1}...')
-		
-		timetable = _create_initial_timetable()
-		timetable_cost = _compute_timetable_cost(timetable)
+	solutions = _create_initial_timetable_generation(population_size)
 
-		# NOTE: heapq sorts ascendingly.
-		heapq.heappush(solutions, (timetable_cost, timetable,))
+	# Start the genetic algorithm.
 
 	# Permanently apply the assignments of the timetable with the best cost
 	# to the database.
@@ -110,6 +104,24 @@ def view_text_form_schedule():
 		print(
 			f'{str(timeslot):31} | {", ".join(timeslot_classes)}')
 		print('-' * 64)
+
+
+def _create_initial_timetable_generation(population_size):
+	solutions = list()
+	for i in range(population_size):
+		app_logger.debug(f'Generating candidate timetable #{i + 1}...')
+		
+		timetable = _create_initial_timetable()
+		timetable_cost = _compute_timetable_cost(timetable)
+
+		# NOTE: heapq sorts ascendingly.
+		heapq.heappush(solutions, (timetable_cost, timetable,))
+
+	return solutions
+
+
+def _create_new_timetable_generation(parent_timetables, population_size=25):
+	pass
 
 
 def _shuffle_teachers_with_same_units(candidate_teachers, teacher_units):

@@ -96,3 +96,31 @@ def _shuffle_slice(l, start, stop):
 		l[i], l[idx] = l[idx], l[i]
 
 		i += 1
+
+
+def _get_starting_timeslot_indexes(num_required_timeslots):
+	starting_timeslot_indexes = list(
+		range(0, 46, num_required_timeslots))
+
+	end_timeslot_index = 0
+	if num_required_timeslots == 2:
+		# The last starting timeslot should be 5:00PM - 5:30PM.
+		end_timeslot_index = 68
+	else:
+		# The last starting timeslot should be 4:00PM - 4:30PM.
+		end_timeslot_index = 66
+
+	starting_timeslot_indexes.extend(
+		list(range(48, end_timeslot_index + 1, num_required_timeslots)))
+
+	return starting_timeslot_indexes
+
+
+def _get_num_class_timeslots(subject_class, starting_timeslot):
+	subject = subject_class.subject
+	num_jumps = subject.num_required_timeslots
+
+	if starting_timeslot.day == 2:
+		num_jumps = num_jumps * 2
+
+	return num_jumps
