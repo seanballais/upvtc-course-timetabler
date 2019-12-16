@@ -56,7 +56,7 @@ def create_schedule(population_size=25,
 		c.save()
 
 	app_logger.info('Done creating timetable.')
-	app_logger.debug(f'Best solution has a cost of {best_cost}.')
+	app_logger.info(f'Best solution has a cost of {best_cost}.')
 
 
 def assign_teachers_to_classes():
