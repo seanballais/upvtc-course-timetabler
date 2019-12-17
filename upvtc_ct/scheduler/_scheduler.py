@@ -45,7 +45,10 @@ def create_schedule(population_size=25,
 			f'Selected parents with costs, {parent1_cost} and {parent2_cost}.')
 
 		solutions = _create_new_timetable_generation(
-			parent1, parent2, population_size, mutation_chance)
+			parent1, parent2, population_size - 1, mutation_chance)
+
+		# Keep the best solution from the previous generation.
+		heapq.heappush(solutions, (parent1_cost, id(parent1), parent1,))
 
 	# Permanently apply the assignments of the timetable with the best cost
 	# to the database.
