@@ -78,10 +78,9 @@ class _Timetable():
 
 		original_timeslots = self._class_timeslots[subject_class]
 		num_session_slots = len(original_timeslots)
-		if num_session_slots > 3 and new_starting_timeslot_idx <= 48:
-			# Oh, so we assigned the class originally on a Wednesday, and we're
-			# scheduling it on a non-Wednesday. Divide! We're sure that
-			# num_session_sltos will always be divisible by 2.
+		if num_session_slots > 3:
+			# Oh, so we assigned the class on a Wednesday. Divide! We're sure
+			# that num_session_sltos will always be divisible by 2.
 			num_session_slots //= 2
 
 		# Let's check first if the new starting timeslot index is a valid one.
@@ -106,9 +105,15 @@ class _Timetable():
 		subject_class.timeslots.clear()
 
 		# Now, change the timeslot of the class.
+		if new_starting_timeslot_idx >= 48:
+			# It's a Wednesday class now, so its slots must be twice.
+			num_required_slots = num_session_slots * 2
+		else:
+			num_required_slots = num_session_slots
+
 		self.add_class(subject_class,
 					   new_starting_timeslot_idx,
-					   num_session_slots,
+					   num_required_slots,
 					   room)
 
 	def change_class_room(self, subject_class, new_room):
