@@ -41,6 +41,11 @@ def create_schedule(population_size=25,
 		parent1_cost, _, parent1 = heapq.heappop(solutions)
 		parent2_cost, _, parent2 = heapq.heappop(solutions)
 
+		if parent1_cost == 0:
+			# Stop the GA when we have found a solution that has a cost of 0.
+			heapq.heappush(solutions, (parent1_cost, id(parent1), parent1,))
+			break
+
 		app_logger.debug(
 			f'Selected parents with costs, {parent1_cost} and {parent2_cost}.')
 
