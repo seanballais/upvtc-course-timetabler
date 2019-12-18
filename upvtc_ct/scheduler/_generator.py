@@ -29,7 +29,18 @@ def _create_initial_timetable():
 		3)
 
 	for subject_class, conflicting_classes in class_conflicts.items():
+		# !!! TODO !!!
+		# All instances of a class share the same timeslots. We must make so
+		# that each instance has their own unique timeslot. If we don't fix
+		# this problem, we're effectively only having one unique offspring per
+		# generation. AAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.
+		print(list(subject_class.timeslots))
+		# We need to copy subject_class since we don't want different
+		# timetables to share the same instance of a class.
 		subject_class = copy.deepcopy(subject_class)
+
+		subject_class.timeslots.clear()
+
 		timeslot_indexes = None
 		if subject_class.subject.num_required_timeslots == 2:
 			# It's a one hour class.
@@ -63,6 +74,12 @@ def _create_initial_timetable_generation(population_size=25):
 
 		# NOTE: heapq sorts ascendingly.
 		heapq.heappush(solutions, (timetable_cost, id(timetable), timetable,))
+
+	for solution in solutions:
+		print("------------------------------------------------------------")
+		timetable = solution[2]
+		for c in timetable.classes:
+			print(list(c.timeslots))
 
 	return solutions
 
