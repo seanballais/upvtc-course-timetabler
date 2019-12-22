@@ -72,6 +72,13 @@ def _create_initial_timetable_generation(population_size=25):
 		# NOTE: heapq sorts ascendingly.
 		heapq.heappush(solutions, (timetable_cost, id(timetable), timetable,))
 
+	if settings.DEBUG:
+		for solution in solutions:
+			app_logger.debug('-' * 60)
+			timetable = solution[2]
+			for c in timetable.classes:
+				app_logger.debug(c.get_timeslots())
+
 	return solutions
 
 
@@ -93,6 +100,13 @@ def _create_new_timetable_generation(parent1,
 		# NOTE: heapq sorts ascendingly.
 		heapq.heappush(
 			new_solutions, (timetable_cost, id(timetable), timetable,))
+
+	if settings.DEBUG:
+		for solution in new_solutions:
+			app_logger.debug('-' * 60)
+			timetable = solution[2]
+			for c in timetable.classes:
+				app_logger.debug(c.get_timeslots())
 
 	return new_solutions
 
