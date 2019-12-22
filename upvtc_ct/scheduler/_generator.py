@@ -3,6 +3,8 @@ import heapq
 import random
 import logging
 
+from upvtc_ct import settings
+
 from ._cost_computation import _compute_timetable_cost
 from ._ds import _Timetable
 from ._utils import (
@@ -29,17 +31,9 @@ def _create_initial_timetable():
 		3)
 
 	for subject_class, conflicting_classes in class_conflicts.items():
-		# !!! TODO !!!
-		# All instances of a class share the same timeslots. We must make so
-		# that each instance has their own unique timeslot. If we don't fix
-		# this problem, we're effectively only having one unique offspring per
-		# generation. AAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.
-		print(list(subject_class.timeslots))
 		# We need to copy subject_class since we don't want different
 		# timetables to share the same instance of a class.
 		subject_class = copy.deepcopy(subject_class)
-
-		subject_class.timeslots.clear()
 
 		timeslot_indexes = None
 		if subject_class.subject.num_required_timeslots == 2:
@@ -72,14 +66,11 @@ def _create_initial_timetable_generation(population_size=25):
 		timetable = _create_initial_timetable()
 		timetable_cost = _compute_timetable_cost(timetable)
 
+		app_logger.info(
+			f'- Candidate timetable #{i + 1} has cost: {timetable_cost}')
+
 		# NOTE: heapq sorts ascendingly.
 		heapq.heappush(solutions, (timetable_cost, id(timetable), timetable,))
-
-	for solution in solutions:
-		print("------------------------------------------------------------")
-		timetable = solution[2]
-		for c in timetable.classes:
-			print(list(c.timeslots))
 
 	return solutions
 
@@ -95,6 +86,9 @@ def _create_new_timetable_generation(parent1,
 		timetable = _create_offspring_timetable(
 			parent1, parent2, mutation_chance)
 		timetable_cost = _compute_timetable_cost(timetable)
+
+		app_logger.info(
+			f'- Candidate timetable #{i + 1} has cost: {timetable_cost}')
 
 		# NOTE: heapq sorts ascendingly.
 		heapq.heappush(

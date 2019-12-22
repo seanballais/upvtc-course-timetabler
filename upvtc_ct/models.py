@@ -1,6 +1,7 @@
 import datetime
 import logging
 
+from playhouse.signals import Model, post_save
 import peewee
 
 from upvtc_ct import settings, utils
@@ -54,7 +55,7 @@ def setup_models():
 				day=day)
 
 
-class Base(peewee.Model):
+class Base(Model):
 	date_created = peewee.DateTimeField(
 		default=utils.current_datetime,
 		null=False,
@@ -301,8 +302,29 @@ class Class(Base):
 			(( 'capacity', ), False),
 		)
 
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		self._timeslots = list()
+
 	def __str__(self):
 		return f'{self.subject} (ID: {self.id})'
+
+	def add_timeslot(self, timeslot):
+		self._timeslots.append(timeslot)
+
+	def clear_timeslots(self):
+		self._timeslots.clear()
+		self.timeslots.clear()
+
+	def get_timeslots(self):
+		return self._timeslots
+
+
+@post_save(sender=Class)
+def on_save_class_handler(model_class, instance, created):
+	for timeslot in instance.get_timeslots():
+		instance.timeslots.add(timeslot)
 
 
 class ClassTimeSlot(Base):

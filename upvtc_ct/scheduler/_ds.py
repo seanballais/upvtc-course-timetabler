@@ -102,7 +102,7 @@ class _Timetable():
 
 		del self._class_timeslots[subject_class]
 
-		subject_class.timeslots.clear()
+		subject_class.clear_timeslots()
 
 		# Now, change the timeslot of the class.
 		if new_starting_timeslot_idx >= 48:
@@ -162,5 +162,5 @@ class _Timetable():
 
 		self._class_timeslots[subject_class].append(timeslot)
 
-		subject_class.timeslots.add(timeslot)
+		subject_class.add_timeslot(timeslot)
 		subject_class.room = room

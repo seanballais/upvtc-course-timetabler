@@ -20,8 +20,7 @@ def main():
 		peewee_logger.propagate = False
 
 	app_logger = logging.getLogger()
-	log_level = (logging.DEBUG if bool(int(os.getenv('UPVTC_CT_DEBUG', 0)))
-							   else logging.INFO)
+	log_level = logging.DEBUG if settings.DEBUG else logging.INFO
 	log_formatter = logging.Formatter(
 		'%(asctime)s | [%(levelname)s] %(message)s')
 	app_logger.setLevel(log_level)
@@ -80,6 +79,9 @@ def main():
 	log_file_handler = logging.FileHandler(settings.LOG_FILE)
 	log_file_handler.setFormatter(log_formatter)
 	app_logger.addHandler(log_file_handler)
+
+	app_logger.info(
+		f'Started in {"debug" if settings.DEBUG else "production"} mode.')
 
 	# Make sure we already have the database file.
 	if not os.path.isfile(settings.DB_FILE):

@@ -32,28 +32,35 @@ def create_schedule(population_size=25,
 
 	# Start the genetic algorithm.
 	for i in range(num_generations):
-		app_logger.info(f'|| Creating Generation #{i + 1}...')
+		app_logger.info(f'Creating Generation {i + 1}/{num_generations}...')
 		if i == 0:
 			# First generation of solutions, so we generate randomly.
 			solutions = _create_initial_timetable_generation(population_size)
-			continue
-		
-		parent1_cost, _, parent1 = heapq.heappop(solutions)
-		parent2_cost, _, parent2 = heapq.heappop(solutions)
+		else:
+			parent1_cost, _, parent1 = heapq.heappop(solutions)
+			parent2_cost, _, parent2 = heapq.heappop(solutions)
 
-		if parent1_cost == 0:
-			# Stop the GA when we have found a solution that has a cost of 0.
+			if parent1_cost == 0:
+				# Stop the GA when we have found a solution that has a cost of
+				# 0.
+				heapq.heappush(
+					solutions, (parent1_cost, id(parent1), parent1,))
+				break
+
+			app_logger.info(
+				f'Selected parents with costs, {parent1_cost}'
+				f' and {parent2_cost}.')
+
+			solutions = _create_new_timetable_generation(
+				parent1, parent2, population_size - 1, mutation_chance)
+
+			# Keep the best solution from the previous generation.
 			heapq.heappush(solutions, (parent1_cost, id(parent1), parent1,))
-			break
 
-		app_logger.debug(
-			f'Selected parents with costs, {parent1_cost} and {parent2_cost}.')
+		best_generation_solution = heapq.heappop(solutions)
+		best_cost = best_generation_solution[0]
 
-		solutions = _create_new_timetable_generation(
-			parent1, parent2, population_size - 1, mutation_chance)
-
-		# Keep the best solution from the previous generation.
-		heapq.heappush(solutions, (parent1_cost, id(parent1), parent1,))
+		app_logger.info(f'Generation #{i + 1} Best Cost: {best_cost}')
 
 	# Permanently apply the assignments of the timetable with the best cost
 	# to the database.
