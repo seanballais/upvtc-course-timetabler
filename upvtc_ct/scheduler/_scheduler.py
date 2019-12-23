@@ -40,13 +40,6 @@ def create_schedule(population_size=25,
 			parent1_cost, _, parent1 = heapq.heappop(solutions)
 			parent2_cost, _, parent2 = heapq.heappop(solutions)
 
-			if parent1_cost == 0:
-				# Stop the GA when we have found a solution that has a cost of
-				# 0.
-				heapq.heappush(
-					solutions, (parent1_cost, id(parent1), parent1,))
-				break
-
 			app_logger.info(
 				f'Selected parents with costs, {parent1_cost}'
 				f' and {parent2_cost}.')
@@ -57,16 +50,16 @@ def create_schedule(population_size=25,
 			# Keep the best solution from the previous generation.
 			heapq.heappush(solutions, (parent1_cost, id(parent1), parent1,))
 
-		best_generation_solution = heapq.heappop(solutions)
-		best_cost = best_generation_solution[0]
-
+		best_cost, _, best_timetable = solutions[0]
 		app_logger.info(f'Generation #{i + 1} Best Cost: {best_cost}')
+
+		if best_cost == 0:
+			# Stop the GA when we have found a solution that has a cost of
+			# 0.
+			break
 
 	# Permanently apply the assignments of the timetable with the best cost
 	# to the database.
-	best_solution = heapq.heappop(solutions)
-	best_cost = best_solution[0]
-	best_timetable = best_solution[2]
 	for c in best_timetable.classes:
 		c.save()
 
