@@ -5,7 +5,8 @@ import sys
 from PyQt5 import QtWidgets
 import docopt
 
-from upvtc_ct import __version__, gui, models, scheduler, settings
+from upvtc_ct import (
+	__version__, gui, models, scheduler, settings, class_autogenerator)
 
 
 def main():
@@ -35,12 +36,14 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct [--no-gui] [--reset-teacher-assignments] '
-		 '[--assign-teachers-to-classes] [--view-text-form-class-conflicts] '
+		 '  upvtc_ct [--no-gui] [--clear-db | --nuke-db] '
+		 '[--reset-teacher-assignments] [--assign-teachers-to-classes] '
 		 '[--reset-schedule]\n'
+		 '           [--view-text-form-class-conflicts] '
 		 '           [--schedule [--population-size=<ps> '
-		 '--num-generations=<ng> --mutation-chance=<mc>]]'
+		 '--num-generations=<ng> --mutation-chance=<mc>]]\n'
 		 ' [--view-text-form-schedule]\n'
+		 '  upvtc_ct --autogenerate-data --num-divisions=<nd>\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -48,10 +51,12 @@ def main():
 		 '  -h --help                         Show this help text.\n'
 		 '  --version                         Show version.\n'
 		 '  --no-gui                          Run without a GUI.\n'
+		 '  --nuke-db                         Clears the database.\n'
 		 '  --reset-teacher-assignments       Reset the class assignments of '
 		 'teachers.\n'
 		 '  --assign-teachers-to-classes      Assign teachers to classes '
 		 'before performing any further actions.\n'
+		 '  --reset-schedule                  Resets the schedule.\n'
 		 '  --view-text-form-class-conflicts  Show the classes that conflict '
 		 'or share students for each class.\n'
 		 '  --schedule                        Create a schedule.\n'
@@ -61,8 +66,12 @@ def main():
 		 'to generate [default: 10].\n'
 		 '  --mutation-chance=<mc>            Sets the mutation chance of '
 		 'offsprings in each generation [default: 0.2].\n'
-		 '  --reset-schedule                  Resets the schedule.\n'
-		 '  --view-text-form-schedule         View the schedule in text form.')
+		 '  --view-text-form-schedule         View the schedule in text '
+		 'form.\n'
+		 '  --autogenerate-data               Autogenerate random timetable '
+		 'data. The GUI is disabled when this is invoked.\n'
+		 '  --num-divisions=<nd>              Number of divisions to '
+		 'autogenerate.')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -99,17 +108,20 @@ def main():
 
 	# We got everything setup so we can start the application proper based on
 	# the passed arguments.
+	if arguments['--nuke-db']:
+		models.nuke_db()
+
 	if arguments['--reset-teacher-assignments']:
 		scheduler.reset_teacher_assignments()
 
 	if arguments['--assign-teachers-to-classes']:
 		scheduler.assign_teachers_to_classes()
 
-	if arguments['--view-text-form-class-conflicts']:
-		scheduler.view_text_form_class_conflicts()
-
 	if arguments['--reset-schedule']:
 		scheduler.reset_schedule()
+
+	if arguments['--view-text-form-class-conflicts']:
+		scheduler.view_text_form_class_conflicts()
 
 	if arguments['--schedule']:
 		scheduler.create_schedule(
@@ -119,6 +131,12 @@ def main():
 
 	if arguments['--view-text-form-schedule']:
 		scheduler.view_text_form_schedule()
+
+	if arguments['--autogenerate-data']:
+		class_autogenerator.autogenerate_data(
+			int(arguments['--num-divisions']))
+
+		arguments['--no-gui'] = True  # Disable the GUI.
 
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])

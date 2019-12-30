@@ -55,6 +55,31 @@ def setup_models():
 				day=day)
 
 
+def nuke_db():
+	app_logger.info('Nuking contents of the database away...')
+
+	delete_queries = [
+		Division.delete(),
+		Course.delete(),
+		Room.delete(),
+		Room.features.get_through_model().delete(),
+		RoomFeature.delete(),
+		TimeSlot.delete(),
+		Teacher.unpreferred_timeslots.get_through_model().delete(),
+		Teacher.delete(),
+		Subject.required_features.get_through_model().delete(),
+		Subject.candidate_teachers.get_through_model().delete(),
+		Subject.delete(),
+		Class.timeslots.get_through_model().delete(),
+		Class.delete(),
+		StudyPlan.subjects.get_through_model().delete(),
+		StudyPlan.delete()
+	]
+	for query in delete_queries:
+		app_logger.debug(f'- Running delete query: {query}')
+		db.execute(query)
+
+
 class Base(Model):
 	date_created = peewee.DateTimeField(
 		default=utils.current_datetime,
