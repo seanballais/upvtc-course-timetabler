@@ -36,14 +36,12 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct [--no-gui] [--clear-db | --nuke-db] '
-		 '[--reset-teacher-assignments] [--assign-teachers-to-classes] '
-		 '[--reset-schedule]\n'
-		 '           [--view-text-form-class-conflicts] '
-		 '           [--schedule [--population-size=<ps> '
+		 '  upvtc_ct [--no-gui] [--nuke-db] [--autogenerate-data] '
+		 '[--reset-teacher-assignments] [--assign-teachers-to-classes]\n'
+		 '           [--reset-schedule] [--view-text-form-class-conflicts] '
+		 '[--schedule [--population-size=<ps> '
 		 '--num-generations=<ng> --mutation-chance=<mc>]]\n'
-		 ' [--view-text-form-schedule]\n'
-		 '  upvtc_ct --autogenerate-data --num-divisions=<nd>\n'
+		 '           [--view-text-form-schedule]\n'
 		 '  upvtc_ct (-h | --help)\n'
 		 '  upvtc_ct --version\n'
 		 '\n'
@@ -69,9 +67,7 @@ def main():
 		 '  --view-text-form-schedule         View the schedule in text '
 		 'form.\n'
 		 '  --autogenerate-data               Autogenerate random timetable '
-		 'data. The GUI is disabled when this is invoked.\n'
-		 '  --num-divisions=<nd>              Number of divisions to '
-		 'autogenerate.')
+		 'data. The GUI is disabled when this is invoked.\n')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -111,6 +107,9 @@ def main():
 	if arguments['--nuke-db']:
 		models.nuke_db()
 
+	if arguments['--autogenerate-data']:
+		class_autogenerator.autogenerate_data()
+
 	if arguments['--reset-teacher-assignments']:
 		scheduler.reset_teacher_assignments()
 
@@ -131,12 +130,6 @@ def main():
 
 	if arguments['--view-text-form-schedule']:
 		scheduler.view_text_form_schedule()
-
-	if arguments['--autogenerate-data']:
-		class_autogenerator.autogenerate_data(
-			int(arguments['--num-divisions']))
-
-		arguments['--no-gui'] = True  # Disable the GUI.
 
 	if not arguments['--no-gui']:
 		app_gui = QtWidgets.QApplication([])

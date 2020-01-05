@@ -76,7 +76,7 @@ def nuke_db():
 		StudyPlan.delete()
 	]
 	for query in delete_queries:
-		app_logger.debug(f'- Running delete query: {query}')
+		app_logger.debug(f'- Running delete query: {query}...')
 		db.execute(query)
 
 
