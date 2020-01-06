@@ -38,13 +38,16 @@ def autogenerate_data():
 		"Division of Management": {
 			"courses": [ 'BS Accountancy', 'BS Management' ],
 			"rooms": [
-
+				'DM Room 11', 'DM Room 12', 'DM Room 13', 'DM Room 14',
+				'DM Room 15', 'DM Room 21', 'DM Room 22', 'DM Room 23',
+				'DM Conference Room 1', 'DM Conference Room 2'
 			]
 		},
 		"Division of Humanities": {
 			"courses": [ 'BA Communication Arts' ],
 			"rooms": [
-				'Room 13', 'Room 24', 'Room 25', 'Humanities Lab', 'MPB'
+				'Room 13', 'Room 24', 'Room 25', 'Humanities Lab', 'MPB',
+				'DM Room 1', 'DM Room 2', 'DM Room 3'
 			]
 		}
 	}
@@ -74,6 +77,7 @@ def autogenerate_data():
 			room = models.Room()
 			room.name = room_name
 			room.division = division
+			room.save()
 
 			# Add some features to rooms, so that it would match the real
 			# world.
@@ -91,7 +95,7 @@ def autogenerate_data():
 
 	# Add features to Room 12.
 	room_12_feature = room_features['Air Conditioner']
-	room_12 = models.Room.select().where(models.Room.name == 'Room 12')
+	room_12 = models.Room.select().where(models.Room.name == 'Room 12').get()
 
 	app_logger.debug(
 		f'- Adding feature {str(room_12_feature)} to {str(room_12)}...')
@@ -104,7 +108,10 @@ def autogenerate_data():
 	
 	app_logger.debug(f'- Adding feature {str(cs_lab_feature)} to CS labs...')
 
-	cs_labs = models.Room.select().where('CS Lab' in models.Room.name)
+	cs_labs = (models.Room
+				.select()
+				.where('CS Lab' in models.Room.name)
+				.execute())
 	for lab in cs_labs:
 		app_logger.debug(f'-- Adding feature to lab {str(lab)}...')
 
@@ -114,14 +121,22 @@ def autogenerate_data():
 	# Add features to BS Biology labs.
 	app_logger.debug(f'- Adding lab features to BS Biology labs...')
 
-	physics_lab = models.Room.select().where(models.Room.name == 'Physics Lab')
-	botany_lab = models.Room.select().where(models.Room.name == 'Botany Lab')
+	physics_lab = (models.Room
+					.select()
+					.where(models.Room.name == 'Physics Lab')
+					.get())
+	botany_lab = (models.Room
+					.select()
+					.where(models.Room.name == 'Botany Lab')
+					.get())
 	zoology_lab = (models.Room
 					.select()
-					.where(models.Room.name == 'Zoology Lab'))
+					.where(models.Room.name == 'Zoology Lab')
+					.get())
 	chemistry_lab = (models.Room
 						.select()
-						.where(models.Room.name == 'Chemistry Lab'))
+						.where(models.Room.name == 'Chemistry Lab')
+						.get())
 	bio_labs = {
 		"Physics Lab": physics_lab,
 		"Botany Lab": botany_lab,
@@ -142,7 +157,7 @@ def autogenerate_data():
 
 	mpb_feature = room_features['Wide Space']
 
-	mpb = models.Room.select().where(models.Room.name == 'MPB')
+	mpb = models.Room.select().where(models.Room.name == 'MPB').get()
 	
 	app_logger.debug(f'-- Adding feature {str(mpb_feature)} to {str(mpb)}...')
 
@@ -161,6 +176,7 @@ def _autogenerate_room_features():
 		'Chemistry Lab Equipment',
 		'Physics Lab Equipment',
 		'Botany Lab Equipment',
+		'Zoology Lab Equipment',
 		'Computers',
 		'Projector',
 		'Wide Space'
