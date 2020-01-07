@@ -222,6 +222,11 @@ class Teacher(Base):
 		default=None,
 		unique=False,
 		null=True)
+	division = peewee.ForeignKeyField(
+		Division,
+		backref='teachers',
+		on_delete='CASCADE',
+		on_update='CASCADE')
 	# TODO: Maybe use a custom through model so that the table name of said
 	#       model accurately represents the contents it is holding.
 	unpreferred_timeslots = peewee.ManyToManyField(
@@ -229,6 +234,7 @@ class Teacher(Base):
 		backref='unpreferring_teachers',
 		on_delete='CASCADE',
 		on_update='CASCADE')
+
 
 	class Meta:
 		indexes = (

@@ -12,7 +12,9 @@ def autogenerate_data():
 	app_logger.info('Generating timetable data...')
 
 	app_logger.debug(':: Generating room features data...')
-	room_features = _autogenerate_room_features()
+
+	_autogenerate_room_features()
+	room_features = _get_room_features()
 
 	app_logger.debug(':: Generating division-related data...')
 
@@ -93,6 +95,44 @@ def autogenerate_data():
 	# Add features to specific rooms.
 	app_logger.debug(':: Adding features to specific rooms...')
 
+	_add_features_to_specific_rooms()
+
+	# Autogenerate teachers.
+	# Autogenerate subjects.
+	# Autogenerate study plans.
+	# Autogenerate classes.
+
+
+def _autogenerate_room_features():
+	features = [
+		'Air Conditioner',
+		'Chemistry Lab Equipment',
+		'Physics Lab Equipment',
+		'Botany Lab Equipment',
+		'Zoology Lab Equipment',
+		'Computers',
+		'Projector',
+		'Wide Space'
+	]
+	for feature in features:
+		app_logger.debug(f'- Generating room feature, {feature}.')
+
+		room_feature = models.RoomFeature()
+		room_feature.name = feature
+		room_feature.save()
+
+
+def _get_room_features():
+	room_features = dict()
+	for feature in models.RoomFeature.select().execute():
+		room_features[feature.name] = feature
+
+	return room_features
+
+
+def _add_features_to_specific_rooms():
+	room_features = _get_room_features()
+
 	# Add features to Room 12.
 	room_12_feature = room_features['Air Conditioner']
 	room_12 = models.Room.select().where(models.Room.name == 'Room 12').get()
@@ -163,32 +203,3 @@ def autogenerate_data():
 
 	mpb.features.add(mpb_feature)
 	mpb.save()
-
-	# Autogenerate teachers.
-	# Autogenerate subjects.
-	# Autogenerate study plans.
-	# Autogenerate classes.
-
-
-def _autogenerate_room_features():
-	features = [
-		'Air Conditioner',
-		'Chemistry Lab Equipment',
-		'Physics Lab Equipment',
-		'Botany Lab Equipment',
-		'Zoology Lab Equipment',
-		'Computers',
-		'Projector',
-		'Wide Space'
-	]
-	feature_objects = dict()
-	for feature in features:
-		app_logger.debug(f'- Generating room feature, {feature}.')
-
-		room_feature = models.RoomFeature()
-		room_feature.name = feature
-		room_feature.save()
-
-		feature_objects[feature] = room_feature
-
-	return feature_objects
