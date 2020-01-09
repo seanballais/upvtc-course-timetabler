@@ -1,6 +1,9 @@
 import logging
 import random
 import string
+import threading
+
+import requests
 
 from upvtc_ct import models
 
@@ -10,6 +13,18 @@ app_logger = logging.getLogger()
 
 def autogenerate_data():
 	app_logger.info('Generating timetable data...')
+
+	# Asynchronously generate teachers names that we will be using when
+	# creating teachers.
+	app_logger.debug(':: Asynchronously generating teacher names...')
+
+	teacher_names = list()
+	num_names = 32
+	num_name_generator_threads = 2
+	name_generator_thread = threading.Thread(
+		target=_get_random_names,
+		args=(teacher_names, num_names, num_name_generator_threads))
+	name_generator_thread.start()
 
 	app_logger.debug(':: Generating room features data...')
 
@@ -98,9 +113,42 @@ def autogenerate_data():
 	_add_features_to_specific_rooms()
 
 	# Autogenerate teachers.
+
+	# Make sure we have generated all teacher names already.
+	name_generator_thread.join()
+	print(teacher_names)
+
 	# Autogenerate subjects.
 	# Autogenerate study plans.
 	# Autogenerate classes.
+
+
+def _get_random_names(names, num_names, num_threads=2):
+	def _get_random_name(names, num_names):
+		for _ in range(num_names):
+			r = requests.get('https://api.namefake.com')
+			name = r.json()['name']
+			names.append(name)
+
+	# Split the task of generating names among threads equally.
+	num_names_per_thread = num_names // num_threads
+	num_remaining_names = num_names % num_threads
+
+	threads = list()
+	for i in range(num_threads):
+		num_names = num_names_per_thread
+		if i == (num_threads - 1) and num_remaining_names > 0:
+			# There are more names that needs creating than we can split among
+			# threads equally. Let the last thread create those remaining
+			# names.
+			num_names += num_remaining_names
+
+		t = threading.Thread(target=_get_random_name, args=(names, num_names,))
+		threads.append(t)
+		t.start()
+
+	for thread in threads:
+		thread.join()
 
 
 def _autogenerate_room_features():
