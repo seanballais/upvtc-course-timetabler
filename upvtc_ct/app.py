@@ -6,7 +6,7 @@ from PyQt5 import QtWidgets
 import docopt
 
 from upvtc_ct import (
-	__version__, gui, models, scheduler, settings, class_autogenerator)
+	__version__, gui, models, scheduler, settings, data_autogenerator)
 
 
 def main():
@@ -36,7 +36,8 @@ def main():
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
 		 '\n'
 		 'Usage:\n'
-		 '  upvtc_ct [--no-gui] [--nuke-db] [--autogenerate-data] '
+		 '  upvtc_ct [--no-gui] [--nuke-db] [--autogenerate-names] '
+		 '[--autogenerate-data] '
 		 '[--reset-teacher-assignments] [--assign-teachers-to-classes]\n'
 		 '           [--reset-schedule] [--view-text-form-class-conflicts] '
 		 '[--schedule [--population-size=<ps> '
@@ -67,7 +68,9 @@ def main():
 		 '  --view-text-form-schedule         View the schedule in text '
 		 'form.\n'
 		 '  --autogenerate-data               Autogenerate random timetable '
-		 'data. The GUI is disabled when this is invoked.\n')
+		 'data. The GUI is disabled when this is invoked.\n'
+		 '  --autogenerate-names              Autogenerate names to be used '
+		 'for creating teachers.')
 	arguments = docopt.docopt(doc_string, version=__version__)
 
 	# Make sure we have an application folder already. We store our database
@@ -107,8 +110,11 @@ def main():
 	if arguments['--nuke-db']:
 		models.nuke_db()
 
+	if arguments['--autogenerate-names']:
+		data_autogenerator.autogenerate_names()
+
 	if arguments['--autogenerate-data']:
-		class_autogenerator.autogenerate_data()
+		data_autogenerator.autogenerate_data()
 
 	if arguments['--reset-teacher-assignments']:
 		scheduler.reset_teacher_assignments()

@@ -5,5 +5,6 @@ import os
 APP_DATA_DIR = os.path.expanduser('~/.upvtc_ct/')
 LOG_FILE = os.path.join(APP_DATA_DIR, 'app.log')
 DB_FILE = os.path.join(APP_DATA_DIR, 'app.db')
+NAMES_FILE = os.path.join(APP_DATA_DIR, 'names.txt')
 
 DEBUG = bool(int(os.getenv('UPVTC_CT_DEBUG', 0)))

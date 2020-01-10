@@ -5,7 +5,7 @@ import threading
 
 import requests
 
-from upvtc_ct import models
+from upvtc_ct import models, settings
 
 
 app_logger = logging.getLogger()
@@ -13,25 +13,6 @@ app_logger = logging.getLogger()
 
 def autogenerate_data():
 	app_logger.info('Generating timetable data...')
-
-	# Asynchronously generate teachers names that we will be using when
-	# creating teachers.
-	app_logger.debug(':: Asynchronously generating teacher names...')
-
-	teacher_names = list()
-	num_names = 32
-	num_name_generator_threads = 2
-	name_generator_thread = threading.Thread(
-		target=_get_random_names,
-		args=(teacher_names, num_names, num_name_generator_threads))
-	name_generator_thread.start()
-
-	app_logger.debug(':: Generating room features data...')
-
-	_autogenerate_room_features()
-	room_features = _get_room_features()
-
-	app_logger.debug(':: Generating division-related data...')
 
 	division_data = {
 		"Division of Natural Sciences and Mathematics": {
@@ -42,6 +23,7 @@ def autogenerate_data():
 				'CS Lec Room 1', 'CS Lec Room 2', 'CS Lab 1', 'CS Lab 2',
 				'CS Lab 3'
 			],
+			"num_teachers": 20,
 		},
 		"Division of Social Sciences": {
 			"courses": [
@@ -50,7 +32,8 @@ def autogenerate_data():
 			"rooms": [
 				'Room 14', 'Room 21', 'Room 22', 'Room 23',
 				'Psych Room', 'Psych Lab'
-			]
+			],
+			"num_teachers": 16,
 		},
 		"Division of Management": {
 			"courses": [ 'BS Accountancy', 'BS Management' ],
@@ -58,16 +41,26 @@ def autogenerate_data():
 				'DM Room 11', 'DM Room 12', 'DM Room 13', 'DM Room 14',
 				'DM Room 15', 'DM Room 21', 'DM Room 22', 'DM Room 23',
 				'DM Conference Room 1', 'DM Conference Room 2'
-			]
+			],
+			"num_teachers": 15,
 		},
 		"Division of Humanities": {
 			"courses": [ 'BA Communication Arts' ],
 			"rooms": [
 				'Room 13', 'Room 24', 'Room 25', 'Humanities Lab', 'MPB',
 				'DM Room 1', 'DM Room 2', 'DM Room 3'
-			]
+			],
+			"num_teachers": 20,
 		}
 	}
+
+	app_logger.debug(':: Generating room features data...')
+
+	_autogenerate_room_features()
+	room_features = _get_room_features()
+
+	app_logger.debug(':: Generating division-related data...')
+
 	for division_name, data in division_data.items():
 		app_logger.debug(f'- Generating division, {division_name}...')
 		division = models.Division()
@@ -113,42 +106,13 @@ def autogenerate_data():
 	_add_features_to_specific_rooms()
 
 	# Autogenerate teachers.
+	app_logger.debug(':: Generating teachers...')
 
-	# Make sure we have generated all teacher names already.
-	name_generator_thread.join()
-	print(teacher_names)
+	_autogenerate_teachers(division_data)
 
 	# Autogenerate subjects.
 	# Autogenerate study plans.
 	# Autogenerate classes.
-
-
-def _get_random_names(names, num_names, num_threads=2):
-	def _get_random_name(names, num_names):
-		for _ in range(num_names):
-			r = requests.get('https://api.namefake.com')
-			name = r.json()['name']
-			names.append(name)
-
-	# Split the task of generating names among threads equally.
-	num_names_per_thread = num_names // num_threads
-	num_remaining_names = num_names % num_threads
-
-	threads = list()
-	for i in range(num_threads):
-		num_names = num_names_per_thread
-		if i == (num_threads - 1) and num_remaining_names > 0:
-			# There are more names that needs creating than we can split among
-			# threads equally. Let the last thread create those remaining
-			# names.
-			num_names += num_remaining_names
-
-		t = threading.Thread(target=_get_random_name, args=(names, num_names,))
-		threads.append(t)
-		t.start()
-
-	for thread in threads:
-		thread.join()
 
 
 def _autogenerate_room_features():
@@ -251,3 +215,37 @@ def _add_features_to_specific_rooms():
 
 	mpb.features.add(mpb_feature)
 	mpb.save()
+
+
+def _autogenerate_teachers(division_data):
+	with open(settings.NAMES_FILE) as f:
+		name_parts = f.read().split()
+
+	names = set()
+	for division_name, data in division_data.items():
+		app_logger.debug(f'- Generating teachers for {division_name}...')
+
+		division = (models.Division
+					.select()
+					.where(models.Division.name == division_name)
+					.get())
+
+		for _ in range(data['num_teachers']):
+			while True:
+				first_name = random.choice(name_parts)
+				last_name = random.choice(name_parts)
+				teacher_name = f'{first_name} {last_name}'
+
+				if teacher_name in names:
+					continue
+
+				break
+
+			app_logger.debug(f'-- Generating teacher, {teacher_name}...')
+
+			teacher = models.Teacher()
+			teacher.first_name = first_name
+			teacher.last_name = last_name
+			teacher.division = division
+			# TODO: Add unpreferred timeslots.
+			teacher.save()
