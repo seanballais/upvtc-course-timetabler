@@ -108,10 +108,44 @@ def autogenerate_data():
 	# Autogenerate teachers.
 	app_logger.debug(':: Generating teachers...')
 
-	_autogenerate_teachers(division_data)
+	teachers = _autogenerate_teachers(division_data)
 
-	# Autogenerate subjects.
+	# Autogenerate GE subjects.
+	num_ges_created = 0
+	ges = dict()
+	for division in models.Division.select().execute():
+		ges[division.name] = list()
+		num_ge_subjects = random.randint(4, 7)
+		for _ in range(num_ge_subjects):
+			ge_subject = models.Subject()
+			ge_subject.name = f'GE {num_ges_created}- {str(division)}'
+			ge_subject.units = 3.0
+			ge_subject.division = division
+
+			# Select a random number of teachers capable of teaching the
+			# subject currently being generated.
+			for _ in range(random.randint(3, 7)):
+				possible_teacher = random.choice(teachers[division.name])
+				ge_subject.candidate_teachers.add(possible_teacher)
+
+			# Add that the GE subjects require a projector for now.
+			ge_subject.required_features.add(room_features['Projector'])
+
+			ge_subject.save()
+
+			ges[division.name].append(ge_subject)
+
+			num_ges_created += 1
+
 	# Autogenerate study plans.
+	for course in models.Course.select().execute():
+		for year_level in range(1, 5):
+			# Assume for now that all courses have four year levels.
+			study_plan = models.StudyPlan()
+			study_plan.course = course
+			study_plan.year_level = year_level
+			study_plan.num_followers = random.randint(35, 75)
+	
 	# Autogenerate classes.
 
 
@@ -222,6 +256,7 @@ def _autogenerate_teachers(division_data):
 		name_parts = f.read().split()
 
 	names = set()
+	teachers = dict()
 	for division_name, data in division_data.items():
 		app_logger.debug(f'- Generating teachers for {division_name}...')
 
@@ -229,6 +264,8 @@ def _autogenerate_teachers(division_data):
 					.select()
 					.where(models.Division.name == division_name)
 					.get())
+
+		teachers[division_name] = list()
 
 		for _ in range(data['num_teachers']):
 			while True:
@@ -241,6 +278,8 @@ def _autogenerate_teachers(division_data):
 
 				break
 
+			names.add(teacher_name)
+
 			app_logger.debug(f'-- Generating teacher, {teacher_name}...')
 
 			teacher = models.Teacher()
@@ -249,3 +288,7 @@ def _autogenerate_teachers(division_data):
 			teacher.division = division
 			# TODO: Add unpreferred timeslots.
 			teacher.save()
+
+			teachers[division_name].append(teacher)
+
+	return teachers
