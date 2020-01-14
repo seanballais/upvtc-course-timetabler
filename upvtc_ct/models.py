@@ -286,6 +286,13 @@ class Subject(Base):
 	def __str__(self):
 		return str(self.name)
 
+	def give_random_candidate_teachers(self, teachers, min_num, max_num):
+		# Select a random number of teachers capable of teaching the
+		# subject currently being generated.
+		for _ in range(random.randint(min_num, max_num)):
+			possible_teacher = random.choice(teachers)
+			self.candidate_teachers.add(possible_teacher)
+
 
 # We have to use a deferred through model since we would have a circular
 # dependency between Class and ClassTimeSlot if we set the through model in

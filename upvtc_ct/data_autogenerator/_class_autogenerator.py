@@ -122,11 +122,8 @@ def autogenerate_data():
 			ge_subject.units = 3.0
 			ge_subject.division = division
 
-			# Select a random number of teachers capable of teaching the
-			# subject currently being generated.
-			for _ in range(random.randint(3, 7)):
-				possible_teacher = random.choice(teachers[division.name])
-				ge_subject.candidate_teachers.add(possible_teacher)
+			ge_subject.give_random_candidate_teachers(
+				teachers[division.name], 3, 7)
 
 			# Add that the GE subjects require a projector for now.
 			ge_subject.required_features.add(room_features['Projector'])
@@ -138,6 +135,7 @@ def autogenerate_data():
 			num_ges_created += 1
 
 	# Autogenerate study plans.
+	num_subjects_generated = 0
 	for course in models.Course.select().execute():
 		for year_level in range(1, 5):
 			# Assume for now that all courses have four year levels.
@@ -145,6 +143,42 @@ def autogenerate_data():
 			study_plan.course = course
 			study_plan.year_level = year_level
 			study_plan.num_followers = random.randint(35, 75)
+
+			# Generate subjects.
+			num_subjects_to_generate = random.randint(6, 8)
+			for _ in range(num_subjects_to_generate):
+				# TODO: Randomly designate a subject as a lecture subject or
+				#       a lab subject. Apply necessary values, such as
+				#       features, to the subject based on the designation.
+				subject = models.Subject()
+				subject.name = (
+					f'Subject {num_subjects_generated} '
+					f'- {str(course.division)}')
+				subject.units = 3.0
+				subject.division = course.division
+
+				subject.give_random_candidate_teachers(
+					teachers[subject.division.name], 3, 7)
+
+				# TODO: If this subject has been randomly selected as some
+				#       lab subject, then give it features that are required
+				#       for such a subject.
+				subject.required_features.add(room_features['Projector'])
+
+				subject.save()
+
+				study_plan.subjects.add(subject)
+
+				num_subjects_generated += 1
+
+			# Add random GEs.
+			num_ges_to_add = random.randint(3, 4):
+			for _ in range(num_ges_to_add):
+				selected_division = random.choice(ges.keys())
+				selected_ge = random.choice(selected_division)
+				study_plan.subjects.add(selected_ge)
+
+			study_plan.save()
 	
 	# Autogenerate classes.
 
