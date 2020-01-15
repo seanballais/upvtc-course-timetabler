@@ -1,5 +1,6 @@
 import datetime
 import logging
+import random
 
 from playhouse.signals import Model, post_save
 import peewee
@@ -289,8 +290,14 @@ class Subject(Base):
 	def give_random_candidate_teachers(self, teachers, min_num, max_num):
 		# Select a random number of teachers capable of teaching the
 		# subject currently being generated.
+		selected_teachers = set()
 		for _ in range(random.randint(min_num, max_num)):
-			possible_teacher = random.choice(teachers)
+			while True:
+				possible_teacher = random.choice(teachers)
+				if possible_teacher not in selected_teachers:
+					selected_teachers.add(possible_teacher)
+					break
+
 			self.candidate_teachers.add(possible_teacher)
 
 

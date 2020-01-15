@@ -110,6 +110,7 @@ def autogenerate_data():
 
 	teachers = _autogenerate_teachers(division_data)
 
+	# TODO: Add debug logs.
 	# Autogenerate GE subjects.
 	num_ges_created = 0
 	ges = dict()
@@ -121,6 +122,10 @@ def autogenerate_data():
 			ge_subject.name = f'GE {num_ges_created}- {str(division)}'
 			ge_subject.units = 3.0
 			ge_subject.division = division
+
+			# GE subject must be saved first before we are able to assign
+			# candidate teachers to it.
+			ge_subject.save()
 
 			ge_subject.give_random_candidate_teachers(
 				teachers[division.name], 3, 7)
@@ -144,26 +149,46 @@ def autogenerate_data():
 			study_plan.year_level = year_level
 			study_plan.num_followers = random.randint(35, 75)
 
+			# Study plan must be saved first before we are able to assign
+			# subjects to it.
+			study_plan.save()
+
 			# Generate subjects.
 			num_subjects_to_generate = random.randint(6, 8)
 			for _ in range(num_subjects_to_generate):
-				# TODO: Randomly designate a subject as a lecture subject or
-				#       a lab subject. Apply necessary values, such as
-				#       features, to the subject based on the designation.
+				subject_is_lab = True if random.random() < 0.1 else False
+
 				subject = models.Subject()
+				
 				subject.name = (
 					f'Subject {num_subjects_generated} '
 					f'- {str(course.division)}')
+				if subject_is_lab:
+					subject.name = f'(Lab) {subject.name}'
+
 				subject.units = 3.0
 				subject.division = course.division
+
+				# Subject must be saved first before we are able to assign
+				# candidate teachers to it.
+				subject.save()
 
 				subject.give_random_candidate_teachers(
 					teachers[subject.division.name], 3, 7)
 
-				# TODO: If this subject has been randomly selected as some
-				#       lab subject, then give it features that are required
-				#       for such a subject.
 				subject.required_features.add(room_features['Projector'])
+				if subject_is_lab:
+					lab_types = [
+						'Chemistry', 'Physics', 'Botany',
+						'Zoology', 'Computers'
+					]
+					lab_type = random.choice(lab_types)
+					if lab_type == 'Computers':
+						subject.required_features.add(
+							room_features['Computers'])
+					else:
+						subject.required_features.add(
+							room_features[f'{lab_type} Lab Equipment'])
 
 				subject.save()
 
@@ -172,10 +197,16 @@ def autogenerate_data():
 				num_subjects_generated += 1
 
 			# Add random GEs.
-			num_ges_to_add = random.randint(3, 4):
+			num_ges_to_add = random.randint(3, 4)
+			selected_ges = set()
 			for _ in range(num_ges_to_add):
-				selected_division = random.choice(ges.keys())
-				selected_ge = random.choice(selected_division)
+				selected_division = random.choice(list(ges.keys()))
+				while True:
+					selected_ge = random.choice(ges[selected_division])
+					if selected_ge not in selected_ges:
+						selected_ges.add(selected_ge)
+						break
+
 				study_plan.subjects.add(selected_ge)
 
 			study_plan.save()
