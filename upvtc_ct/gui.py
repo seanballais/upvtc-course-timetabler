@@ -550,7 +550,7 @@ class EditInformationWindow(QMainWindow):
 				'capacity',
 				'timeslots'
 			],
-			[ 'first_name', 'last_name', 'unpreferred_timeslots' ],
+			[ 'first_name', 'last_name', 'division', 'unpreferred_timeslots' ],
 			[ 'name', 'division', 'features' ],
 			[ 'name' ]
 		]

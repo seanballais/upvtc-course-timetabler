@@ -1,4 +1,5 @@
 import logging
+import math
 import random
 import string
 import threading
@@ -61,6 +62,66 @@ def autogenerate_data():
 
 	app_logger.debug(':: Generating division-related data...')
 
+	_autogenerate_division_related_data(division_data, room_features)
+
+	# Add features to specific rooms.
+	app_logger.debug(':: Adding features to specific rooms...')
+
+	_add_features_to_specific_rooms()
+
+	# Autogenerate teachers.
+	app_logger.debug(':: Generating teachers...')
+
+	teachers = _autogenerate_teachers(division_data)
+
+	# Autogenerate GE subjects.
+	app_logger.debug(':: Generating GE Subjects...')
+
+	ges = _autogenerate_ge_subjects(teachers, room_features)
+
+	# Autogenerate study plans.
+	app_logger.debug(':: Generating Study Plans...')
+
+	num_subject_enrollees = _autogenerate_study_plans(
+		teachers, room_features, ges)
+	
+	# Autogenerate classes.
+	app_logger.debug(':: Generating classes for each subject...')
+	
+	_autogenerate_classes(num_subject_enrollees)
+
+	app_logger.info(
+		'Finished generating timetable data. Have a great day! 🙂')
+
+
+def _autogenerate_room_features():
+	features = [
+		'Air Conditioner',
+		'Chemistry Lab Equipment',
+		'Physics Lab Equipment',
+		'Botany Lab Equipment',
+		'Zoology Lab Equipment',
+		'Computers',
+		'Projector',
+		'Wide Space'
+	]
+	for feature in features:
+		app_logger.debug(f'- Generating room feature, {feature}.')
+
+		room_feature = models.RoomFeature()
+		room_feature.name = feature
+		room_feature.save()
+
+
+def _get_room_features():
+	room_features = dict()
+	for feature in models.RoomFeature.select().execute():
+		room_features[feature.name] = feature
+
+	return room_features
+
+
+def _autogenerate_division_related_data(division_data, room_features):
 	for division_name, data in division_data.items():
 		app_logger.debug(f'- Generating division, {division_name}...')
 		division = models.Division()
@@ -100,40 +161,63 @@ def autogenerate_data():
 
 				room.features.add(feature)
 
-	# Add features to specific rooms.
-	app_logger.debug(':: Adding features to specific rooms...')
 
-	_add_features_to_specific_rooms()
+def _add_features_to_specific_rooms():
+	room_features = _get_room_features()
 
-	# Autogenerate teachers.
-	app_logger.debug(':: Generating teachers...')
+	# Add features to Room 12.
+	_add_features_to_room_12(room_features)
 
-	teachers = _autogenerate_teachers(division_data)
+	# Add features to CS labs.
+	_add_features_to_cs_labs(room_features)
 
-	# Autogenerate GE subjects.
-	app_logger.debug(':: Generating GE Subjects...')
+	# Add features to BS Biology labs.
+	app_logger.debug(f'- Adding lab features to BS Biology labs...')
 
+	_add_features_to_bs_bio_labs(room_features)
+
+	# Add features to the MPB.
+	app_logger.debug(f'- Adding features to the MPB...')
+
+	_add_features_to_the_mpb(room_features)
+
+
+def _autogenerate_teachers(division_data):
+	with open(settings.NAMES_FILE) as f:
+		name_parts = f.read().split()
+
+	names = set()
+	teachers = dict()
+	for division_name, data in division_data.items():
+		app_logger.debug(f'- Generating teachers for {division_name}...')
+
+		division = (models.Division
+					.select()
+					.where(models.Division.name == division_name)
+					.get())
+
+		teachers[division_name] = list()
+
+		for _ in range(data['num_teachers']):
+			teacher = _generate_teacher_object(name_parts, names, division)
+
+			teachers[division_name].append(teacher)
+
+	return teachers
+
+
+def _autogenerate_ge_subjects(teachers, room_features):
 	num_ges_created = 0
 	ges = dict()
 	for division in models.Division.select().execute():
 		ges[division.name] = list()
 		num_ge_subjects = random.randint(4, 7)
 		for _ in range(num_ge_subjects):
-			subject_name = f'GE {num_ges_created} - {str(division)}'
-
-			app_logger.debug(f'- Generating GE subject, {subject_name}..')
-
-			ge_subject = models.Subject()
-			ge_subject.name = subject_name
-			ge_subject.units = 3.0
-			ge_subject.division = division
-
-			# GE subject must be saved first before we are able to assign
-			# candidate teachers to it.
-			ge_subject.save()
+			ge_subject = _generate_ge_subject_object(num_ges_created, division)
 
 			app_logger.debug(
-				f'-- Adding candidate teachers to subject, {subject_name}...')
+				'-- Adding candidate teachers to subject, '
+				f'{ge_subject.name}...')
 
 			ge_subject.give_random_candidate_teachers(
 				teachers[division.name], 3, 7)
@@ -142,7 +226,7 @@ def autogenerate_data():
 			subject_room_feature = room_features['Projector']
 			app_logger.debug(
 				f'-- Adding feature {str(subject_room_feature)} '
-				f'to subject, {subject_name}...')
+				f'to subject, {ge_subject.name}...')
 			ge_subject.required_features.add(subject_room_feature)
 
 			ge_subject.save()
@@ -151,134 +235,54 @@ def autogenerate_data():
 
 			num_ges_created += 1
 
-	# Autogenerate study plans.
-	app_logger.debug(':: Generating Study Plans...')
+	return ges
 
+
+def _autogenerate_study_plans(teachers, room_features, ges):
 	num_subjects_generated = 0
+	num_subject_enrollees = dict()
 	for course in models.Course.select().execute():
 		for year_level in range(1, 5):
 			app_logger.debug(
 				f'- Generating study plan for {course} '
 				f'at year level {year_level}...')
 
-			# Assume for now that all courses have four year levels.
-			study_plan = models.StudyPlan()
-			study_plan.course = course
-			study_plan.year_level = year_level
-			study_plan.num_followers = random.randint(35, 75)
-
-			# Study plan must be saved first before we are able to assign
-			# subjects to it.
-			study_plan.save()
+			study_plan = _generate_study_plan_object(course, year_level)
 
 			# Generate subjects.
-			num_subjects_to_generate = random.randint(6, 8)
-			for _ in range(num_subjects_to_generate):
-				subject_is_lab = True if random.random() < 0.1 else False
-				subject_name = (
-					f'Subject {num_subjects_generated} '
-					f'- {str(course.division)}')
-				if subject_is_lab:
-					subject_name = f'(Lab) {subject_name}'
-
-				app_logger.debug(
-					f'-- Generating and adding subject {subject_name}...')
-
-				subject = models.Subject()				
-				subject.name = subject_name
-				subject.units = 3.0
-				subject.division = course.division
-
-				# Subject must be saved first before we are able to assign
-				# candidate teachers to it.
-				subject.save()
-
-				app_logger.debug(
-					'--- Adding candidate teachers '
-					f'to subject, {subject_name}...')
-				subject.give_random_candidate_teachers(
-					teachers[subject.division.name], 3, 7)
-
-				subject_room_features = list()
-				subject_room_features.append(room_features['Projector'])
-				if subject_is_lab:
-					lab_types = [
-						'Chemistry', 'Physics', 'Botany',
-						'Zoology', 'Computers'
-					]
-					lab_type = random.choice(lab_types)
-					if lab_type == 'Computers':
-						subject_room_features.append(
-							room_features['Computers'])
-					else:
-						subject_room_features.append(
-							room_features[f'{lab_type} Lab Equipment'])
-
-				for feature in subject_room_features:
-					app_logger.debug(
-						f'-- Adding feature {str(feature)} '
-						f'to subject, {subject_name}...')
-					subject.required_features.add(feature)
-
-				subject.save()
-
-				study_plan.subjects.add(subject)
-
-				num_subjects_generated += 1
+			num_subjects_generated = _generate_subjects_for_study_plan(
+				study_plan, course, teachers,
+				room_features, num_subject_enrollees, num_subjects_generated)
 
 			# Add random GEs.
 			app_logger.debug(
 				f'- Adding random GEs to study plan, {str(study_plan)}...')
-			num_ges_to_add = random.randint(3, 4)
-			selected_ges = set()
-			for _ in range(num_ges_to_add):
-				selected_division = random.choice(list(ges.keys()))
-				while True:
-					selected_ge = random.choice(ges[selected_division])
-					if selected_ge not in selected_ges:
-						selected_ges.add(selected_ge)
-						break
+			
+			_add_random_ges_to_study_plan(
+				study_plan, ges, num_subject_enrollees)
 
-				app_logger.debug(
-					f'-- Adding GE subject, {str(selected_ge)}...')
-				study_plan.subjects.add(selected_ge)
-
-			study_plan.save()
-	
-	# Autogenerate classes.
+	return num_subject_enrollees
 
 
-def _autogenerate_room_features():
-	features = [
-		'Air Conditioner',
-		'Chemistry Lab Equipment',
-		'Physics Lab Equipment',
-		'Botany Lab Equipment',
-		'Zoology Lab Equipment',
-		'Computers',
-		'Projector',
-		'Wide Space'
-	]
-	for feature in features:
-		app_logger.debug(f'- Generating room feature, {feature}.')
+def _autogenerate_classes(num_subject_enrollees):
+	for subject, num_enrollees in num_subject_enrollees.items():
+		app_logger.debug(
+			f'- Generating classes for subject, {str(subject)}...')
 
-		room_feature = models.RoomFeature()
-		room_feature.name = feature
-		room_feature.save()
+		slots_per_class = 30  # Assume 30 slots per class for now.
+		num_classes = math.ceil(num_enrollees / slots_per_class)
+		for i in range(num_classes):
+			app_logger.debug(
+				f'-- Generating class number {i} for subject, '
+				f'{str(subject)}, with {slots_per_class} slots...')
 
-
-def _get_room_features():
-	room_features = dict()
-	for feature in models.RoomFeature.select().execute():
-		room_features[feature.name] = feature
-
-	return room_features
+			subject_class = models.Class()
+			subject_class.subject = subject
+			subject_class.capacity = slots_per_class
+			subject_class.save()
 
 
-def _add_features_to_specific_rooms():
-	room_features = _get_room_features()
-
-	# Add features to Room 12.
+def _add_features_to_room_12(room_features):
 	room_12_feature = room_features['Air Conditioner']
 	room_12 = models.Room.select().where(models.Room.name == 'Room 12').get()
 
@@ -288,14 +292,15 @@ def _add_features_to_specific_rooms():
 	room_12.features.add(room_12_feature)
 	room_12.save()
 
-	# Add features to CS labs.
+
+def _add_features_to_cs_labs(room_features):
 	cs_lab_feature = room_features['Computers']
 	
 	app_logger.debug(f'- Adding feature {str(cs_lab_feature)} to CS labs...')
 
 	cs_labs = (models.Room
 				.select()
-				.where('CS Lab' in models.Room.name)
+				.where(models.Room.name.startswith('CS Lab'))
 				.execute())
 	for lab in cs_labs:
 		app_logger.debug(f'-- Adding feature to lab {str(lab)}...')
@@ -303,9 +308,8 @@ def _add_features_to_specific_rooms():
 		lab.features.add(cs_lab_feature)
 		lab.save()
 
-	# Add features to BS Biology labs.
-	app_logger.debug(f'- Adding lab features to BS Biology labs...')
 
+def _add_features_to_bs_bio_labs(room_features):
 	physics_lab = (models.Room
 					.select()
 					.where(models.Room.name == 'Physics Lab')
@@ -337,9 +341,8 @@ def _add_features_to_specific_rooms():
 		lab.features.add(feature)
 		lab.save()
 
-	# Add features to the MPB.
-	app_logger.debug(f'- Adding features to the MPB...')
 
+def _add_features_to_the_mpb(room_features):
 	mpb_feature = room_features['Wide Space']
 
 	mpb = models.Room.select().where(models.Room.name == 'MPB').get()
@@ -350,44 +353,184 @@ def _add_features_to_specific_rooms():
 	mpb.save()
 
 
-def _autogenerate_teachers(division_data):
-	with open(settings.NAMES_FILE) as f:
-		name_parts = f.read().split()
+def _generate_teacher_object(name_parts, names, division):
+	while True:
+		first_name = random.choice(name_parts)
+		last_name = random.choice(name_parts)
+		teacher_name = f'{first_name} {last_name}'
 
-	names = set()
-	teachers = dict()
-	for division_name, data in division_data.items():
-		app_logger.debug(f'- Generating teachers for {division_name}...')
+		if teacher_name in names:
+			continue
 
-		division = (models.Division
-					.select()
-					.where(models.Division.name == division_name)
-					.get())
+		break
 
-		teachers[division_name] = list()
+	names.add(teacher_name)
 
-		for _ in range(data['num_teachers']):
-			while True:
-				first_name = random.choice(name_parts)
-				last_name = random.choice(name_parts)
-				teacher_name = f'{first_name} {last_name}'
+	app_logger.debug(f'-- Generating teacher, {teacher_name}...')
 
-				if teacher_name in names:
-					continue
+	teacher = models.Teacher()
+	teacher.first_name = first_name
+	teacher.last_name = last_name
+	teacher.division = division
+	# TODO: Add unpreferred timeslots.
+	teacher.save()
 
+	return teacher
+
+
+def _generate_ge_subject_object(num_ges_created, division):
+	subject_name = f'GE {num_ges_created} - {str(division)}'
+
+	app_logger.debug(f'- Generating GE subject, {subject_name}..')
+
+	ge_subject = models.Subject()
+	ge_subject.name = subject_name
+	ge_subject.units = 3.0
+	ge_subject.division = division
+
+	# GE subject must be saved first before we are able to assign
+	# candidate teachers to it.
+	ge_subject.save()
+
+	return ge_subject
+
+
+def _generate_study_plan_object(course, year_level):
+	# Assume for now that all courses have four year levels.
+	study_plan = models.StudyPlan()
+	study_plan.course = course
+	study_plan.year_level = year_level
+	study_plan.num_followers = random.randint(35, 75)
+
+	# Study plan must be saved first before we are able to assign
+	# subjects to it.
+	study_plan.save()
+
+	return study_plan
+
+
+def _generate_subjects_for_study_plan(study_plan,
+									  course,
+									  teachers,
+									  room_features,
+									  num_subject_enrollees,
+									  num_subjects_generated):
+	num_subjects_to_generate = random.randint(6, 8)
+	for _ in range(num_subjects_to_generate):
+		is_subject_lab = True if random.random() < 0.1 else False
+		subject_name = (
+			f'Subject {num_subjects_generated} - {str(course.division)}')
+
+		_generate_subject(
+			subject_name, study_plan, num_subject_enrollees,
+			course, teachers, room_features, is_subject_lab)
+		
+		if is_subject_lab:
+			# Let's create a lecture subject counterpart.
+			_generate_subject(
+				subject_name, study_plan, num_subject_enrollees,
+				course, teachers, room_features, is_subject_lab=False)
+
+		num_subjects_generated += 1
+
+	return num_subjects_generated
+
+
+def _add_random_ges_to_study_plan(study_plan, ges, num_subject_enrollees):
+	num_ges_to_add = random.randint(3, 4)
+	selected_ges = set()
+	for _ in range(num_ges_to_add):
+		selected_division = random.choice(list(ges.keys()))
+		while True:
+			selected_ge = random.choice(ges[selected_division])
+			if selected_ge not in selected_ges:
+				selected_ges.add(selected_ge)
 				break
 
-			names.add(teacher_name)
+		app_logger.debug(f'-- Adding GE subject, {str(selected_ge)}...')
 
-			app_logger.debug(f'-- Generating teacher, {teacher_name}...')
+		study_plan.subjects.add(selected_ge)
 
-			teacher = models.Teacher()
-			teacher.first_name = first_name
-			teacher.last_name = last_name
-			teacher.division = division
-			# TODO: Add unpreferred timeslots.
-			teacher.save()
+		if selected_ge not in num_subject_enrollees:
+			num_subject_enrollees[selected_ge] = study_plan.num_followers
+		else:
+			num_subject_enrollees[selected_ge] += study_plan.num_followers
 
-			teachers[division_name].append(teacher)
+	study_plan.save()
 
-	return teachers
+
+def _generate_subject(subject_name,
+					  study_plan,
+					  num_subject_enrollees,
+					  course,
+					  teachers,
+					  room_features,
+					  is_subject_lab):
+	if is_subject_lab:
+		subject_name = f'(Lab) {subject_name}'
+
+	subject = _generate_subject_object(subject_name, course, is_subject_lab)
+
+	app_logger.debug(
+		'--- Adding candidate teachers '
+		f'to subject, {subject.name}...')
+
+	subject.give_random_candidate_teachers(
+		teachers[subject.division.name], 3, 7)
+
+	_apply_features_to_subject(subject, course, room_features, is_subject_lab)
+
+	study_plan.subjects.add(subject)
+
+	# No need to check if the subject instance is in
+	# num_subject_enrollees since this is the first time
+	# we would create an entry for the subject instance.
+	num_subject_enrollees[subject] = study_plan.num_followers
+
+
+def _generate_subject_object(subject_name, course, is_subject_lab):
+	app_logger.debug(f'-- Generating and adding subject {subject_name}...')
+
+	subject = models.Subject()				
+	subject.name = subject_name
+	subject.division = course.division
+
+	if is_subject_lab:
+		# Lab subjects don't have units.
+		subject.units = 0.0
+	else:
+		# It's a lecture subject.
+		subject.units = 3.0
+
+	# Subject must be saved first before we are able to assign
+	# candidate teachers to it.
+	subject.save()
+
+	return subject
+
+
+def _apply_features_to_subject(subject, course, room_features, is_subject_lab):
+	subject_room_features = list()
+	subject_room_features.append(room_features['Projector'])
+	if is_subject_lab:
+		lab_types = [
+			'Chemistry', 'Physics', 'Botany',
+			'Zoology', 'Computers'
+		]
+		lab_type = random.choice(lab_types)
+		if lab_type == 'Computers':
+			subject_room_features.append(
+				room_features['Computers'])
+		elif (course.division.name
+				== 'Division of Natural Sciences and Mathematics'):
+			# The BS Biology lab equipments must be restricted to DNSM.
+			subject_room_features.append(
+				room_features[f'{lab_type} Lab Equipment'])
+
+	for feature in subject_room_features:
+		app_logger.debug(
+			f'-- Adding feature {str(feature)} '
+			f'to subject, {subject.name}...')
+		subject.required_features.add(feature)
+
+	subject.save()
