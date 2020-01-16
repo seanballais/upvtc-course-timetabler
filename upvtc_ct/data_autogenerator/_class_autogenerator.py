@@ -110,16 +110,21 @@ def autogenerate_data():
 
 	teachers = _autogenerate_teachers(division_data)
 
-	# TODO: Add debug logs.
 	# Autogenerate GE subjects.
+	app_logger.debug(':: Generating GE Subjects...')
+
 	num_ges_created = 0
 	ges = dict()
 	for division in models.Division.select().execute():
 		ges[division.name] = list()
 		num_ge_subjects = random.randint(4, 7)
 		for _ in range(num_ge_subjects):
+			subject_name = f'GE {num_ges_created} - {str(division)}'
+
+			app_logger.debug(f'- Generating GE subject, {subject_name}..')
+
 			ge_subject = models.Subject()
-			ge_subject.name = f'GE {num_ges_created}- {str(division)}'
+			ge_subject.name = subject_name
 			ge_subject.units = 3.0
 			ge_subject.division = division
 
@@ -127,11 +132,18 @@ def autogenerate_data():
 			# candidate teachers to it.
 			ge_subject.save()
 
+			app_logger.debug(
+				f'-- Adding candidate teachers to subject, {subject_name}...')
+
 			ge_subject.give_random_candidate_teachers(
 				teachers[division.name], 3, 7)
 
 			# Add that the GE subjects require a projector for now.
-			ge_subject.required_features.add(room_features['Projector'])
+			subject_room_feature = room_features['Projector']
+			app_logger.debug(
+				f'-- Adding feature {str(subject_room_feature)} '
+				f'to subject, {subject_name}...')
+			ge_subject.required_features.add(subject_room_feature)
 
 			ge_subject.save()
 
@@ -140,9 +152,15 @@ def autogenerate_data():
 			num_ges_created += 1
 
 	# Autogenerate study plans.
+	app_logger.debug(':: Generating Study Plans...')
+
 	num_subjects_generated = 0
 	for course in models.Course.select().execute():
 		for year_level in range(1, 5):
+			app_logger.debug(
+				f'- Generating study plan for {course} '
+				f'at year level {year_level}...')
+
 			# Assume for now that all courses have four year levels.
 			study_plan = models.StudyPlan()
 			study_plan.course = course
@@ -157,15 +175,17 @@ def autogenerate_data():
 			num_subjects_to_generate = random.randint(6, 8)
 			for _ in range(num_subjects_to_generate):
 				subject_is_lab = True if random.random() < 0.1 else False
-
-				subject = models.Subject()
-				
-				subject.name = (
+				subject_name = (
 					f'Subject {num_subjects_generated} '
 					f'- {str(course.division)}')
 				if subject_is_lab:
-					subject.name = f'(Lab) {subject.name}'
+					subject_name = f'(Lab) {subject_name}'
 
+				app_logger.debug(
+					f'-- Generating and adding subject {subject_name}...')
+
+				subject = models.Subject()				
+				subject.name = subject_name
 				subject.units = 3.0
 				subject.division = course.division
 
@@ -173,10 +193,14 @@ def autogenerate_data():
 				# candidate teachers to it.
 				subject.save()
 
+				app_logger.debug(
+					'--- Adding candidate teachers '
+					f'to subject, {subject_name}...')
 				subject.give_random_candidate_teachers(
 					teachers[subject.division.name], 3, 7)
 
-				subject.required_features.add(room_features['Projector'])
+				subject_room_features = list()
+				subject_room_features.append(room_features['Projector'])
 				if subject_is_lab:
 					lab_types = [
 						'Chemistry', 'Physics', 'Botany',
@@ -184,11 +208,17 @@ def autogenerate_data():
 					]
 					lab_type = random.choice(lab_types)
 					if lab_type == 'Computers':
-						subject.required_features.add(
+						subject_room_features.append(
 							room_features['Computers'])
 					else:
-						subject.required_features.add(
+						subject_room_features.append(
 							room_features[f'{lab_type} Lab Equipment'])
+
+				for feature in subject_room_features:
+					app_logger.debug(
+						f'-- Adding feature {str(feature)} '
+						f'to subject, {subject_name}...')
+					subject.required_features.add(feature)
 
 				subject.save()
 
@@ -197,6 +227,8 @@ def autogenerate_data():
 				num_subjects_generated += 1
 
 			# Add random GEs.
+			app_logger.debug(
+				f'- Adding random GEs to study plan, {str(study_plan)}...')
 			num_ges_to_add = random.randint(3, 4)
 			selected_ges = set()
 			for _ in range(num_ges_to_add):
@@ -207,6 +239,8 @@ def autogenerate_data():
 						selected_ges.add(selected_ge)
 						break
 
+				app_logger.debug(
+					f'-- Adding GE subject, {str(selected_ge)}...')
 				study_plan.subjects.add(selected_ge)
 
 			study_plan.save()
