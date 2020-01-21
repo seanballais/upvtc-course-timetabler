@@ -59,13 +59,15 @@ def setup_models():
 def nuke_db():
 	app_logger.info('Nuking contents of the database away...')
 
+	# Timeslots should not be deleted away, since they should always exist
+	# in the context of our problem and are constant. They are one of the
+	# fundamental parts of a timetable.
 	delete_queries = [
 		Division.delete(),
 		Course.delete(),
 		Room.delete(),
 		Room.features.get_through_model().delete(),
 		RoomFeature.delete(),
-		TimeSlot.delete(),
 		Teacher.unpreferred_timeslots.get_through_model().delete(),
 		Teacher.delete(),
 		Subject.required_features.get_through_model().delete(),

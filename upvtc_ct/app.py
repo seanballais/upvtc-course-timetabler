@@ -31,6 +31,9 @@ def main():
 	console_handler.setFormatter(log_formatter)
 	app_logger.addHandler(console_handler)
 
+	# TODO: Add a "Fix Database" option that will recreate any tables that are
+	#       missing from the database.
+
 	# Set up argument parsing and obtain arguments through docopt.
 	doc_string = (
 		f'Automated Course Timetabler for UPVTC (v{__version__})\n'
