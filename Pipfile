@@ -10,6 +10,7 @@ pyqt5 = "*"
 peewee = ">=3.*.*"
 docopt = "*"
 requests = "*"
+xlsxwriter = "*"
 
 [requires]
 python_version = "3.7"
