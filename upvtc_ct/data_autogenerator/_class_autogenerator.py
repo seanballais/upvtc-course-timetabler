@@ -171,6 +171,8 @@ def _add_features_to_specific_rooms():
 	# Add features to CS labs.
 	_add_features_to_cs_labs(room_features)
 
+	# Add features to DM labs.
+
 	# Add features to BS Biology labs.
 	app_logger.debug(f'- Adding lab features to BS Biology labs...')
 
@@ -512,7 +514,11 @@ def _generate_subject_object(subject_name, course, is_subject_lab):
 def _apply_features_to_subject(subject, course, room_features, is_subject_lab):
 	subject_room_features = list()
 	subject_room_features.append(room_features['Projector'])
-	if is_subject_lab:
+
+	does_lab_need_lab_features = (
+		course.division.name == 'Division of Natural Sciences and Mathematics')
+	if is_subject_lab and does_lab_need_lab_features:
+		# For now, limit specific lab features to DNSM courses.
 		lab_types = [
 			'Chemistry', 'Physics', 'Botany',
 			'Zoology', 'Computers'
@@ -521,8 +527,7 @@ def _apply_features_to_subject(subject, course, room_features, is_subject_lab):
 		if lab_type == 'Computers':
 			subject_room_features.append(
 				room_features['Computers'])
-		elif (course.division.name
-				== 'Division of Natural Sciences and Mathematics'):
+		else:
 			# The BS Biology lab equipments must be restricted to DNSM.
 			subject_room_features.append(
 				room_features[f'{lab_type} Lab Equipment'])
