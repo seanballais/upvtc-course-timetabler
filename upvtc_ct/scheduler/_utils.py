@@ -50,8 +50,12 @@ def get_class_conflicts(invalid_cache=False):
 			student_idx = 0
 
 			for subject_class in subject_classes:
-				class_capacity[subject_class] = subject_class.capacity
+				if subject_class not in class_capacity:
+					class_capacity[subject_class] = subject_class.capacity
 
+				# Maybe the same classes are being assigned to different
+				# students from different study plans, making some classes
+				# unfilled.
 				while (class_capacity[subject_class] > 0
 						and student_idx < study_plan.num_followers):
 					students[student_idx].add_class(subject_class)
