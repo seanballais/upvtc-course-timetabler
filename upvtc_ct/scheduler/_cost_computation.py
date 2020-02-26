@@ -2,6 +2,12 @@ from upvtc_ct import models
 
 from ._utils import get_class_conflicts
 
+
+_cached_subjects = None
+_cached_classes = None
+_cached_rooms = None
+
+
 def _compute_timetable_cost(timetable):
 	cost = 0
 	hc_penalty = 10000
@@ -88,11 +94,16 @@ def _compute_hc4_constraint(timetable, hc_penalty):
 
 def _compute_hc5_constraint(timetable, hc_penalty):
 	cost = 0
-	classes = models.Class.select()
-	for subject_class in classes:
+	subjects = _get_subjects()
+	classes = _get_classes()
+	rooms = _get_rooms()
+	for subject_class, class_data in classes.items():
+		print(subject_class)
 		room = timetable.get_class_room(subject_class)
-		room_features = set(room.features)
-		room_requirements = set(subject_class.subject.required_features)
+		room_features = rooms[room]['features']
+
+		class_subject = class_data['subject']
+		room_requirements = subjects[class_subject]['required_features']
 		if not room_requirements.issubset(room_features):
 			# Room does not have the features the subject requires.
 			cost += hc_penalty
@@ -191,3 +202,69 @@ def _compute_sc3_constraint(timetable, sc_penalty):
 				cost += sc_penalty
 
 	return cost
+
+
+def _get_subjects():
+	global _cached_subjects
+
+	if _cached_subjects is not None:
+		return _cached_subjects
+
+	_cached_subjects = dict()
+
+	for subject in models.Subject.select():
+		_cached_subjects[subject] = dict()
+
+		_cached_subjects[subject]['name'] = subject.name
+		_cached_subjects[subject]['units'] = subject.units
+		_cached_subjects[subject]['division'] = subject.division
+		_cached_subjects[subject]['candidate_teachers'] = set(
+			subject.candidate_teachers)
+		_cached_subjects[subject]['required_features'] = set(
+			subject.required_features)
+		_cached_subjects[subject]['num_required_timeslots'] = (
+			subject.num_required_timeslots)
+		_cached_subjects[subject]['is_wednesday_class'] = (
+			subject.is_wednesday_class)
+
+	return _cached_subjects
+
+
+def _get_classes():
+	global _cached_classes
+
+	if _cached_classes is not None:
+		return _cached_classes
+
+	_cached_classes = dict()
+
+	for subject_class in models.Class.select():
+		_cached_classes[subject_class] = dict()
+
+		_cached_classes[subject_class]['subject'] = subject_class.subject
+		_cached_classes[subject_class]['assigned_teacher'] = (
+			subject_class.assigned_teacher)
+		_cached_classes[subject_class]['capacity'] = subject_class.capacity
+		_cached_classes[subject_class]['timeslots'] = list(
+			subject_class.timeslots)
+		_cached_classes[subject_class]['room'] = subject_class.room
+
+	return _cached_subjects
+
+
+def _get_rooms():
+	global _cached_rooms
+
+	if _cached_rooms is not None:
+		return _cached_rooms
+
+	_cached_rooms = dict()
+
+	for room in models.Room.select():
+		_cached_rooms[room] = dict()
+
+		_cached_rooms[room]['name'] = room.name
+		_cached_rooms[room]['division'] = room.division
+		_cached_rooms[room]['features'] = set(room.features)
+
+	return _cached_rooms

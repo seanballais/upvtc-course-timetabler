@@ -133,6 +133,8 @@ class _Timetable():
 		return self._timetable[timeslot][room]
 
 	def get_class_room(self, subject_class):
+		print(__name__)
+		print(subject_class)
 		return self._class_room.get(subject_class, None)
 
 	def get_class_timeslots(self, subject_class):
