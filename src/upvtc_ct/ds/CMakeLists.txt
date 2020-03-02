@@ -4,13 +4,10 @@
 cmake_minimum_required(VERSION 3.13)
 
 ################################################################################
-# Set up compilation of the upvtc_ct module.                                   #
+# Set up compilation of the data structures module.                            #
 ################################################################################
-add_subdirectory(ds)
-add_subdirectory(preprocessor)
-
-add_library(upvtc_ct-lib INTERFACE)
-target_link_libraries(upvtc_ct-lib
-    INTERFACE
-        upvtc_ct-lib-ds
+add_library(upvtc_ct-lib-ds STATIC "")
+target_sources(upvtc_ct-lib-ds
+    PRIVATE
+        models.cpp
 )
