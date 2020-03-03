@@ -63,17 +63,40 @@ namespace upvtc_ct::ds
     return this->name == r.name;
   }
 
-  StudentGroup::StudentGroup(const Degree degree,
-                             const unsigned int yearLevel,
-                             const unsigned int numMembers)
-    : degree(degree),
-      yearLevel(yearLevel),
-      numMembers(numMembers),
-      assignedCourses({}) {}
+  BaseStudentGroup::BaseStudentGroup(
+        const unsigned int numMembers,
+        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+    : numMembers(numMembers),
+      assignedCourses(assignedCourses) {}
+
+  StudentGroup::StudentGroup(
+        const Degree degree,
+        const unsigned int yearLevel,
+        const unsigned int numMembers,
+        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+    : BaseStudentGroup(numMembers, assignedCourses),
+      degree(degree),
+      yearLevel(yearLevel) {}
 
   bool StudentGroup::operator==(const StudentGroup& sg) const
   {
-    return this->degree == sg.degree && this->yearLevel == sg.yearLevel;
+    return (this->degree == sg.degree
+            && this->yearLevel == sg.yearLevel
+            && this->assignedCourses == sg.assignedCourses);
+  }
+
+  SubStudentGroup::SubStudentGroup(
+        const StudentGroup parentGroup,
+        const unsigned int numMembers,
+        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+    : BaseStudentGroup(numMembers, assignedCourses),
+      parentGroup(parentGroup) {}
+  
+  bool SubStudentGroup::operator==(const SubStudentGroup& ssg) const
+  {
+    return (this->parentGroup == ssg.parentGroup
+            && this->numMembers == ssg.numMembers
+            && this->assignedCourses == ssg.assignedCourses);
   }
 
   Teacher::Teacher(const std::string name)
@@ -109,6 +132,30 @@ namespace upvtc_ct::ds
                   << std::to_string(sg.yearLevel)
                   << "-"
                   << std::to_string(sg.numMembers);
+
+    for (const auto& course : sg.assignedCourses) {
+      objIdentifier << "-";
+      objIdentifier << course.name;
+    }
+
+    return std::hash<std::string>()(objIdentifier.str());
+  }
+
+  size_t SubStudentGroupHashFunction::operator()(
+      const SubStudentGroup& ssg) const
+  {
+    size_t parentGroupHash = StudentGroupHashFunction()(ssg.parentGroup);
+
+    std::stringstream objIdentifier;
+    objIdentifier << std::to_string(parentGroupHash)
+                  << "-"
+                  << std::to_string(ssg.numMembers);
+
+    for (const auto& course : ssg.assignedCourses) {
+      objIdentifier << "-";
+      objIdentifier << course.name;
+    }
+
     return std::hash<std::string>()(objIdentifier.str());
   }
 

@@ -83,22 +83,49 @@ namespace upvtc_ct::ds
     size_t operator()(const Room& r) const;
   };
 
-  struct StudentGroup
+  struct BaseStudentGroup
   {
-    StudentGroup(const Degree degree, const unsigned int yearLevel,
-                 const unsigned int numMembers);
+    BaseStudentGroup(
+      const unsigned int numMembers,
+      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
+
+    const unsigned int numMembers;
+    const std::unordered_set<Course, CourseHashFunction> assignedCourses;
+  };
+
+  struct StudentGroup : public BaseStudentGroup
+  {
+    StudentGroup(
+      const Degree degree, const unsigned int yearLevel,
+      const unsigned int numMembers,
+      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
     bool operator==(const StudentGroup& sg) const;
 
     const Degree degree;
     const unsigned int yearLevel;
-    const unsigned int numMembers;
-    const std::unordered_set<Course, CourseHashFunction> assignedCourses;
   };
 
   class StudentGroupHashFunction
   {
   public:
     size_t operator()(const StudentGroup& sg) const;
+  };
+
+  struct SubStudentGroup : public BaseStudentGroup
+  {
+    SubStudentGroup(
+      const StudentGroup parentGroup,
+      const unsigned int numMembers,
+      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
+    bool operator==(const SubStudentGroup& ssg) const;
+
+    const StudentGroup parentGroup;
+  };
+
+  class SubStudentGroupHashFunction
+  {
+  public:
+    size_t operator()(const SubStudentGroup& ssg) const;
   };
 
   struct Teacher
