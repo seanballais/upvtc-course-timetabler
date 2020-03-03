@@ -13,4 +13,5 @@ add_library(upvtc_ct-lib INTERFACE)
 target_link_libraries(upvtc_ct-lib
     INTERFACE
         upvtc_ct-lib-ds
+        upvtc_ct-lib-preprocessor
 )

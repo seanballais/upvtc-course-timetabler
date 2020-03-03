@@ -8,19 +8,28 @@
 
 namespace upvtc_ct::preprocessor
 {
-  using upvtc_ct;
+  namespace ds = upvtc_ct::ds;
 
   class DataManager
   {
+  public:
+    DataManager();
+
+    // The member variables, courses and studentGroups, can become huge.
+    // Returning them by value will be expensive. As such, we will be returning
+    // them by references instead. We are returning const references of them
+    // to prevent unwanted manipulations.
+    const std::unordered_set<ds::Course, ds::CourseHashFunction>& getCourses();
+    const std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>&
+      getStudentGroups();
+
   private:
-    std::string getBinFullPath() const;
+    std::string getBinFolderPath() const;
 
-    const std::unordered_set<ds::Course, ds::CourseHashFunction> courses;
-    const std::unordered_set<ds::StudentGroup, StudentGroupHashFunction>
+    std::unordered_set<ds::Course, ds::CourseHashFunction> courses;
+    std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>
       studentGroups;
-    ds::CourseDependencyList courseDependencyList;
-  }
+  };
 }
-
 
 #endif
