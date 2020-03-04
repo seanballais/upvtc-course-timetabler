@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <unordered_set>
 
@@ -38,45 +39,84 @@ namespace upvtc_ct::preprocessor
     // Go through divisions first.
     for (const auto& [_, studyPlanItem] : studyPlan.items()) {
       const std::string divisionName = studyPlanItem["division_name"];
+      std::unordered_set<ds::Course*> divisionCourses;
+      std::unordered_set<ds::Degree*> divisionDegrees;
 
       // Now go through each degree offered by the division.
-      const auto& divisionDegrees = studyPlanItem["degrees"];
-      for (const auto& [_, degreeItem] : divisionDegrees.items()) {
+      const auto& divisionItemDegrees = studyPlanItem["degrees"];
+      for (const auto& [_, degreeItem] : divisionItemDegrees.items()) {
         const std::string degreeName = degreeItem["degree_name"];
+
+        std::unique_ptr<ds::Degree> degreePtr(
+          std::make_unique<ds::Degree>(degreeName));
+        divisionDegrees.insert(degreePtr.get());
+        this->degrees.insert(std::move(degreePtr));
 
         // Now go through each year level in the study plan of a degree.
         const auto& degreePlans = degreeItem["plans"];
         for (const auto& [_, planItem] : degreePlans.items()) {
+          // NOTE: Plans must be sorted ascendingly by year level, then by
+          //       semester.
           const int yearLevel = planItem["year_level"].get<int>();
-          const int semester = planItem["semester"].get<int>();
+          const int planSemester = planItem["semester"].get<int>();
 
-          const auto& degreeCourses = planItem["courses"];
-          for (const auto& [_, courseItem] : degreeCourses.items()) {
+          if (planSemester != semester) {
+            // If the plan is assigned to a semester that we are not curerntly
+            // scheduling, then we should just skip.
+            continue;
+          }
+
+          const auto& degreeItemCourses = planItem["courses"];
+          for (const auto& [_, courseItem] : degreeItemCourses.items()) {
             const std::string courseName = courseItem["course_name"];
+            std::unordered_set<ds::Course*> coursePrereqs;
 
             const auto& prerequisites = courseItem["prerequisites"];
             for (const auto& [_, prereq] : prerequisites.items()) {
-              std::cout << prereq << std::endl;
+              auto prereqCourseItem = this->courseNameToObject.find(prereq);
+              if (prereqCourseItem == this->courseNameToObject.end()) {
+                throw utils::InvalidContentsError(
+                  "Referenced another course that was not yet generated.");
+              }
+
+              ds::Course* prereqCourse = prereqCourseItem->second;
+              coursePrereqs.insert(prereqCourse);
             }
+
+            std::unique_ptr<ds::Course> coursePtr(
+              std::make_unique<ds::Course>(courseName, coursePrereqs));
+            this->courseNameToObject.insert({courseName, coursePtr.get()});
+            divisionCourses.insert(coursePtr.get());
+            this->courses.insert(std::move(coursePtr));
           }
         }
       }
+
+      std::unique_ptr<ds::Division> divisionPtr(
+        new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
+      this->divisions.insert(std::move(divisionPtr));
     }
   }
 
-  const std::unordered_set<ds::Course, ds::CourseHashFunction>&
+  const std::unordered_set<std::unique_ptr<ds::Course>>&
   DataManager::getCourses()
   {
     return this->courses;
   }
 
-  const std::unordered_set<ds::Division, ds::DivisionHashFunction>&
+  const std::unordered_set<std::unique_ptr<ds::Degree>>&
+  DataManager::getDegrees()
+  {
+    return this->degrees;
+  }
+
+  const std::unordered_set<std::unique_ptr<ds::Division>>&
   DataManager::getDivisions()
   {
     return this->divisions;
   }
 
-  const std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>&
+  const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
   DataManager::getStudentGroups()
   {
     return this->studentGroups;

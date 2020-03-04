@@ -10,6 +10,12 @@ namespace upvtc_ct::utils
   public:
     FileNotFoundError(const char* what_arg);
   };
+
+  class InvalidContentsError : public std::runtime_error
+  {
+  public:
+    InvalidContentsError(const char* what_arg);
+  };
 }
 
 #endif

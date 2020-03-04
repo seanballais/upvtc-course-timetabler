@@ -2,6 +2,7 @@
 #define UPVTC_CT_PREPROCESSOR_HPP_
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -20,19 +21,19 @@ namespace upvtc_ct::preprocessor
     // Returning them by value will be expensive. As such, we will be returning
     // them by references instead. We are returning const references of them
     // to prevent unwanted manipulations.
-    const std::unordered_set<ds::Course, ds::CourseHashFunction>& getCourses();
-    const std::unordered_set<ds::Division, ds::DivisionHashFunction>&
-      getDivisions();
-    const std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>&
+    const std::unordered_set<std::unique_ptr<ds::Course>>& getCourses();
+    const std::unordered_set<std::unique_ptr<ds::Degree>>& getDegrees();
+    const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
+    const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
 
   private:
     std::string getBinFolderPath() const;
 
-    std::unordered_set<ds::Course, ds::CourseHashFunction> courses;
-    std::unordered_set<ds::Division, ds::DivisionHashFunction> divisions;
-    std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>
-      studentGroups;
+    std::unordered_set<std::unique_ptr<ds::Course>> courses;
+    std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
+    std::unordered_set<std::unique_ptr<ds::Division>> divisions;
+    std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
 
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
   };

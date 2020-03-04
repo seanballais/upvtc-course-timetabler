@@ -11,3 +11,6 @@ target_sources(upvtc_ct-lib-preprocessor
     PRIVATE
         data_manager.cpp
 )
+target_link_libraries(upvtc_ct-lib-preprocessor
+    upvtc_ct-lib-ds
+)
