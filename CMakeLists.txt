@@ -26,3 +26,12 @@ include_directories("${CMAKE_SOURCE_DIR}/src")
 # Note that the CMakeLists.txt file for the main application is here in this
 # directory.
 add_subdirectory(src)
+
+################################################################################
+# Copy data files to the output directory.                                     #
+################################################################################
+message(STATUS "Copying data files to the binary folder")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/data/study_plans.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/study_plans.json"
+    COPYONLY)

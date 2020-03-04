@@ -11,49 +11,52 @@
 
 #include <upvtc_ct/preprocessor/data_manager.hpp>
 #include <upvtc_ct/ds/models.hpp>
+#include <upvtc_ct/utils/errors.hpp>
 
 namespace upvtc_ct::preprocessor
 {
   using json = nlohmann::json;
   namespace ds = upvtc_ct::ds;
+  namespace utils = upvtc_ct::utils;
 
   DataManager::DataManager(const unsigned int semester)
   {
     const std::string dataFolder = this->getBinFolderPath()
                                    + std::string("/data/");
     const std::string studyPlanFilePath = dataFolder
-                                          + std::string("study_plan.json");
+                                          + std::string("study_plans.json");
     
     std::ifstream studyPlanFile(studyPlanFilePath, std::ifstream::in);
+    if (!studyPlanFile) {
+      throw utils::FileNotFoundError(
+        "The Study Plans JSON file cannot be found.");
+    }
+
     json studyPlan;
     studyPlanFile >> studyPlan;
 
     // Go through divisions first.
-    for (const auto& divisionItem : studyPlan.items()) {
-      const std::string divisionName = divisionItem.key();
-      //ds::Division division = ds::Division(divisionName);
+    for (const auto& [_, studyPlanItem] : studyPlan.items()) {
+      const std::string divisionName = studyPlanItem["division_name"];
 
       // Now go through each degree offered by the division.
-      for (const auto& degreeItem : divisionItem.value()["degrees"].items()) {
-        const std::string degreeName = degreeItem.key();
-        //ds::Degree degree = ds::Degree(degreeName);
+      const auto& divisionDegrees = studyPlanItem["degrees"];
+      for (const auto& [_, degreeItem] : divisionDegrees.items()) {
+        const std::string degreeName = degreeItem["degree_name"];
 
         // Now go through each year level in the study plan of a degree.
-        for (const auto& yearLevelItem : degreeItem.value().items()) {
-          const int yearLevel = std::stoi(yearLevelItem.key());
+        const auto& degreePlans = degreeItem["plans"];
+        for (const auto& [_, planItem] : degreePlans.items()) {
+          const int yearLevel = planItem["year_level"].get<int>();
+          const int semester = planItem["semester"].get<int>();
 
-          // Now go through each semester of a year level.
-          for (const auto& semesterItem : yearLevelItem.value().items()) {
-            const int semester = std::stoi(semesterItem.key());
+          const auto& degreeCourses = planItem["courses"];
+          for (const auto& [_, courseItem] : degreeCourses.items()) {
+            const std::string courseName = courseItem["course_name"];
 
-            for (const auto& courseItem
-                  : semesterItem.value()["courses"].items()) {
-              const std::string courseName = courseItem.key();
-              std::unordered_set<ds::Course, ds::CourseHashFunction> prereqs;
-
-              for (const auto& prereq : courseItem.value()["prerequisites"]) {
-                //ds::Course
-              }
+            const auto& prerequisites = courseItem["prerequisites"];
+            for (const auto& [_, prereq] : prerequisites.items()) {
+              std::cout << prereq << std::endl;
             }
           }
         }

@@ -14,5 +14,6 @@ target_sources(upvtc_ct
         main.cpp
 )
 target_link_libraries(upvtc_ct
+    upvtc_ct-lib
     ${CONAN_LIBS}
 )

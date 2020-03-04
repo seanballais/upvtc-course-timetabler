@@ -1,0 +1,29 @@
+// DO NOT INCLUDE THE COMMENT BELOW WHEN USING THIS FILE.
+// Numbers are 0-indexed.
+
+[
+  {
+    "division_name": "DNSM",
+    "degrees": [
+      {
+        "degree_name": "BSCS",
+        "plans": [
+          {
+            "year_level": 0,
+            "semester": 0,
+            "courses": [
+              {
+                "course_name": "CMSC 11",
+                "prerequisites": []
+              },
+              {
+                "course_name": "MATH 17",
+                "prerequisites": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
