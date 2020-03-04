@@ -9,12 +9,16 @@ namespace upvtc_ct::ds
 {
   // Note that these models, except Class, are and should be read-only. There is
   // no reason at the moment that most of these models should be mutable.
+  class CourseHashFunction;
+
   struct Course
   {
-    Course(const std::string name);
+    Course(const std::string name,
+           const std::unordered_set<Course*> prerequisites);
     bool operator==(const Course& c) const;
 
     const std::string name;
+    const std::unordered_set<Course*> prerequisites;
   };
 
   class CourseHashFunction
@@ -69,12 +73,14 @@ namespace upvtc_ct::ds
 
   struct Room
   {
-    Room(const std::string name, const unsigned int capacity);
+    Room(const std::string name,
+         const unsigned int capacity,
+         const std::unordered_set<RoomFeature*> roomFeatures);
     bool operator==(const Room& r) const;
 
     const std::string name;
     const unsigned int capacity;
-    const std::unordered_set<RoomFeature, RoomFeatureHashFunction> roomFeatures;
+    const std::unordered_set<RoomFeature*> roomFeatures;
   };
 
   class RoomHashFunction
@@ -87,10 +93,10 @@ namespace upvtc_ct::ds
   {
     BaseStudentGroup(
       const unsigned int numMembers,
-      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
+      const std::unordered_set<Course*> assignedCourses);
 
     const unsigned int numMembers;
-    const std::unordered_set<Course, CourseHashFunction> assignedCourses;
+    const std::unordered_set<Course*> assignedCourses;
   };
 
   struct StudentGroup : public BaseStudentGroup
@@ -98,7 +104,7 @@ namespace upvtc_ct::ds
     StudentGroup(
       const Degree degree, const unsigned int yearLevel,
       const unsigned int numMembers,
-      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
+      const std::unordered_set<Course*> assignedCourses);
     bool operator==(const StudentGroup& sg) const;
 
     const Degree degree;
@@ -116,7 +122,7 @@ namespace upvtc_ct::ds
     SubStudentGroup(
       const StudentGroup parentGroup,
       const unsigned int numMembers,
-      const std::unordered_set<Course, CourseHashFunction> assignedCourses);
+      const std::unordered_set<Course*> assignedCourses);
     bool operator==(const SubStudentGroup& ssg) const;
 
     const StudentGroup parentGroup;
@@ -134,7 +140,7 @@ namespace upvtc_ct::ds
     bool operator==(const Teacher& t) const;
 
     const std::string name;
-    const std::unordered_set<Course, CourseHashFunction> potentialCourses;
+    const std::unordered_set<Course*> potentialCourses;
   };
 
   class TeacherHashFunction
@@ -145,9 +151,22 @@ namespace upvtc_ct::ds
 
   struct Division
   {
-    std::unordered_set<Course, CourseHashFunction> courses;
-    std::unordered_set<Degree, DegreeHashFunction> degrees;
-    std::unordered_set<Room, RoomHashFunction> rooms;
+    Division(const std::string name,
+             const std::unordered_set<Course*> courses,
+             const std::unordered_set<Degree*> degrees,
+             const std::unordered_set<Room*> rooms);
+    bool operator==(const Division& d) const;
+
+    const std::string name;
+    const std::unordered_set<Course*> courses;
+    const std::unordered_set<Degree*> degrees;
+    const std::unordered_set<Room*> rooms;
+  };
+
+  class DivisionHashFunction
+  {
+  public:
+    size_t operator()(const Division& d) const;
   };
 
   struct Class

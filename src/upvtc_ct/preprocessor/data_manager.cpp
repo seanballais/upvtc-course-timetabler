@@ -1,19 +1,76 @@
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <unordered_set>
 
 #include <limits.h>
 #include <unistd.h>
+
+#include <nlohmann/json.hpp>
 
 #include <upvtc_ct/preprocessor/data_manager.hpp>
 #include <upvtc_ct/ds/models.hpp>
 
 namespace upvtc_ct::preprocessor
 {
-  DataManager::DataManager() {}
+  using json = nlohmann::json;
+  namespace ds = upvtc_ct::ds;
+
+  DataManager::DataManager(const unsigned int semester)
+  {
+    const std::string dataFolder = this->getBinFolderPath()
+                                   + std::string("/data/");
+    const std::string studyPlanFilePath = dataFolder
+                                          + std::string("study_plan.json");
+    
+    std::ifstream studyPlanFile(studyPlanFilePath, std::ifstream::in);
+    json studyPlan;
+    studyPlanFile >> studyPlan;
+
+    // Go through divisions first.
+    for (const auto& divisionItem : studyPlan.items()) {
+      const std::string divisionName = divisionItem.key();
+      //ds::Division division = ds::Division(divisionName);
+
+      // Now go through each degree offered by the division.
+      for (const auto& degreeItem : divisionItem.value()["degrees"].items()) {
+        const std::string degreeName = degreeItem.key();
+        //ds::Degree degree = ds::Degree(degreeName);
+
+        // Now go through each year level in the study plan of a degree.
+        for (const auto& yearLevelItem : degreeItem.value().items()) {
+          const int yearLevel = std::stoi(yearLevelItem.key());
+
+          // Now go through each semester of a year level.
+          for (const auto& semesterItem : yearLevelItem.value().items()) {
+            const int semester = std::stoi(semesterItem.key());
+
+            for (const auto& courseItem
+                  : semesterItem.value()["courses"].items()) {
+              const std::string courseName = courseItem.key();
+              std::unordered_set<ds::Course, ds::CourseHashFunction> prereqs;
+
+              for (const auto& prereq : courseItem.value()["prerequisites"]) {
+                //ds::Course
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   const std::unordered_set<ds::Course, ds::CourseHashFunction>&
   DataManager::getCourses()
   {
     return this->courses;
+  }
+
+  const std::unordered_set<ds::Division, ds::DivisionHashFunction>&
+  DataManager::getDivisions()
+  {
+    return this->divisions;
   }
 
   const std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>&

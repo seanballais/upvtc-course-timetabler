@@ -6,35 +6,14 @@
 namespace upvtc_ct::ds
 {
   // Model Definitions
-  Course::Course(const std::string name)
-    : name(name) {}
+  Course::Course(const std::string name,
+                 const std::unordered_set<Course*> prerequisites)
+    : name(name),
+      prerequisites(prerequisites) {}
 
   bool Course::operator==(const Course& c) const
   {
     return this->name == c.name;
-  }
-
-  CourseDependencyList::CourseDependencyList()
-    : dependencies({}) {}
-
-  void CourseDependencyList::addDependency(Course c, Course dependency)
-  {
-    if (this->isCoursePresent(c)) {
-      this->dependencies[c].insert(dependency);
-    }
-  }
-
-  CourseDependencyList::Dependencies
-  CourseDependencyList::getDependency(Course c)
-  {
-    return (this->isCoursePresent(c)) ? this->dependencies[c]
-                                      : CourseDependencyList::Dependencies({});
-  }
-
-  bool CourseDependencyList::isCoursePresent(Course c)
-  {
-    auto item = this->dependencies.find(c);
-    return item != this->dependencies.end();
   }
 
   Degree::Degree(const std::string name)
@@ -53,10 +32,12 @@ namespace upvtc_ct::ds
     return this->name == r.name;
   }
 
-  Room::Room(const std::string name, const unsigned int capacity)
+  Room::Room(const std::string name,
+             const unsigned int capacity,
+             const std::unordered_set<RoomFeature*> roomFeatures)
     : name(name),
       capacity(capacity),
-      roomFeatures({}) {}
+      roomFeatures(roomFeatures) {}
 
   bool Room::operator==(const Room& r) const
   {
@@ -65,7 +46,7 @@ namespace upvtc_ct::ds
 
   BaseStudentGroup::BaseStudentGroup(
         const unsigned int numMembers,
-        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+        const std::unordered_set<Course*> assignedCourses)
     : numMembers(numMembers),
       assignedCourses(assignedCourses) {}
 
@@ -73,7 +54,7 @@ namespace upvtc_ct::ds
         const Degree degree,
         const unsigned int yearLevel,
         const unsigned int numMembers,
-        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+        const std::unordered_set<Course*> assignedCourses)
     : BaseStudentGroup(numMembers, assignedCourses),
       degree(degree),
       yearLevel(yearLevel) {}
@@ -88,15 +69,15 @@ namespace upvtc_ct::ds
   SubStudentGroup::SubStudentGroup(
         const StudentGroup parentGroup,
         const unsigned int numMembers,
-        const std::unordered_set<Course, CourseHashFunction> assignedCourses)
+        const std::unordered_set<Course*> assignedCourses)
     : BaseStudentGroup(numMembers, assignedCourses),
       parentGroup(parentGroup) {}
   
   bool SubStudentGroup::operator==(const SubStudentGroup& ssg) const
   {
-    return (this->parentGroup == ssg.parentGroup
-            && this->numMembers == ssg.numMembers
-            && this->assignedCourses == ssg.assignedCourses);
+    return this->parentGroup == ssg.parentGroup
+           && this->numMembers == ssg.numMembers
+           && this->assignedCourses == ssg.assignedCourses;
   }
 
   Teacher::Teacher(const std::string name)
@@ -106,6 +87,20 @@ namespace upvtc_ct::ds
   bool Teacher::operator==(const Teacher& t) const
   {
     return this->name == t.name;
+  }
+
+  Division::Division(const std::string name,
+                     const std::unordered_set<Course*> courses,
+                     const std::unordered_set<Degree*> degrees,
+                     const std::unordered_set<Room*> rooms)
+    : name(name),
+      courses(courses),
+      degrees(degrees),
+      rooms(rooms) {}
+  
+  bool Division::operator==(const Division& d) const
+  {
+    return this->name == d.name;
   }
 
   // Model Hash Function Definitions
@@ -135,7 +130,7 @@ namespace upvtc_ct::ds
 
     for (const auto& course : sg.assignedCourses) {
       objIdentifier << "-";
-      objIdentifier << course.name;
+      objIdentifier << course->name;
     }
 
     return std::hash<std::string>()(objIdentifier.str());
@@ -153,7 +148,7 @@ namespace upvtc_ct::ds
 
     for (const auto& course : ssg.assignedCourses) {
       objIdentifier << "-";
-      objIdentifier << course.name;
+      objIdentifier << course->name;
     }
 
     return std::hash<std::string>()(objIdentifier.str());
@@ -162,5 +157,10 @@ namespace upvtc_ct::ds
   size_t TeacherHashFunction::operator()(const Teacher& t) const
   {
     return std::hash<std::string>()(t.name);
+  }
+
+  size_t DivisionHashFunction::operator()(const Division& d) const
+  {
+    return std::hash<std::string>()(d.name);
   }
 }

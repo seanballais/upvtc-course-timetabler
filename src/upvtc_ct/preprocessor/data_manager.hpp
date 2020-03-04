@@ -2,6 +2,7 @@
 #define UPVTC_CT_PREPROCESSOR_HPP_
 
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include <upvtc_ct/ds/models.hpp>
@@ -13,13 +14,15 @@ namespace upvtc_ct::preprocessor
   class DataManager
   {
   public:
-    DataManager();
+    DataManager(const unsigned int semester);
 
     // The member variables, courses and studentGroups, can become huge.
     // Returning them by value will be expensive. As such, we will be returning
     // them by references instead. We are returning const references of them
     // to prevent unwanted manipulations.
     const std::unordered_set<ds::Course, ds::CourseHashFunction>& getCourses();
+    const std::unordered_set<ds::Division, ds::DivisionHashFunction>&
+      getDivisions();
     const std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>&
       getStudentGroups();
 
@@ -27,8 +30,11 @@ namespace upvtc_ct::preprocessor
     std::string getBinFolderPath() const;
 
     std::unordered_set<ds::Course, ds::CourseHashFunction> courses;
+    std::unordered_set<ds::Division, ds::DivisionHashFunction> divisions;
     std::unordered_set<ds::StudentGroup, ds::StudentGroupHashFunction>
       studentGroups;
+
+    std::unordered_map<std::string, ds::Course*> courseNameToObject;
   };
 }
 
