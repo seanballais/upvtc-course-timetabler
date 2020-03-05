@@ -12,6 +12,11 @@ namespace upvtc_ct::preprocessor
 {
   namespace ds = upvtc_ct::ds;
 
+  // TODO:
+  //   - Let DataManager be able to consume the student groups JSON file,
+  //   - Test DataManager.
+  //   - Generate classes based on the data gathered.
+
   class DataManager
   {
   public:
@@ -34,8 +39,6 @@ namespace upvtc_ct::preprocessor
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
-
-    std::unordered_map<std::string, ds::Course*> courseNameToObject;
   };
 }
 

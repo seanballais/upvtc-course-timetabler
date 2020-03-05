@@ -91,23 +91,23 @@ namespace upvtc_ct::ds
 
   struct BaseStudentGroup
   {
-    BaseStudentGroup(
-      const unsigned int numMembers,
-      const std::unordered_set<Course*> assignedCourses);
+    BaseStudentGroup(const std::unordered_set<Course*> assignedCourses);
+    const unsigned int getNumMembers() const;
+    void setNumMembers(const unsigned int numMembers);
 
-    const unsigned int numMembers;
     const std::unordered_set<Course*> assignedCourses;
+  private:
+    unsigned int numMembers;
+    bool isNumMembersAssigned;
   };
 
   struct StudentGroup : public BaseStudentGroup
   {
-    StudentGroup(
-      const Degree degree, const unsigned int yearLevel,
-      const unsigned int numMembers,
-      const std::unordered_set<Course*> assignedCourses);
+    StudentGroup(const Degree* degree, const unsigned int yearLevel,
+                 const std::unordered_set<Course*> assignedCourses);
     bool operator==(const StudentGroup& sg) const;
 
-    const Degree degree;
+    const Degree* degree;
     const unsigned int yearLevel;
   };
 
@@ -119,10 +119,8 @@ namespace upvtc_ct::ds
 
   struct SubStudentGroup : public BaseStudentGroup
   {
-    SubStudentGroup(
-      const StudentGroup parentGroup,
-      const unsigned int numMembers,
-      const std::unordered_set<Course*> assignedCourses);
+    SubStudentGroup(const StudentGroup parentGroup,
+                    const std::unordered_set<Course*> assignedCourses);
     bool operator==(const SubStudentGroup& ssg) const;
 
     const StudentGroup parentGroup;

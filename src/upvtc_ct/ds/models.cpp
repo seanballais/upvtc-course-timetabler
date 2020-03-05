@@ -45,39 +45,49 @@ namespace upvtc_ct::ds
   }
 
   BaseStudentGroup::BaseStudentGroup(
-        const unsigned int numMembers,
         const std::unordered_set<Course*> assignedCourses)
-    : numMembers(numMembers),
-      assignedCourses(assignedCourses) {}
+    : assignedCourses(assignedCourses),
+      isNumMembersAssigned(false) {}
 
-  StudentGroup::StudentGroup(
-        const Degree degree,
-        const unsigned int yearLevel,
-        const unsigned int numMembers,
-        const std::unordered_set<Course*> assignedCourses)
-    : BaseStudentGroup(numMembers, assignedCourses),
+  const unsigned int BaseStudentGroup::getNumMembers() const
+  {
+    return this->numMembers;
+  }
+
+  void BaseStudentGroup::setNumMembers(const unsigned int numMembers)
+  {
+    // numMembers should only be assigned once to preserve its const-ness in
+    // principle.
+    if (!this->isNumMembersAssigned) {
+      this->numMembers = numMembers;
+      this->isNumMembersAssigned = true;
+    }
+  }
+
+  StudentGroup::StudentGroup(const Degree* degree, const unsigned int yearLevel,
+                             const std::unordered_set<Course*> assignedCourses)
+    : BaseStudentGroup(assignedCourses),
       degree(degree),
       yearLevel(yearLevel) {}
 
   bool StudentGroup::operator==(const StudentGroup& sg) const
   {
-    return (this->degree == sg.degree
-            && this->yearLevel == sg.yearLevel
-            && this->assignedCourses == sg.assignedCourses);
+    return this->degree == sg.degree
+           && this->yearLevel == sg.yearLevel
+           && this->assignedCourses == sg.assignedCourses;
   }
 
   SubStudentGroup::SubStudentGroup(
         const StudentGroup parentGroup,
-        const unsigned int numMembers,
         const std::unordered_set<Course*> assignedCourses)
-    : BaseStudentGroup(numMembers, assignedCourses),
+    : BaseStudentGroup(assignedCourses),
       parentGroup(parentGroup) {}
   
   bool SubStudentGroup::operator==(const SubStudentGroup& ssg) const
   {
     return this->parentGroup == ssg.parentGroup
-           && this->numMembers == ssg.numMembers
-           && this->assignedCourses == ssg.assignedCourses;
+           && this->assignedCourses == ssg.assignedCourses
+           && this->getNumMembers() == ssg.getNumMembers();
   }
 
   Teacher::Teacher(const std::string name)
@@ -122,16 +132,11 @@ namespace upvtc_ct::ds
   size_t StudentGroupHashFunction::operator()(const StudentGroup& sg) const
   {
     std::stringstream objIdentifier;
-    objIdentifier << sg.degree.name
+    objIdentifier << sg.degree->name
                   << "-"
                   << std::to_string(sg.yearLevel)
                   << "-"
-                  << std::to_string(sg.numMembers);
-
-    for (const auto& course : sg.assignedCourses) {
-      objIdentifier << "-";
-      objIdentifier << course->name;
-    }
+                  << std::to_string(sg.getNumMembers());
 
     return std::hash<std::string>()(objIdentifier.str());
   }
@@ -144,12 +149,7 @@ namespace upvtc_ct::ds
     std::stringstream objIdentifier;
     objIdentifier << std::to_string(parentGroupHash)
                   << "-"
-                  << std::to_string(ssg.numMembers);
-
-    for (const auto& course : ssg.assignedCourses) {
-      objIdentifier << "-";
-      objIdentifier << course->name;
-    }
+                  << std::to_string(ssg.getNumMembers());
 
     return std::hash<std::string>()(objIdentifier.str());
   }

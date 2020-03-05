@@ -35,3 +35,8 @@ configure_file(
     "${CMAKE_SOURCE_DIR}/data/study_plans.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/study_plans.json"
     COPYONLY)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/data/student_groups.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/student_groups.json"
+    COPYONLY)

@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 #include <limits.h>
 #include <unistd.h>
@@ -13,6 +14,7 @@
 #include <upvtc_ct/preprocessor/data_manager.hpp>
 #include <upvtc_ct/ds/models.hpp>
 #include <upvtc_ct/utils/errors.hpp>
+#include <upvtc_ct/utils/hash_specializations.hpp>
 
 namespace upvtc_ct::preprocessor
 {
@@ -36,6 +38,12 @@ namespace upvtc_ct::preprocessor
     json studyPlan;
     studyPlanFile >> studyPlan;
 
+    std::unordered_map<std::string, ds::Course*> courseNameToObject;
+    std::unordered_map<std::pair<std::string, unsigned int>,
+                       ds::StudentGroup*,
+                       utils::PairHash>
+      generatedStudentGroups;
+
     // Go through divisions first.
     for (const auto& [_, studyPlanItem] : studyPlan.items()) {
       const std::string divisionName = studyPlanItem["division_name"];
@@ -50,7 +58,6 @@ namespace upvtc_ct::preprocessor
         std::unique_ptr<ds::Degree> degreePtr(
           std::make_unique<ds::Degree>(degreeName));
         divisionDegrees.insert(degreePtr.get());
-        this->degrees.insert(std::move(degreePtr));
 
         // Now go through each year level in the study plan of a degree.
         const auto& degreePlans = degreeItem["plans"];
@@ -67,34 +74,83 @@ namespace upvtc_ct::preprocessor
           }
 
           const auto& degreeItemCourses = planItem["courses"];
+          std::unordered_set<ds::Course*> planCourses;
           for (const auto& [_, courseItem] : degreeItemCourses.items()) {
             const std::string courseName = courseItem["course_name"];
             std::unordered_set<ds::Course*> coursePrereqs;
 
             const auto& prerequisites = courseItem["prerequisites"];
             for (const auto& [_, prereq] : prerequisites.items()) {
-              auto prereqCourseItem = this->courseNameToObject.find(prereq);
-              if (prereqCourseItem == this->courseNameToObject.end()) {
+              auto prereqCourseItem = courseNameToObject.find(prereq);
+              if (prereqCourseItem == courseNameToObject.end()) {
                 throw utils::InvalidContentsError(
-                  "Referenced another course that was not yet generated.");
+                  "Referenced another course that was not yet generated. "
+                  "Please check your Study Plans JSON file.");
               }
 
               ds::Course* prereqCourse = prereqCourseItem->second;
               coursePrereqs.insert(prereqCourse);
             }
 
+            // Create a course object. Make sure that we only have one copy of
+            // the newly generated course object throughout the program.
             std::unique_ptr<ds::Course> coursePtr(
               std::make_unique<ds::Course>(courseName, coursePrereqs));
-            this->courseNameToObject.insert({courseName, coursePtr.get()});
+            planCourses.insert(coursePtr.get());
             divisionCourses.insert(coursePtr.get());
+            courseNameToObject.insert({courseName, coursePtr.get()});
             this->courses.insert(std::move(coursePtr));
           }
+
+          // Create a StudentGroup. Similar to the course object, we have to
+          // make sure that there is only one copy for each StudentGroup object.
+          auto sgPtr(std::make_unique<ds::StudentGroup>(degreePtr.get(),
+                                                        yearLevel,
+                                                        planCourses));
+          generatedStudentGroups.insert({
+            std::make_pair(degreeName, yearLevel), std::move(sgPtr.get())
+          });
+          this->studentGroups.insert(std::move(sgPtr));
         }
+
+        this->degrees.insert(std::move(degreePtr));
       }
 
       std::unique_ptr<ds::Division> divisionPtr(
         new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
       this->divisions.insert(std::move(divisionPtr));
+    }
+
+    // Parse the student_groups.json file.
+    const std::string studentGroupsFilePath = 
+      dataFolder + std::string("student_groups.json");
+    std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
+    if (!studentGroupsFile) {
+      throw utils::FileNotFoundError(
+        "The Student Groups JSON file cannot be found.");
+    }
+
+    json studentGroups;
+    studentGroupsFile >> studentGroups;
+
+    for (const auto& [_, studentGroup] : studentGroups.items()) {
+      std::string degreeName = studentGroup["degree_name"];
+      unsigned int yearLevel = studentGroup["year_level"].get<int>();
+      unsigned int numMembers = studentGroup["num_members"].get<int>();
+
+      const auto& sgItem = generatedStudentGroups.find(
+        std::make_pair(degreeName, yearLevel));
+      if (sgItem == generatedStudentGroups.end()) {
+        std::cout << "Encountered a non-existing student group, with the"
+                  << "following details:"
+                  << "  Degree:\t" << degreeName
+                  << "  Year Level:\t" << yearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        ds::StudentGroup* sg = sgItem->second;
+        sg->setNumMembers(numMembers);
+      }
     }
   }
 

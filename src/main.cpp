@@ -23,5 +23,18 @@ int main(int argc, char* argv[])
     std::cout << "\t" << course->name << std::endl;
   }
 
+  std::cout << "STUDENT GROUPS" << std::endl;
+  for (const auto& group : dm.getStudentGroups()) {
+    std::cout << "----------------------------" << std::endl;
+    std::cout << "\tDegree:\t" << group->degree->name << std::endl;
+    std::cout << "\tYear Level:\t" << group->yearLevel << std::endl;
+    std::cout << "\tNo. of Members:\t" << group->getNumMembers() << std::endl;
+    std::cout << "\tCourses:" << std::endl;
+    for (const auto& course : group->assignedCourses) {
+        std::cout << "\t\t" << course->name << std::endl;
+    }
+  }
+  std::cout << "----------------------------" << std::endl;
+
   return 0;
 }
