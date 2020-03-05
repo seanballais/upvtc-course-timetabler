@@ -1,12 +1,17 @@
 #ifndef UPVTC_CT_DS_MODELS_HPP_
 #define UPVTC_CT_DS_MODELS_HPP_
 
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 
+#include <upvtc_ct/utils/errors.hpp>
+
 namespace upvtc_ct::ds
 {
+  namespace utils = upvtc_ct::utils;
+
   // Note that these models, except Class, are and should be read-only. There is
   // no reason at the moment that most of these models should be mutable.
   class CourseHashFunction;
@@ -174,6 +179,30 @@ namespace upvtc_ct::ds
     unsigned int day;
     Room room;
     unsigned int timeslot;
+  };
+
+  class Config
+  {
+  public:
+    Config(const std::unordered_map<std::string, std::string> configData);
+    bool empty() const;
+
+    template<typename T>
+    T get(const std::string key)
+    {
+      throw utils::DisallowedFunctionError();
+    }
+
+  private:
+    const std::string getValue(const std::string key) const;
+
+    const std::unordered_map<std::string, std::string> configData;
+  };
+
+  class ConfigError : public std::runtime_error
+  {
+  public:
+    ConfigError(const char* what_arg);
   };
 }
 

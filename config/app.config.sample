@@ -1,0 +1,7 @@
+# Note that numbers are 0-indexed.
+
+semester = 0
+max_lecture_capacity = 35
+max_lab_capacity = 25
+max_annual_teacher_load = 24
+max_semestral_teacher_load = 12

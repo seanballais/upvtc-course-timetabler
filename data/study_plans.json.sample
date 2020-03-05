@@ -14,6 +14,7 @@
             "courses": [
               {
                 "course_name": "CMSC 11",
+                "has_lab": true,
                 "prerequisites": []
               },
               {
@@ -27,3 +28,4 @@
     ]
   }
 ]
+

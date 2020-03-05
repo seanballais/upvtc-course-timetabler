@@ -1,12 +1,13 @@
 #include <iostream>
 
-#include <upvtc_ct/preprocessor/data_manager.hpp>
+#include <upvtc_ct/ds/models.hpp>
+#include <upvtc_ct/utils/data_manager.hpp>
 
 int main(int argc, char* argv[])
 {
   std::cout << "I'm working!" << std::endl;
 
-  upvtc_ct::preprocessor::DataManager dm(0);
+  upvtc_ct::utils::DataManager dm;
 
   std::cout << "DIVISIONS" << std::endl;
   for (const auto& division : dm.getDivisions()) {
@@ -35,6 +36,23 @@ int main(int argc, char* argv[])
     }
   }
   std::cout << "----------------------------" << std::endl;
+
+  upvtc_ct::ds::Config config = dm.getConfig();
+
+  std::cout << "CONFIG" << std::endl;
+  std::cout << "\tSemester: " << config.get<int>("semester") << std::endl;
+  std::cout << "\tMax Lecture Capacity: "
+            << config.get<int>("max_lecture_capacity")
+            << std::endl;
+  std::cout << "\tMax Lab Capacity: "
+            << config.get<int>("max_lab_capacity")
+            << std::endl;
+  std::cout << "\tMax Annual Teacher Load: "
+            << config.get<int>("max_annual_teacher_load")
+            << std::endl;
+  std::cout << "\tMax Semestral Teacher Load: "
+            << config.get<int>("max_semestral_teacher_load")
+            << std::endl;
 
   return 0;
 }

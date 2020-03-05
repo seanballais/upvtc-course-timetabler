@@ -10,4 +10,5 @@ add_library(upvtc_ct-lib-utils STATIC "")
 target_sources(upvtc_ct-lib-utils
     PRIVATE
         errors.cpp
+        data_manager.cpp
 )

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -10,20 +11,25 @@
 #include <unistd.h>
 
 #include <nlohmann/json.hpp>
+#include <toml11/toml.hpp>
 
-#include <upvtc_ct/preprocessor/data_manager.hpp>
 #include <upvtc_ct/ds/models.hpp>
+#include <upvtc_ct/utils/data_manager.hpp>
 #include <upvtc_ct/utils/errors.hpp>
 #include <upvtc_ct/utils/hash_specializations.hpp>
 
-namespace upvtc_ct::preprocessor
+namespace upvtc_ct::utils
 {
   using json = nlohmann::json;
   namespace ds = upvtc_ct::ds;
   namespace utils = upvtc_ct::utils;
 
-  DataManager::DataManager(const unsigned int semester)
+  DataManager::DataManager()
+    : config(this->getConfigData())
   {
+    ds::Config config = this->getConfig();
+    const unsigned int semester = config.get<int>("semester");
+
     const std::string dataFolder = this->getBinFolderPath()
                                    + std::string("/data/");
     const std::string studyPlanFilePath = dataFolder
@@ -152,6 +158,50 @@ namespace upvtc_ct::preprocessor
         sg->setNumMembers(numMembers);
       }
     }
+  }
+
+  const std::unordered_map<std::string, std::string>
+  DataManager::getConfigData()
+  {
+    const std::string configFolder = this->getBinFolderPath()
+                                     + std::string("/config/");
+    const std::string configFilePath = configFolder
+                                       + std::string("app.config");
+    toml::value configData;
+    try {
+      configData = toml::parse(configFilePath);  
+    } catch (std::runtime_error err) {
+      throw utils::FileNotFoundError("The configuration file cannot be found.");
+    }
+
+    return std::unordered_map<std::string, std::string>({
+      {
+        "semester",
+        std::to_string(toml::find<int>(configData, "semester"))
+      },
+      {
+        "max_lecture_capacity",
+        std::to_string(toml::find<int>(configData, "max_lecture_capacity"))
+      },
+      {
+        "max_lab_capacity",
+        std::to_string(toml::find<int>(configData, "max_lab_capacity"))
+      },
+      {
+        "max_annual_teacher_load",
+        std::to_string(toml::find<int>(configData, "max_annual_teacher_load"))
+      },
+      {
+        "max_semestral_teacher_load",
+        std::to_string(
+          toml::find<int>(configData, "max_semestral_teacher_load"))
+      }
+    });
+  }
+
+  const ds::Config& DataManager::getConfig()
+  {
+    return this->config;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Course>>&

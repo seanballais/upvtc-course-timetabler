@@ -9,4 +9,7 @@ namespace upvtc_ct::utils
 
   InvalidContentsError::InvalidContentsError(const char* what_arg)
     : std::runtime_error(what_arg) {}
+
+  DisallowedFunctionError::DisallowedFunctionError()
+    : std::runtime_error("Called function should not be used.") {}
 }

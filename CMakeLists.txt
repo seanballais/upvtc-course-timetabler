@@ -28,7 +28,7 @@ include_directories("${CMAKE_SOURCE_DIR}/src")
 add_subdirectory(src)
 
 ################################################################################
-# Copy data files to the output directory.                                     #
+# Copy config and data files to the output directory.                                     #
 ################################################################################
 message(STATUS "Copying data files to the binary folder")
 configure_file(
@@ -39,4 +39,9 @@ configure_file(
 configure_file(
     "${CMAKE_SOURCE_DIR}/data/student_groups.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/student_groups.json"
+    COPYONLY)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/config/app.config"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config/app.config"
     COPYONLY)

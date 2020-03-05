@@ -35,5 +35,8 @@
 build/
 build/**.*
 
-# Non-sample data files.
-data/**/*.json
+# Non-Sample Data Files
+data/*.json
+
+# Non-Sample Config Files
+config/*.config

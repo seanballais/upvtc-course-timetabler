@@ -16,6 +16,12 @@ namespace upvtc_ct::utils
   public:
     InvalidContentsError(const char* what_arg);
   };
+
+  class DisallowedFunctionError : public std::runtime_error
+  {
+  public:
+    DisallowedFunctionError();
+  };
 }
 
 #endif
