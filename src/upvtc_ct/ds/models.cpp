@@ -1,3 +1,4 @@
+#include <functional>
 #include <sstream>
 #include <string>
 
@@ -113,6 +114,35 @@ namespace upvtc_ct::ds
     return this->name == d.name;
   }
 
+  bool Class::operator==(const Class& c) const
+  {
+    const std::string thisCourseName = (this->course != nullptr)
+      ? this->course->name
+      : "nullptr";
+    const std::string thisTeacherName = (this->teacher != nullptr)
+      ? this->teacher->name
+      : "nullptr";
+    const std::string thisRoomName = (this->room != nullptr)
+      ? this->room->name
+      : "nullptr";
+    const std::string otherCourseName = (c.course != nullptr)
+      ? c.course->name
+      : "nullptr";
+    const std::string otherTeacherName = (c.teacher != nullptr)
+      ? c.teacher->name
+      : "nullptr";
+    const std::string otherRoomName = (c.room != nullptr)
+      ? c.room->name
+      : "nullptr";
+
+    return this->id == c.id
+           && thisCourseName == otherCourseName
+           && thisTeacherName == otherTeacherName
+           && this->day == c.day
+           && thisRoomName == otherRoomName
+           && this->timeslot == c.timeslot;
+  }
+
   // Model Hash Function Definitions
   size_t CourseHashFunction::operator()(const Course& c) const
   {
@@ -162,6 +192,43 @@ namespace upvtc_ct::ds
   size_t DivisionHashFunction::operator()(const Division& d) const
   {
     return std::hash<std::string>()(d.name);
+  }
+
+  size_t ClassHashFunction::operator()(const Class& c) const
+  {
+    std::stringstream objIdentifier;
+    objIdentifier << "("
+                  << c.id << ", ";
+
+    if (c.course == nullptr) {
+      objIdentifier << "nullptr";
+    } else {
+      objIdentifier << c.course->name;
+    }
+    
+    objIdentifier << ", ";
+
+    if (c.teacher == nullptr) {
+      objIdentifier << "nullptr";
+    } else {
+      objIdentifier << c.teacher->name;
+    }
+
+    objIdentifier << ", "
+                  << c.day << ", ";
+
+    if (c.room == nullptr) {
+      objIdentifier << "nullptr";
+    } else {
+      objIdentifier << c.room->name;
+    }
+    
+    objIdentifier << ", "
+                  << c.timeslot
+                  << ")"
+                  << std::endl;
+
+    return std::hash<std::string>()(objIdentifier.str());
   }
 
   Config::Config(const std::unordered_map<std::string, std::string> configData)

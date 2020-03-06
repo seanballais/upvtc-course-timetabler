@@ -174,11 +174,20 @@ namespace upvtc_ct::ds
 
   struct Class
   {
-    const Course course;
-    Teacher teacher;
+    bool operator==(const Class& c) const;
+
+    size_t id; // Used to identify which Class objects describe the same class.
+    const Course* course;
+    Teacher* teacher;
     unsigned int day;
-    Room room;
+    Room* room;
     unsigned int timeslot;
+  };
+
+  class ClassHashFunction
+  {
+  public:
+    size_t operator()(const Class& c) const;
   };
 
   class Config

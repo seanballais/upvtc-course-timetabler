@@ -44,7 +44,6 @@ namespace upvtc_ct::utils
     json studyPlan;
     studyPlanFile >> studyPlan;
 
-    std::unordered_map<std::string, ds::Course*> courseNameToObject;
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
                        utils::PairHash>
@@ -87,14 +86,10 @@ namespace upvtc_ct::utils
 
             const auto& prerequisites = courseItem["prerequisites"];
             for (const auto& [_, prereq] : prerequisites.items()) {
-              auto prereqCourseItem = courseNameToObject.find(prereq);
-              if (prereqCourseItem == courseNameToObject.end()) {
-                throw utils::InvalidContentsError(
-                  "Referenced another course that was not yet generated. "
-                  "Please check your Study Plans JSON file.");
-              }
-
-              ds::Course* prereqCourse = prereqCourseItem->second;
+              ds::Course* prereqCourse = this->getCourseNameObject(
+                prereq,
+                "Referenced another course that was not yet generated. "
+                "Please check your Study Plans JSON file.");
               coursePrereqs.insert(prereqCourse);
             }
 
@@ -226,6 +221,18 @@ namespace upvtc_ct::utils
   DataManager::getStudentGroups()
   {
     return this->studentGroups;
+  }
+
+  ds::Course* const DataManager::getCourseNameObject(
+      const std::string courseName,
+      const char* errorMsg)
+  {
+    auto courseItem = this->courseNameToObject.find(courseName);
+    if (courseItem == this->courseNameToObject.end()) {
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return courseItem->second;
   }
 
   std::string DataManager::getBinFolderPath() const

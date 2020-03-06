@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <upvtc_ct/ds/models.hpp>
+#include <upvtc_ct/preprocessor/preprocessor.hpp>
 #include <upvtc_ct/utils/data_manager.hpp>
 
 int main(int argc, char* argv[])
@@ -53,6 +54,40 @@ int main(int argc, char* argv[])
   std::cout << "\tMax Semestral Teacher Load: "
             << config.get<int>("max_semestral_teacher_load")
             << std::endl;
+  std::cout << "-----------------------------------" << std::endl;
+
+  std::cout << "CLASSES" << std::endl;
+  auto pp = upvtc_ct::preprocessor::Preprocessor(&dm);
+  for (auto cls : pp.getClasses()) {
+    std::cout << "---------------------------------" << std::endl;
+    std::cout << "\tID: " << cls.id << std::endl;
+
+    std::cout << "\tCourse: ";
+    if (cls.course != nullptr) {
+      std::cout << cls.course->name << std::endl;
+    } else {
+      std::cout << "None" << std::endl;
+    }
+
+    std::cout << "\tTeacher: ";
+    if (cls.teacher != nullptr) {
+      std::cout << cls.teacher->name << std::endl;
+    } else {
+      std::cout << "None" << std::endl;
+    }
+
+    std::cout << "\tDay: " << cls.day << std::endl;
+
+    std::cout << "\tRoom: ";
+    if (cls.room != nullptr) {
+      std::cout << cls.room->name << std::endl;
+    } else {
+      std::cout << "None" << std::endl;
+    }
+
+    std::cout << "\tTimeslot: " << cls.timeslot << std::endl;
+  }
+  std::cout << "-----------------------------------" << std::endl;
 
   return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef UPVTC_CT_PREPROCESSOR_HPP_
-#define UPVTC_CT_PREPROCESSOR_HPP_
+#ifndef UPVTC_CT_UTILS_DATA_MANAGER_HPP_
+#define UPVTC_CT_UTILS_DATA_MANAGER_HPP_
 
 #include <string>
 #include <memory>
@@ -27,6 +27,8 @@ namespace upvtc_ct::utils
     const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
+    ds::Course* const getCourseNameObject(const std::string courseName,
+                                          const char* errorMsg);
 
   private:
     std::string getBinFolderPath() const;
@@ -37,6 +39,7 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
+    std::unordered_map<std::string, ds::Course*> courseNameToObject;
   };
 }
 
