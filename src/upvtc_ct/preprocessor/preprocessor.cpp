@@ -39,6 +39,7 @@ namespace upvtc_ct::preprocessor
     unsigned int maxLecCapacity = config.get<int>("max_lecture_capacity");
 
     std::unordered_set<ds::Class, ds::ClassHashFunction> classes;
+    size_t numClassesGenerated = 0;
     for (const auto item : numCourseEnrolleesMap) {
       int numCourseEnrollees = item.second;
       int numClasses = static_cast<int>(
@@ -56,7 +57,8 @@ namespace upvtc_ct::preprocessor
         // Assume for now that a course requires three timeslots.
         for (int ctr = 0; ctr < 3; ctr++) {
           ds::Class cls = {
-            .id=classID,
+            .id=numClassesGenerated,
+            .classID=classID,
             .course=course,
             .teacher=nullptr,
             .day=0,
@@ -64,6 +66,8 @@ namespace upvtc_ct::preprocessor
             .timeslot=0
           };
           classes.insert(cls);
+
+          numClassesGenerated++;
         }
       }
     }

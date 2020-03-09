@@ -176,7 +176,9 @@ namespace upvtc_ct::ds
   {
     bool operator==(const Class& c) const;
 
-    size_t id; // Used to identify which Class objects describe the same class.
+    size_t id; // Used to identify different classes from one another.
+    size_t classID; // Used to identify which Class objects describe the
+                    // same class.
     const Course* course;
     Teacher* teacher;
     unsigned int day;
