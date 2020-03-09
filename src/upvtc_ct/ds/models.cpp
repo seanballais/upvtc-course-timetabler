@@ -7,10 +7,13 @@
 namespace upvtc_ct::ds
 {
   // Model Definitions
-  Course::Course(const std::string name,
-                 const std::unordered_set<Course*> prerequisites)
+  Course::Course(const std::string name, const bool hasLab,
+                 const std::unordered_set<Course*> prerequisites,
+                 const std::unordered_set<RoomFeature*> labRequirements)
     : name(name),
-      prerequisites(prerequisites) {}
+      hasLab(hasLab),
+      prerequisites(prerequisites),
+      labRequirements(labRequirements) {}
 
   bool Course::operator==(const Course& c) const
   {

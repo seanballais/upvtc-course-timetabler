@@ -22,7 +22,10 @@ int main(int argc, char* argv[])
 
   std::cout << "COURSES" << std::endl;
   for (const auto& course : dm.getCourses()) {
-    std::cout << "\t" << course->name << std::endl;
+    std::cout << "\t"
+              << course->name
+              << ((course->hasLab) ? " (Has lab)" : "")
+              << std::endl;
   }
 
   std::cout << "STUDENT GROUPS" << std::endl;

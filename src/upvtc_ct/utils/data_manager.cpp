@@ -82,8 +82,9 @@ namespace upvtc_ct::utils
           std::unordered_set<ds::Course*> planCourses;
           for (const auto& [_, courseItem] : degreeItemCourses.items()) {
             const std::string courseName = courseItem["course_name"];
+            const bool hasLab = courseItem["has_lab"].get<bool>();
+            
             std::unordered_set<ds::Course*> coursePrereqs;
-
             const auto& prerequisites = courseItem["prerequisites"];
             for (const auto& [_, prereq] : prerequisites.items()) {
               ds::Course* prereqCourse = this->getCourseNameObject(
@@ -93,10 +94,15 @@ namespace upvtc_ct::utils
               coursePrereqs.insert(prereqCourse);
             }
 
+            std::unordered_set<ds::RoomFeature*> labReqs;
+
             // Create a course object. Make sure that we only have one copy of
             // the newly generated course object throughout the program.
             std::unique_ptr<ds::Course> coursePtr(
-              std::make_unique<ds::Course>(courseName, coursePrereqs));
+              std::make_unique<ds::Course>(courseName,
+                                           hasLab,
+                                           coursePrereqs,
+                                           labReqs));
             planCourses.insert(coursePtr.get());
             divisionCourses.insert(coursePtr.get());
             courseNameToObject.insert({courseName, coursePtr.get()});

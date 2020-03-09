@@ -15,11 +15,14 @@
               {
                 "course_name": "CMSC 11",
                 "has_lab": true,
-                "prerequisites": []
+                "prerequisites": [],
+                "lab_requirements": []
               },
               {
                 "course_name": "MATH 17",
-                "prerequisites": []
+                "has_lab": false,
+                "prerequisites": [],
+                "lab_requirements": []
               }
             ]
           }
@@ -28,4 +31,3 @@
     ]
   }
 ]
-

@@ -14,16 +14,19 @@ namespace upvtc_ct::ds
 
   // Note that these models, except Class, are and should be read-only. There is
   // no reason at the moment that most of these models should be mutable.
-  class CourseHashFunction;
+  class RoomFeature;
 
   struct Course
   {
-    Course(const std::string name,
-           const std::unordered_set<Course*> prerequisites);
+    Course(const std::string name, const bool hasLab,
+           const std::unordered_set<Course*> prerequisites,
+           const std::unordered_set<RoomFeature*> labRequirements);
     bool operator==(const Course& c) const;
 
     const std::string name;
+    const bool hasLab;
     const std::unordered_set<Course*> prerequisites;
+    const std::unordered_set<RoomFeature*> labRequirements;
   };
 
   class CourseHashFunction
