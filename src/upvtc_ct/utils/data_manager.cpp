@@ -235,6 +235,30 @@ namespace upvtc_ct::utils
     return this->studentGroups;
   }
 
+  ds::Course* const DataManager::getCourseNameObject(
+      const std::string courseName,
+      const char* errorMsg)
+  {
+    auto courseItem = this->courseNameToObject.find(courseName);
+    if (courseItem == this->courseNameToObject.end()) {
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return courseItem->second;
+  }
+
+  const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
+  DataManager::getClassGroups()
+  {
+    return this->classGroups;
+  }
+
+  const std::unordered_map<size_t, std::unordered_set<size_t>>&
+  DataManager::getClassConflicts()
+  {
+    return this->classConflicts;
+  }
+
   void DataManager::addClass(std::unique_ptr<ds::Class>&& clsPtr)
   {
     // Add classes into a class group.
@@ -248,16 +272,15 @@ namespace upvtc_ct::utils
     this->classes.insert(std::move(clsPtr));
   }
 
-  ds::Course* const DataManager::getCourseNameObject(
-      const std::string courseName,
-      const char* errorMsg)
+  void DataManager::addClassConflict(const size_t classGroup,
+                                     const size_t conflictedGroup)
   {
-    auto courseItem = this->courseNameToObject.find(courseName);
-    if (courseItem == this->courseNameToObject.end()) {
-      throw utils::InvalidContentsError(errorMsg);
+    const auto item = this->classConflicts.find(classGroup);
+    if (item == this->classConflicts.end()) {
+      this->classConflicts.insert({classGroup, {}});
     }
 
-    return courseItem->second;
+    this->classConflicts[classGroup].insert(conflictedGroup);
   }
 
   std::string DataManager::getBinFolderPath() const

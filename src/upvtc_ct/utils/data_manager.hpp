@@ -30,7 +30,14 @@ namespace upvtc_ct::utils
       getStudentGroups();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
+    const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
+      getClassGroups();
+    const std::unordered_map<size_t, std::unordered_set<size_t>>&
+      getClassConflicts();
+
     void addClass(std::unique_ptr<ds::Class>&& cls);
+    void addClassConflict(const size_t classGroup,
+                          const size_t conflictedGroup);
 
   private:
     std::string getBinFolderPath() const;
@@ -43,7 +50,13 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
+
+    // NOte that the key is the class group ID.
     std::unordered_map<size_t, std::unordered_set<ds::Class*>> classGroups;
+
+    // Note that the key is the class group ID, and the values are the class
+    // groups that are in conflict with the class group referred to by the key.
+    std::unordered_map<size_t, std::unordered_set<size_t>> classConflicts;
   };
 }
 

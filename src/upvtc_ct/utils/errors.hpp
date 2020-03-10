@@ -5,6 +5,12 @@
 
 namespace upvtc_ct::utils
 {
+  class DisallowedFunctionError : public std::runtime_error
+  {
+  public:
+    DisallowedFunctionError();
+  };
+
   class FileNotFoundError : public std::runtime_error
   {
   public:
@@ -17,10 +23,10 @@ namespace upvtc_ct::utils
     InvalidContentsError(const char* what_arg);
   };
 
-  class DisallowedFunctionError : public std::runtime_error
+  class MaxClassCapacityError : public std::runtime_error
   {
   public:
-    DisallowedFunctionError();
+    MaxClassCapacityError(const char* what_arg);
   };
 }
 

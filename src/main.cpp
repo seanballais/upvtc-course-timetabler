@@ -94,5 +94,14 @@ int main(int argc, char* argv[])
   }
   std::cout << "-----------------------------------" << std::endl;
 
+  std::cout << "CLASS CONFLICTS" << std::endl;
+  for (const auto item : dm.getClassConflicts()) {
+    std::cout << item.first << " is in conflict with:" << std::endl;
+    for (const auto cls : item.second) {
+      std::cout << "\t" << cls << std::endl;
+    }
+  }
+  std::cout << "-----------------------------------" << std::endl;
+
   return 0;
 }
