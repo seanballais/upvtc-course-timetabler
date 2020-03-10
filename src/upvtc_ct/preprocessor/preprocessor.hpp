@@ -1,6 +1,7 @@
 #ifndef UPVTC_CT_PREPROCESSOR_PREPROCESSOR_HPP_
 #define UPVTC_CT_PREPROCESSOR_PREPROCESSOR_HPP_
 
+#include <memory>
 #include <unordered_set>
 
 #include <upvtc_ct/ds/models.hpp>
@@ -15,12 +16,12 @@ namespace upvtc_ct::preprocessor
   {
   public:
     Preprocessor(utils::DataManager* const dataManager);
-    const std::unordered_set<ds::Class, ds::ClassHashFunction>
-      getClasses() const;
+    void preprocess();
 
   private:
+    void generateClasses();
+
     utils::DataManager* const dataManager;
-    std::unordered_set<ds::Class, ds::ClassHashFunction> classes;
   };
 }
 

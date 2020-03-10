@@ -211,6 +211,12 @@ namespace upvtc_ct::utils
     return this->courses;
   }
 
+  const std::unordered_set<std::unique_ptr<ds::Class>>&
+  DataManager::getClasses()
+  {
+    return this->classes;
+  }
+
   const std::unordered_set<std::unique_ptr<ds::Degree>>&
   DataManager::getDegrees()
   {
@@ -227,6 +233,19 @@ namespace upvtc_ct::utils
   DataManager::getStudentGroups()
   {
     return this->studentGroups;
+  }
+
+  void DataManager::addClass(std::unique_ptr<ds::Class>&& clsPtr)
+  {
+    // Add classes into a class group.
+    auto classGroup = this->classGroups.find(clsPtr->classID);
+    if (classGroup == this->classGroups.end()) {
+      this->classGroups.insert({clsPtr->classID, {}});
+    }
+
+    this->classGroups[clsPtr->classID].insert(clsPtr.get());
+
+    this->classes.insert(std::move(clsPtr));
   }
 
   ds::Course* const DataManager::getCourseNameObject(

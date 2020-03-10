@@ -117,6 +117,17 @@ namespace upvtc_ct::ds
     return this->name == d.name;
   }
 
+  Class::Class(const size_t id, const size_t classID, Course* const course,
+               Teacher* const teacher, const unsigned int day, Room* const room,
+               const unsigned int timeslot)
+    : id(id),
+      classID(classID),
+      course(course),
+      teacher(teacher),
+      day(day),
+      room(room),
+      timeslot(timeslot) {}
+
   bool Class::operator==(const Class& c) const
   {
     return this->id == c.id;

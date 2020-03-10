@@ -61,35 +61,36 @@ int main(int argc, char* argv[])
 
   std::cout << "CLASSES" << std::endl;
   auto pp = upvtc_ct::preprocessor::Preprocessor(&dm);
-  for (auto cls : pp.getClasses()) {
+  pp.preprocess();
+  for (const auto& cls : dm.getClasses()) {
     std::cout << "---------------------------------" << std::endl;
-    std::cout << "\tID: " << cls.id << std::endl;
-    std::cout << "\tClass ID: " << cls.classID << std::endl;
+    std::cout << "\tID: " << cls->id << std::endl;
+    std::cout << "\tClass ID: " << cls->classID << std::endl;
 
     std::cout << "\tCourse: ";
-    if (cls.course != nullptr) {
-      std::cout << cls.course->name << std::endl;
+    if (cls->course != nullptr) {
+      std::cout << cls->course->name << std::endl;
     } else {
       std::cout << "None" << std::endl;
     }
 
     std::cout << "\tTeacher: ";
-    if (cls.teacher != nullptr) {
-      std::cout << cls.teacher->name << std::endl;
+    if (cls->teacher != nullptr) {
+      std::cout << cls->teacher->name << std::endl;
     } else {
       std::cout << "None" << std::endl;
     }
 
-    std::cout << "\tDay: " << cls.day << std::endl;
+    std::cout << "\tDay: " << cls->day << std::endl;
 
     std::cout << "\tRoom: ";
-    if (cls.room != nullptr) {
-      std::cout << cls.room->name << std::endl;
+    if (cls->room != nullptr) {
+      std::cout << cls->room->name << std::endl;
     } else {
       std::cout << "None" << std::endl;
     }
 
-    std::cout << "\tTimeslot: " << cls.timeslot << std::endl;
+    std::cout << "\tTimeslot: " << cls->timeslot << std::endl;
   }
   std::cout << "-----------------------------------" << std::endl;
 

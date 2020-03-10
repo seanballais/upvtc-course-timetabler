@@ -23,12 +23,14 @@ namespace upvtc_ct::utils
     // to prevent unwanted manipulations.
     const ds::Config& getConfig();
     const std::unordered_set<std::unique_ptr<ds::Course>>& getCourses();
+    const std::unordered_set<std::unique_ptr<ds::Class>>& getClasses();
     const std::unordered_set<std::unique_ptr<ds::Degree>>& getDegrees();
     const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
+    void addClass(std::unique_ptr<ds::Class>&& cls);
 
   private:
     std::string getBinFolderPath() const;
@@ -36,10 +38,12 @@ namespace upvtc_ct::utils
 
     ds::Config config;
     std::unordered_set<std::unique_ptr<ds::Course>> courses;
+    std::unordered_set<std::unique_ptr<ds::Class>> classes;
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
+    std::unordered_map<size_t, std::unordered_set<ds::Class*>> classGroups;
   };
 }
 

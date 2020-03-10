@@ -1,6 +1,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,11 +17,14 @@ namespace upvtc_ct::preprocessor
   // We do not want to copy a DataManager instance, because there will be
   // redundancies. We can just use a pointer to an instance of it instead.
   Preprocessor::Preprocessor(utils::DataManager* const dataManager)
-    : dataManager(dataManager),
-      classes({}) {}
+    : dataManager(dataManager) {}
 
-  const std::unordered_set<ds::Class, ds::ClassHashFunction>
-  Preprocessor::getClasses() const
+  void Preprocessor::preprocess()
+  {
+    this->generateClasses();
+  }
+
+  void Preprocessor::generateClasses()
   {
     std::unordered_map<std::string, int> numCourseEnrolleesMap;
     for (const auto& group : this->dataManager->getStudentGroups()) {
@@ -38,7 +42,6 @@ namespace upvtc_ct::preprocessor
     ds::Config config = dataManager->getConfig();
     unsigned int maxLecCapacity = config.get<int>("max_lecture_capacity");
 
-    std::unordered_set<ds::Class, ds::ClassHashFunction> classes;
     size_t numClassesGenerated = 0;
     for (const auto item : numCourseEnrolleesMap) {
       int numCourseEnrollees = item.second;
@@ -56,22 +59,16 @@ namespace upvtc_ct::preprocessor
 
         // Assume for now that a course requires three timeslots.
         for (int ctr = 0; ctr < 3; ctr++) {
-          ds::Class cls = {
-            .id=numClassesGenerated,
-            .classID=classID,
-            .course=course,
-            .teacher=nullptr,
-            .day=0,
-            .room=nullptr,
-            .timeslot=0
-          };
-          classes.insert(cls);
+          std::unique_ptr<ds::Class> clsPtr(
+            std::make_unique<ds::Class>(
+              numClassesGenerated, classID, course, nullptr, 0, nullptr, 0));
+          this->dataManager->addClass(std::move(clsPtr));
 
           numClassesGenerated++;
         }
       }
     }
 
-    return classes;
+
   }
 }
