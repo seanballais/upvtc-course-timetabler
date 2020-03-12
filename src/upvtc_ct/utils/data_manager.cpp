@@ -94,7 +94,7 @@ namespace upvtc_ct::utils
               coursePrereqs.insert(prereqCourse);
             }
 
-            std::unordered_set<ds::RoomFeature*> labReqs;
+            std::unordered_set<ds::RoomFeature*> roomReqs;
 
             // Create a course object. Make sure that we only have one copy of
             // the newly generated course object throughout the program.
@@ -102,10 +102,10 @@ namespace upvtc_ct::utils
               std::make_unique<ds::Course>(courseName,
                                            hasLab,
                                            coursePrereqs,
-                                           labReqs));
+                                           roomReqs));
             planCourses.insert(coursePtr.get());
             divisionCourses.insert(coursePtr.get());
-            courseNameToObject.insert({courseName, coursePtr.get()});
+            this->courseNameToObject.insert({courseName, coursePtr.get()});
             this->courses.insert(std::move(coursePtr));
           }
 
@@ -115,7 +115,7 @@ namespace upvtc_ct::utils
                                                         yearLevel,
                                                         planCourses));
           generatedStudentGroups.insert({
-            std::make_pair(degreeName, yearLevel), std::move(sgPtr.get())
+            std::make_pair(degreeName, yearLevel), sgPtr.get()
           });
           this->studentGroups.insert(std::move(sgPtr));
         }
@@ -128,7 +128,45 @@ namespace upvtc_ct::utils
       this->divisions.insert(std::move(divisionPtr));
     }
 
-    // Parse the student_groups.json file.
+    // Get the GEs and electives.
+    const std::string gesElectivesFilePath = 
+      dataFolder + std::string("ges_electives.json");
+    std::ifstream gesElectivesFile(gesElectivesFilePath, std::ifstream::in);
+    if (!gesElectivesFile) {
+      throw utils::FileNotFoundError(
+        "The GEs and Electives JSON file cannot be found.");
+    }
+
+    json gesElectives;
+    gesElectivesFile >> gesElectives;
+
+    for (const auto& [_, course] : gesElectives.items()) {
+      const std::string courseName = course["course_name"];
+
+      std::unordered_set<ds::Course*> coursePrereqs;
+      const auto& prerequisites = course["prerequisites"];
+      for (const auto& [_, prereq] : prerequisites.items()) {
+        ds::Course* prereqCourse = this->getCourseNameObject(
+          prereq,
+          "Referenced another course that was not yet generated. "
+          "Please check your Study Plans JSON file.");
+        coursePrereqs.insert(prereqCourse);
+      }
+
+      std::unordered_set<ds::RoomFeature*> roomReqs;
+
+      // Create a course object. Make sure that we only have one copy of
+      // the newly generated course object throughout the program.
+      std::unique_ptr<ds::Course> coursePtr(
+        std::make_unique<ds::Course>(courseName,
+                                     false, // No lab for GEs and electives.
+                                     coursePrereqs,
+                                     roomReqs));
+      this->courseNameToObject.insert({courseName, coursePtr.get()});
+      this->courses.insert(std::move(coursePtr));
+    }
+
+    // Get the student groups.
     const std::string studentGroupsFilePath = 
       dataFolder + std::string("student_groups.json");
     std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
@@ -141,9 +179,9 @@ namespace upvtc_ct::utils
     studentGroupsFile >> studentGroups;
 
     for (const auto& [_, studentGroup] : studentGroups.items()) {
-      std::string degreeName = studentGroup["degree_name"];
-      unsigned int yearLevel = studentGroup["year_level"].get<int>();
-      unsigned int numMembers = studentGroup["num_members"].get<int>();
+      const std::string degreeName = studentGroup["degree_name"];
+      const unsigned int yearLevel = studentGroup["year_level"].get<int>();
+      const unsigned int numMembers = studentGroup["num_members"].get<int>();
 
       const auto& sgItem = generatedStudentGroups.find(
         std::make_pair(degreeName, yearLevel));
@@ -157,6 +195,53 @@ namespace upvtc_ct::utils
       } else {
         ds::StudentGroup* sg = sgItem->second;
         sg->setNumMembers(numMembers);
+      }
+    }
+
+    // Get the GEs and electives regular students are enrolled in.
+    const std::string regGEsElectivesFilePath = 
+      dataFolder + std::string("regular_student_ges_electives.json");
+    std::ifstream regGEsElectivesFile(regGEsElectivesFilePath,
+                                      std::ifstream::in);
+    if (!regGEsElectivesFile) {
+      throw utils::FileNotFoundError(
+        "The GEs and Electives (Regular) JSON file cannot be found.");
+    }
+
+    json regGEsElectives;
+    regGEsElectivesFile >> regGEsElectives;
+
+    for (const auto& [_, group] : regGEsElectives.items()) {
+      const std::string parentDegreeName = group["degree_name"];
+      const unsigned int parentYearLevel = group["year_level"].get<int>();
+      const unsigned int numMembers = group["num_members"].get<int>();
+
+      const auto& sgItem = generatedStudentGroups.find(
+        std::make_pair(parentDegreeName, parentYearLevel));
+      if (sgItem == generatedStudentGroups.end()) {
+        std::cout << "While processing GEs and electives, encountered a "
+                  << "non-existing student group, with the following "
+                  << "details:"
+                  << "  Degree:\t" << parentDegreeName
+                  << "  Year Level:\t" << parentYearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        std::unordered_set<ds::Course*> assignedCourses;
+        const auto& courses = group["courses"];
+        for (const auto& [_, courseName] : courses.items()) {
+          ds::Course* coursePtr = this->getCourseNameObject(
+            courseName,
+            "Referenced another course that was not yet generated. "
+            "Please check your Study Plans JSON file.");
+          assignedCourses.insert(coursePtr);
+        }
+
+        ds::StudentGroup* parentGroup = sgItem->second;
+        std::unique_ptr<ds::SubStudentGroup> ssgPtr(
+          std::make_unique<ds::SubStudentGroup>(parentGroup, assignedCourses));
+        ssgPtr->setNumMembers(numMembers);
+        this->subStudentGroups.insert(std::move(ssgPtr));
       }
     }
   }
@@ -235,6 +320,12 @@ namespace upvtc_ct::utils
     return this->studentGroups;
   }
 
+  const std::unordered_set<std::unique_ptr<ds::SubStudentGroup>>&
+  DataManager::getSubStudentGroups()
+  {
+    return this->subStudentGroups;
+  }
+
   ds::Course* const DataManager::getCourseNameObject(
       const std::string courseName,
       const char* errorMsg)
@@ -286,7 +377,7 @@ namespace upvtc_ct::utils
   std::string DataManager::getBinFolderPath() const
   {
     // Note that this function is only guaranteed to work in Linux. Please refer
-    // to the linkL
+    // to the link
     //   https://stackoverflow.com/a/55579815/1116098
     // if you would like to add support for Windows.
     //

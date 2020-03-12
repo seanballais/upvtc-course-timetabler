@@ -41,6 +41,22 @@ int main(int argc, char* argv[])
   }
   std::cout << "----------------------------" << std::endl;
 
+  std::cout << "SUB STUDENT GROUPS" << std::endl;
+  for (const auto& group : dm.getSubStudentGroups()) {
+    std::cout << "----------------------------" << std::endl;
+    std::cout << "\tParent Degree:\t"
+              << group->parentGroup->degree->name << std::endl;
+    std::cout << "\tParent Year Level:\t"
+              << group->parentGroup->yearLevel << std::endl;
+    std::cout << "\tNum Members:\t"
+              << group->getNumMembers() << std::endl;
+    std::cout << "\tCourses:" << std::endl;
+    for (const auto& course : group->assignedCourses) {
+        std::cout << "\t\t" << course->name << std::endl;
+    }
+  }
+  std::cout << "----------------------------" << std::endl;
+
   upvtc_ct::ds::Config config = dm.getConfig();
 
   std::cout << "CONFIG" << std::endl;

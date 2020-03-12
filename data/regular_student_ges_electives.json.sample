@@ -1,0 +1,26 @@
+[
+  {
+    "degree_name": "BSCS",
+    "year_level": 0,
+    "num_members": 15,
+    "courses": [
+      "COMM 1"
+    ]
+  },
+  {
+    "degree_name": "BSCS",
+    "year_level": 0,
+    "num_members": 20,
+    "courses": [
+      "HIST 1"
+    ]
+  },
+  {
+    "degree_name": "BSCS",
+    "year_level": 0,
+    "num_members": 30,
+    "courses": [
+      "COMM 1", "HIST 1"
+    ]
+  }
+]

@@ -9,11 +9,11 @@ namespace upvtc_ct::ds
   // Model Definitions
   Course::Course(const std::string name, const bool hasLab,
                  const std::unordered_set<Course*> prerequisites,
-                 const std::unordered_set<RoomFeature*> labRequirements)
+                 const std::unordered_set<RoomFeature*> roomRequirements)
     : name(name),
       hasLab(hasLab),
       prerequisites(prerequisites),
-      labRequirements(labRequirements) {}
+      roomRequirements(roomRequirements) {}
 
   bool Course::operator==(const Course& c) const
   {
@@ -68,7 +68,7 @@ namespace upvtc_ct::ds
     }
   }
 
-  StudentGroup::StudentGroup(const Degree* degree, const unsigned int yearLevel,
+  StudentGroup::StudentGroup(Degree* const degree, const unsigned int yearLevel,
                              const std::unordered_set<Course*> assignedCourses)
     : BaseStudentGroup(assignedCourses),
       degree(degree),
@@ -82,7 +82,7 @@ namespace upvtc_ct::ds
   }
 
   SubStudentGroup::SubStudentGroup(
-        const StudentGroup parentGroup,
+        StudentGroup* const parentGroup,
         const std::unordered_set<Course*> assignedCourses)
     : BaseStudentGroup(assignedCourses),
       parentGroup(parentGroup) {}
@@ -164,7 +164,7 @@ namespace upvtc_ct::ds
   size_t SubStudentGroupHashFunction::operator()(
       const SubStudentGroup& ssg) const
   {
-    size_t parentGroupHash = StudentGroupHashFunction()(ssg.parentGroup);
+    size_t parentGroupHash = StudentGroupHashFunction()(*(ssg.parentGroup));
 
     std::stringstream objIdentifier;
     objIdentifier << std::to_string(parentGroupHash)

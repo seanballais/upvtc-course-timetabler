@@ -31,14 +31,25 @@ add_subdirectory(src)
 # Copy config and data files to the output directory.                                     #
 ################################################################################
 message(STATUS "Copying data files to the binary folder")
+
 configure_file(
-    "${CMAKE_SOURCE_DIR}/data/study_plans.json"
-    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/study_plans.json"
+    "${CMAKE_SOURCE_DIR}/data/regular_student_ges_electives.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/ges_electives.json"
+    COPYONLY)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/data/regular_student_ges_electives.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/regular_student_ges_electives.json"
     COPYONLY)
 
 configure_file(
     "${CMAKE_SOURCE_DIR}/data/student_groups.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/student_groups.json"
+    COPYONLY)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/data/study_plans.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/study_plans.json"
     COPYONLY)
 
 configure_file(

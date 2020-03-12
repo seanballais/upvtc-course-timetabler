@@ -20,13 +20,13 @@ namespace upvtc_ct::ds
   {
     Course(const std::string name, const bool hasLab,
            const std::unordered_set<Course*> prerequisites,
-           const std::unordered_set<RoomFeature*> labRequirements);
+           const std::unordered_set<RoomFeature*> roomRequirements);
     bool operator==(const Course& c) const;
 
     const std::string name;
     const bool hasLab;
     const std::unordered_set<Course*> prerequisites;
-    const std::unordered_set<RoomFeature*> labRequirements;
+    const std::unordered_set<RoomFeature*> roomRequirements;
   };
 
   class CourseHashFunction
@@ -111,11 +111,11 @@ namespace upvtc_ct::ds
 
   struct StudentGroup : public BaseStudentGroup
   {
-    StudentGroup(const Degree* degree, const unsigned int yearLevel,
+    StudentGroup(Degree* const degree, const unsigned int yearLevel,
                  const std::unordered_set<Course*> assignedCourses);
     bool operator==(const StudentGroup& sg) const;
 
-    const Degree* degree;
+    Degree* const degree;
     const unsigned int yearLevel;
   };
 
@@ -127,11 +127,11 @@ namespace upvtc_ct::ds
 
   struct SubStudentGroup : public BaseStudentGroup
   {
-    SubStudentGroup(const StudentGroup parentGroup,
+    SubStudentGroup(StudentGroup* const parentGroup,
                     const std::unordered_set<Course*> assignedCourses);
     bool operator==(const SubStudentGroup& ssg) const;
 
-    const StudentGroup parentGroup;
+    StudentGroup* const parentGroup;
   };
 
   class SubStudentGroupHashFunction
