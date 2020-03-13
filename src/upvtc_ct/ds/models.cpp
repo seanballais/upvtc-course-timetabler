@@ -1,4 +1,5 @@
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <string>
 
@@ -73,6 +74,22 @@ namespace upvtc_ct::ds
     : BaseStudentGroup(assignedCourses),
       degree(degree),
       yearLevel(yearLevel) {}
+
+  void StudentGroup::addSubGroup(
+      const std::unordered_set<Course*> assignedCourses,
+      const unsigned int numMembers)
+  {
+    std::unique_ptr<SubStudentGroup> ssg(
+      std::make_unique<SubStudentGroup>(this, assignedCourses));
+    ssg->setNumMembers(numMembers);
+    this->subGroups.insert(std::move(ssg));
+  }
+
+  std::unordered_set<std::unique_ptr<SubStudentGroup>>&
+  StudentGroup::getSubGroups()
+  {
+    return this->subGroups;
+  }
 
   bool StudentGroup::operator==(const StudentGroup& sg) const
   {

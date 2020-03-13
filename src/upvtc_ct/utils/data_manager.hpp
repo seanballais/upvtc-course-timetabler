@@ -28,8 +28,6 @@ namespace upvtc_ct::utils
     const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
-    const std::unordered_set<std::unique_ptr<ds::SubStudentGroup>>&
-      getSubStudentGroups();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
@@ -51,7 +49,6 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
-    std::unordered_set<std::unique_ptr<ds::SubStudentGroup>> subStudentGroups;
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
 
     // NOte that the key is the class group ID.

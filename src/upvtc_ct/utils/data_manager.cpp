@@ -238,10 +238,7 @@ namespace upvtc_ct::utils
         }
 
         ds::StudentGroup* parentGroup = sgItem->second;
-        std::unique_ptr<ds::SubStudentGroup> ssgPtr(
-          std::make_unique<ds::SubStudentGroup>(parentGroup, assignedCourses));
-        ssgPtr->setNumMembers(numMembers);
-        this->subStudentGroups.insert(std::move(ssgPtr));
+        parentGroup->addSubGroup(assignedCourses, numMembers);
       }
     }
   }
@@ -318,12 +315,6 @@ namespace upvtc_ct::utils
   DataManager::getStudentGroups()
   {
     return this->studentGroups;
-  }
-
-  const std::unordered_set<std::unique_ptr<ds::SubStudentGroup>>&
-  DataManager::getSubStudentGroups()
-  {
-    return this->subStudentGroups;
   }
 
   ds::Course* const DataManager::getCourseNameObject(

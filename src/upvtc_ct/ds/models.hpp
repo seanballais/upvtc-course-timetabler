@@ -1,6 +1,7 @@
 #ifndef UPVTC_CT_DS_MODELS_HPP_
 #define UPVTC_CT_DS_MODELS_HPP_
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -99,6 +100,7 @@ namespace upvtc_ct::ds
 
   struct BaseStudentGroup
   {
+  public:
     BaseStudentGroup(const std::unordered_set<Course*> assignedCourses);
     const unsigned int getNumMembers() const;
     void setNumMembers(const unsigned int numMembers);
@@ -109,14 +111,23 @@ namespace upvtc_ct::ds
     bool isNumMembersAssigned;
   };
 
+  struct SubStudentGroup;
+
   struct StudentGroup : public BaseStudentGroup
   {
+  public:
     StudentGroup(Degree* const degree, const unsigned int yearLevel,
                  const std::unordered_set<Course*> assignedCourses);
+    void addSubGroup(const std::unordered_set<Course*> assignedCourses,
+                     const unsigned int numMembers);
+    std::unordered_set<std::unique_ptr<SubStudentGroup>>& getSubGroups();
     bool operator==(const StudentGroup& sg) const;
 
     Degree* const degree;
     const unsigned int yearLevel;
+
+  private:
+    std::unordered_set<std::unique_ptr<SubStudentGroup>> subGroups;
   };
 
   class StudentGroupHashFunction
