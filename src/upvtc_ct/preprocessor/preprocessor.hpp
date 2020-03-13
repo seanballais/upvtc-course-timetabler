@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include <upvtc_ct/ds/models.hpp>
@@ -22,8 +23,17 @@ namespace upvtc_ct::preprocessor
   private:
     void generateClasses();
     void identifyClassConflicts();
+    void identifyGroupMemberClassConflicts(const ds::BaseStudentGroup& group);
+    void identifyGroupMemberClassConflicts(
+      const ds::BaseStudentGroup& group,
+      const std::unordered_set<ds::Course*>& additionalCourses);
+    void generateClassGroup(const unsigned int idStart,
+                            size_t classID,
+                            ds::Course* course);
 
     size_t selectClassGroup(std::string courseName);
+
+    std::unordered_map<std::string, int> getNumEnrolleesPerCourse();
 
     utils::DataManager* const dataManager;
     std::unordered_map<std::string, std::unordered_set<size_t>>

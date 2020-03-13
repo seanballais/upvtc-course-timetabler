@@ -78,9 +78,9 @@ int main(int argc, char* argv[])
   std::cout << "CLASSES" << std::endl;
   auto pp = upvtc_ct::preprocessor::Preprocessor(&dm);
   pp.preprocess();
-  for (const auto& cls : dm.getClasses()) {
+  for (const auto& classGroup : dm.getClassGroups()) {
+    const upvtc_ct::ds::Class* cls = *(classGroup.second.begin());
     std::cout << "---------------------------------" << std::endl;
-    std::cout << "\tID: " << cls->id << std::endl;
     std::cout << "\tClass ID: " << cls->classID << std::endl;
 
     std::cout << "\tCourse: ";
