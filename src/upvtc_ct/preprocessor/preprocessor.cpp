@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 #include <upvtc_ct/ds/models.hpp>
 #include <upvtc_ct/preprocessor/preprocessor.hpp>
@@ -87,17 +86,17 @@ namespace upvtc_ct::preprocessor
     std::unordered_map<std::string, int> numCourseEnrolleesMap;
     for (const auto& group : this->dataManager->getStudentGroups()) {
       // Get all courses that are going to be attended by members of the group.
-      std::vector<ds::Course*> assignedCourses;
+      std::unordered_set<ds::Course*> assignedCourses;
       
       // Go through the courses in the study plan first.
       for (ds::Course* coursePtr : group->assignedCourses) {
-        assignedCourses.push_back(coursePtr);
+        assignedCourses.insert(coursePtr);
       }
 
       // And then the assigned courses of each sub-student groups.
       for (const auto& subGroup : group->getSubGroups()) {
         for (ds::Course* coursePtr : subGroup->assignedCourses) {
-          assignedCourses.push_back(coursePtr);
+          assignedCourses.insert(coursePtr);
         }
       }
 
