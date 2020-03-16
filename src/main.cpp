@@ -111,10 +111,25 @@ int main(int argc, char* argv[])
   std::cout << "-----------------------------------" << std::endl;
 
   std::cout << "CLASS CONFLICTS" << std::endl;
+  const auto& classGroups = dm.getClassGroups();
   for (const auto item : dm.getClassConflicts()) {
-    std::cout << item.first << " is in conflict with:" << std::endl;
-    for (const auto cls : item.second) {
-      std::cout << "\t" << cls << std::endl;
+    // We don't care which class we get, as long as it's in the correct
+    // class group. We only need the class group information, like the class ID
+    // and the course name.
+    const upvtc_ct::ds::Class* cls = *(classGroups.at(item.first).begin());
+    std::cout << cls->course->name
+              << " (" << item.first << ")"
+              << " is in conflict with:" << std::endl;
+    for (const auto classGrpID : item.second) {
+      // We don't care which class we get, as long as it's in the correct
+      // class group. We only need the class group information, like the class
+      // ID and the course name.
+      const upvtc_ct::ds::Class* conflictingClass = *(classGroups.at(classGrpID)
+                                                                 .begin());
+      std::cout << "\t"
+                << conflictingClass->course->name
+                << " (" << classGrpID << ")"
+                << std::endl;
     }
   }
   std::cout << "-----------------------------------" << std::endl;
