@@ -6,10 +6,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <nlohmann/json.hpp>
+
 #include <upvtc_ct/ds/models.hpp>
+#include <upvtc_ct/utils/hash_specializations.hpp>
 
 namespace upvtc_ct::utils
 {
+  using json = nlohmann::json;
   namespace ds = upvtc_ct::ds;
 
   class DataManager
@@ -40,8 +44,26 @@ namespace upvtc_ct::utils
                           const size_t conflictedGroup);
 
   private:
-    std::string getBinFolderPath() const;
+    const std::string getBinFolderPath() const;
+    const std::string getDataFolderPath() const;
+
     const std::unordered_map<std::string, std::string> getConfigData();
+
+    const std::unordered_set<ds::Course*> getCoursesFromJSON(
+      const json coursesJSON,
+      const char* errorMsg = "Referenced another course that was not "
+                             "yet generated. Please check your Study "
+                             "Plans JSON file.");
+
+    void parseGEsElectivesJSON();
+    void parseStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               PairHash>& generatedStudentGroups);
+    void parseRegularStudentGroupsGEsElectivesJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               PairHash>& generatedStudentGroups);
 
     ds::Config config;
     std::unordered_set<std::unique_ptr<ds::Course>> courses;
@@ -49,6 +71,7 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
+    
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
 
     // NOte that the key is the class group ID.

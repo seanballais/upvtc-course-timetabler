@@ -46,8 +46,7 @@ namespace upvtc_ct::utils
 
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
-                       utils::PairHash>
-      generatedStudentGroups;
+                       utils::PairHash> generatedStudentGroups;
 
     // Go through divisions first.
     for (const auto& [_, studyPlanItem] : studyPlan.items()) {
@@ -84,15 +83,8 @@ namespace upvtc_ct::utils
             const std::string courseName = courseItem["course_name"];
             const bool hasLab = courseItem["has_lab"].get<bool>();
             
-            std::unordered_set<ds::Course*> coursePrereqs;
             const auto& prerequisites = courseItem["prerequisites"];
-            for (const auto& [_, prereq] : prerequisites.items()) {
-              ds::Course* prereqCourse = this->getCourseNameObject(
-                prereq,
-                "Referenced another course that was not yet generated. "
-                "Please check your Study Plans JSON file.");
-              coursePrereqs.insert(prereqCourse);
-            }
+            const auto coursePrereqs = this->getCoursesFromJSON(prerequisites);
 
             std::unordered_set<ds::RoomFeature*> roomReqs;
 
@@ -128,158 +120,9 @@ namespace upvtc_ct::utils
       this->divisions.insert(std::move(divisionPtr));
     }
 
-    // Get the GEs and electives.
-    const std::string gesElectivesFilePath = 
-      dataFolder + std::string("ges_electives.json");
-    std::ifstream gesElectivesFile(gesElectivesFilePath, std::ifstream::in);
-    if (!gesElectivesFile) {
-      throw utils::FileNotFoundError(
-        "The GEs and Electives JSON file cannot be found.");
-    }
-
-    json gesElectives;
-    gesElectivesFile >> gesElectives;
-
-    for (const auto& [_, course] : gesElectives.items()) {
-      const std::string courseName = course["course_name"];
-
-      std::unordered_set<ds::Course*> coursePrereqs;
-      const auto& prerequisites = course["prerequisites"];
-      for (const auto& [_, prereq] : prerequisites.items()) {
-        ds::Course* prereqCourse = this->getCourseNameObject(
-          prereq,
-          "Referenced another course that was not yet generated. "
-          "Please check your Study Plans JSON file.");
-        coursePrereqs.insert(prereqCourse);
-      }
-
-      std::unordered_set<ds::RoomFeature*> roomReqs;
-
-      // Create a course object. Make sure that we only have one copy of
-      // the newly generated course object throughout the program.
-      std::unique_ptr<ds::Course> coursePtr(
-        std::make_unique<ds::Course>(courseName,
-                                     false, // No lab for GEs and electives.
-                                     coursePrereqs,
-                                     roomReqs));
-      this->courseNameToObject.insert({courseName, coursePtr.get()});
-      this->courses.insert(std::move(coursePtr));
-    }
-
-    // Get the student groups.
-    const std::string studentGroupsFilePath = 
-      dataFolder + std::string("student_groups.json");
-    std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
-    if (!studentGroupsFile) {
-      throw utils::FileNotFoundError(
-        "The Student Groups JSON file cannot be found.");
-    }
-
-    json studentGroups;
-    studentGroupsFile >> studentGroups;
-
-    for (const auto& [_, studentGroup] : studentGroups.items()) {
-      const std::string degreeName = studentGroup["degree_name"];
-      const unsigned int yearLevel = studentGroup["year_level"].get<int>();
-      const unsigned int numMembers = studentGroup["num_members"].get<int>();
-
-      const auto& sgItem = generatedStudentGroups.find(
-        std::make_pair(degreeName, yearLevel));
-      if (sgItem == generatedStudentGroups.end()) {
-        std::cout << "Encountered a non-existing student group, with the"
-                  << "following details:"
-                  << "  Degree:\t" << degreeName
-                  << "  Year Level:\t" << yearLevel
-                  << "Skipping…"
-                  << std::endl;
-      } else {
-        ds::StudentGroup* sg = sgItem->second;
-        sg->setNumMembers(numMembers);
-      }
-    }
-
-    // Get the GEs and electives regular students are enrolled in.
-    const std::string regGEsElectivesFilePath = 
-      dataFolder + std::string("regular_student_ges_electives.json");
-    std::ifstream regGEsElectivesFile(regGEsElectivesFilePath,
-                                      std::ifstream::in);
-    if (!regGEsElectivesFile) {
-      throw utils::FileNotFoundError(
-        "The GEs and Electives (Regular) JSON file cannot be found.");
-    }
-
-    json regGEsElectives;
-    regGEsElectivesFile >> regGEsElectives;
-
-    for (const auto& [_, group] : regGEsElectives.items()) {
-      const std::string parentDegreeName = group["degree_name"];
-      const unsigned int parentYearLevel = group["year_level"].get<int>();
-      const unsigned int numMembers = group["num_members"].get<int>();
-
-      const auto& sgItem = generatedStudentGroups.find(
-        std::make_pair(parentDegreeName, parentYearLevel));
-      if (sgItem == generatedStudentGroups.end()) {
-        std::cout << "While processing GEs and electives, encountered a "
-                  << "non-existing student group, with the following "
-                  << "details:"
-                  << "  Degree:\t" << parentDegreeName
-                  << "  Year Level:\t" << parentYearLevel
-                  << "Skipping…"
-                  << std::endl;
-      } else {
-        std::unordered_set<ds::Course*> assignedCourses;
-        const auto& courses = group["courses"];
-        for (const auto& [_, courseName] : courses.items()) {
-          ds::Course* coursePtr = this->getCourseNameObject(
-            courseName,
-            "Referenced another course that was not yet generated. "
-            "Please check your Study Plans JSON file.");
-          assignedCourses.insert(coursePtr);
-        }
-
-        ds::StudentGroup* parentGroup = sgItem->second;
-        parentGroup->addSubGroup(assignedCourses, numMembers);
-      }
-    }
-  }
-
-  const std::unordered_map<std::string, std::string>
-  DataManager::getConfigData()
-  {
-    const std::string configFolder = this->getBinFolderPath()
-                                     + std::string("/config/");
-    const std::string configFilePath = configFolder
-                                       + std::string("app.config");
-    toml::value configData;
-    try {
-      configData = toml::parse(configFilePath);  
-    } catch (std::runtime_error err) {
-      throw utils::FileNotFoundError("The configuration file cannot be found.");
-    }
-
-    return std::unordered_map<std::string, std::string>({
-      {
-        "semester",
-        std::to_string(toml::find<int>(configData, "semester"))
-      },
-      {
-        "max_lecture_capacity",
-        std::to_string(toml::find<int>(configData, "max_lecture_capacity"))
-      },
-      {
-        "max_lab_capacity",
-        std::to_string(toml::find<int>(configData, "max_lab_capacity"))
-      },
-      {
-        "max_annual_teacher_load",
-        std::to_string(toml::find<int>(configData, "max_annual_teacher_load"))
-      },
-      {
-        "max_semestral_teacher_load",
-        std::to_string(
-          toml::find<int>(configData, "max_semestral_teacher_load"))
-      }
-    });
+    this->parseGEsElectivesJSON();
+    this->parseStudentGroupsJSON(generatedStudentGroups);
+    this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
   }
 
   const ds::Config& DataManager::getConfig()
@@ -365,7 +208,7 @@ namespace upvtc_ct::utils
     this->classConflicts[classGroup].insert(conflictedGroup);
   }
 
-  std::string DataManager::getBinFolderPath() const
+  const std::string DataManager::getBinFolderPath() const
   {
     // Note that this function is only guaranteed to work in Linux. Please refer
     // to the link
@@ -382,5 +225,177 @@ namespace upvtc_ct::utils
     std::string binPath = std::string(path, (count > 0) ? count : 0);
 
     return std::filesystem::path(binPath).parent_path();
+  }
+
+  const std::string DataManager::getDataFolderPath() const
+  {
+    return this->getBinFolderPath() + std::string("/data/");
+  }
+
+  const std::unordered_map<std::string, std::string>
+  DataManager::getConfigData()
+  {
+    const std::string configFolder = this->getBinFolderPath()
+                                     + std::string("/config/");
+    const std::string configFilePath = configFolder
+                                       + std::string("app.config");
+    toml::value configData;
+    try {
+      configData = toml::parse(configFilePath);  
+    } catch (std::runtime_error err) {
+      throw utils::FileNotFoundError("The configuration file cannot be found.");
+    }
+
+    return std::unordered_map<std::string, std::string>({
+      {
+        "semester",
+        std::to_string(toml::find<int>(configData, "semester"))
+      },
+      {
+        "max_lecture_capacity",
+        std::to_string(toml::find<int>(configData, "max_lecture_capacity"))
+      },
+      {
+        "max_lab_capacity",
+        std::to_string(toml::find<int>(configData, "max_lab_capacity"))
+      },
+      {
+        "max_annual_teacher_load",
+        std::to_string(toml::find<int>(configData, "max_annual_teacher_load"))
+      },
+      {
+        "max_semestral_teacher_load",
+        std::to_string(
+          toml::find<int>(configData, "max_semestral_teacher_load"))
+      }
+    });
+  }
+
+  const std::unordered_set<ds::Course*>
+  DataManager::getCoursesFromJSON(const json coursesJSON, const char* errorMsg)
+  {
+    std::unordered_set<ds::Course*> courses;
+    for (const auto& [_, courseName] : coursesJSON.items()) {
+      ds::Course* course = this->getCourseNameObject(courseName, errorMsg);
+      courses.insert(course);
+    }
+
+    return courses;
+  }
+
+  void DataManager::parseGEsElectivesJSON()
+  {
+    // Get the GEs and electives.
+    const std::string gesElectivesFileName = "ges_electives.json";
+    const std::string gesElectivesFilePath = this->getDataFolderPath()
+                                             + gesElectivesFileName;
+    std::ifstream gesElectivesFile(gesElectivesFilePath, std::ifstream::in);
+    if (!gesElectivesFile) {
+      throw utils::FileNotFoundError("The GEs and Electives JSON file "
+                                     "cannot be found.");
+    }
+
+    json gesElectives;
+    gesElectivesFile >> gesElectives;
+
+    for (const auto& [_, course] : gesElectives.items()) {
+      const std::string courseName = course["course_name"];
+
+      const auto& prerequisites = course["prerequisites"];
+      const auto coursePrereqs = this->getCoursesFromJSON(prerequisites);
+
+      std::unordered_set<ds::RoomFeature*> roomReqs;
+
+      // Create a course object. Make sure that we only have one copy of
+      // the newly generated course object throughout the program.
+      std::unique_ptr<ds::Course> coursePtr(
+        std::make_unique<ds::Course>(courseName,
+                                     false, // No lab for GEs and electives.
+                                     coursePrereqs,
+                                     roomReqs));
+      this->courseNameToObject.insert({courseName, coursePtr.get()});
+      this->courses.insert(std::move(coursePtr));
+    }
+  }
+
+  void DataManager::parseStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               utils::PairHash>& generatedStudentGroups)
+  {
+    const std::string studentGroupsFileName = "student_groups.json";
+    const std::string studentGroupsFilePath = this->getDataFolderPath()
+                                              + studentGroupsFileName;
+    std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
+    if (!studentGroupsFile) {
+      throw utils::FileNotFoundError("The Student Groups JSON file cannot "
+                                     "be found.");
+    }
+
+    json studentGroups;
+    studentGroupsFile >> studentGroups;
+
+    for (const auto& [_, studentGroup] : studentGroups.items()) {
+      const std::string degreeName = studentGroup["degree_name"];
+      const unsigned int yearLevel = studentGroup["year_level"].get<int>();
+      const unsigned int numMembers = studentGroup["num_members"].get<int>();
+
+      const auto& sgItem = generatedStudentGroups.find(
+        std::make_pair(degreeName, yearLevel));
+      if (sgItem == generatedStudentGroups.end()) {
+        std::cout << "Encountered a non-existing student group, with the"
+                  << "following details:"
+                  << "  Degree:\t" << degreeName
+                  << "  Year Level:\t" << yearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        ds::StudentGroup* sg = sgItem->second;
+        sg->setNumMembers(numMembers);
+      }
+    }
+  }
+
+  void DataManager::parseRegularStudentGroupsGEsElectivesJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               PairHash>& generatedStudentGroups)
+  {
+    const std::string jsonFileName = "regular_student_ges_electives.json";
+    const std::string regGEsElectivesFilePath = this->getDataFolderPath()
+                                                + jsonFileName;
+    std::ifstream regGEsElectivesFile(regGEsElectivesFilePath,
+                                      std::ifstream::in);
+    if (!regGEsElectivesFile) {
+      throw utils::FileNotFoundError("The GEs and Electives (Regular) JSON "
+                                     "file cannot be found.");
+    }
+
+    json regGEsElectives;
+    regGEsElectivesFile >> regGEsElectives;
+
+    for (const auto& [_, group] : regGEsElectives.items()) {
+      const std::string parentDegreeName = group["degree_name"];
+      const unsigned int parentYearLevel = group["year_level"].get<int>();
+      const unsigned int numMembers = group["num_members"].get<int>();
+
+      const auto& sgItem = generatedStudentGroups.find(
+        std::make_pair(parentDegreeName, parentYearLevel));
+      if (sgItem == generatedStudentGroups.end()) {
+        std::cout << "While processing GEs and electives, encountered a "
+                  << "non-existing student group, with the following "
+                  << "details:"
+                  << "  Degree:\t" << parentDegreeName
+                  << "  Year Level:\t" << parentYearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        const auto& courses = group["courses"];
+        const auto assignedCourses = this->getCoursesFromJSON(courses);
+
+        ds::StudentGroup* parentGroup = sgItem->second;
+        parentGroup->addSubGroup(assignedCourses, numMembers);
+      }
+    }
   }
 }
