@@ -55,15 +55,29 @@ namespace upvtc_ct::utils
                              "yet generated. Please check your Study "
                              "Plans JSON file.");
 
-    void parseGEsElectivesJSON();
-    void parseStudentGroupsJSON(
-      const std::unordered_map<std::pair<std::string, unsigned int>,
-                               ds::StudentGroup*,
-                               PairHash>& generatedStudentGroups);
+    void parseCoursesJSON();
+    void parseStudyPlansJSON(
+      const unsigned int semester,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         ds::StudentGroup*,
+                         PairHash>& generatedStudentGroups);
     void parseRegularStudentGroupsGEsElectivesJSON(
       const std::unordered_map<std::pair<std::string, unsigned int>,
                                ds::StudentGroup*,
                                PairHash>& generatedStudentGroups);
+    void parseStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               PairHash>& generatedStudentGroups);
+
+    void parsePlanFromStudyPlansJSON(
+      const json planItemJSON,
+      const unsigned int semester,
+      ds::Degree* const degree,
+      std::unordered_set<ds::Course*>& divisionCourses,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         ds::StudentGroup*,
+                         PairHash>& generatedStudentGroups);
 
     ds::Config config;
     std::unordered_set<std::unique_ptr<ds::Course>> courses;

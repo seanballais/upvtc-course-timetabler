@@ -1,0 +1,26 @@
+[
+  {
+    "course_name": "CMSC 11",
+    "has_lab": true,
+    "prerequisites": [],
+    "room_requirements": []
+  },
+  {
+    "course_name": "MATH 17",
+    "has_lab": false,
+    "prerequisites": [],
+    "room_requirements": []
+  },
+  {
+    "course_name": "COMM 1",
+    "has_lab": false,
+    "prerequisites": [],
+    "room_requirements": []
+  },
+  {
+    "course_name": "HIST 1",
+    "has_lab": false,
+    "prerequisites": [],
+    "room_requirements": []
+  }
+]

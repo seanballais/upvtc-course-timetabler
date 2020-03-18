@@ -33,8 +33,8 @@ add_subdirectory(src)
 message(STATUS "Copying data files to the binary folder")
 
 configure_file(
-    "${CMAKE_SOURCE_DIR}/data/regular_student_ges_electives.json"
-    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/ges_electives.json"
+    "${CMAKE_SOURCE_DIR}/data/courses.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/courses.json"
     COPYONLY)
 
 configure_file(

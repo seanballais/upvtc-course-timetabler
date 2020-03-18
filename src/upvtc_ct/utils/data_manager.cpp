@@ -30,97 +30,13 @@ namespace upvtc_ct::utils
     ds::Config config = this->getConfig();
     const unsigned int semester = config.get<int>("semester");
 
-    const std::string dataFolder = this->getBinFolderPath()
-                                   + std::string("/data/");
-    const std::string studyPlanFilePath = dataFolder
-                                          + std::string("study_plans.json");
-    
-    std::ifstream studyPlanFile(studyPlanFilePath, std::ifstream::in);
-    if (!studyPlanFile) {
-      throw utils::FileNotFoundError(
-        "The Study Plans JSON file cannot be found.");
-    }
-
-    json studyPlan;
-    studyPlanFile >> studyPlan;
+    this->parseCoursesJSON();
 
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
-                       utils::PairHash> generatedStudentGroups;
+                       PairHash> generatedStudentGroups;
+    this->parseStudyPlansJSON(semester, generatedStudentGroups);
 
-    // Go through divisions first.
-    for (const auto& [_, studyPlanItem] : studyPlan.items()) {
-      const std::string divisionName = studyPlanItem["division_name"];
-      std::unordered_set<ds::Course*> divisionCourses;
-      std::unordered_set<ds::Degree*> divisionDegrees;
-
-      // Now go through each degree offered by the division.
-      const auto& divisionItemDegrees = studyPlanItem["degrees"];
-      for (const auto& [_, degreeItem] : divisionItemDegrees.items()) {
-        const std::string degreeName = degreeItem["degree_name"];
-
-        std::unique_ptr<ds::Degree> degreePtr(
-          std::make_unique<ds::Degree>(degreeName));
-        divisionDegrees.insert(degreePtr.get());
-
-        // Now go through each year level in the study plan of a degree.
-        const auto& degreePlans = degreeItem["plans"];
-        for (const auto& [_, planItem] : degreePlans.items()) {
-          // NOTE: Plans must be sorted ascendingly by year level, then by
-          //       semester.
-          const int yearLevel = planItem["year_level"].get<int>();
-          const int planSemester = planItem["semester"].get<int>();
-
-          if (planSemester != semester) {
-            // If the plan is assigned to a semester that we are not curerntly
-            // scheduling, then we should just skip.
-            continue;
-          }
-
-          const auto& degreeItemCourses = planItem["courses"];
-          std::unordered_set<ds::Course*> planCourses;
-          for (const auto& [_, courseItem] : degreeItemCourses.items()) {
-            const std::string courseName = courseItem["course_name"];
-            const bool hasLab = courseItem["has_lab"].get<bool>();
-            
-            const auto& prerequisites = courseItem["prerequisites"];
-            const auto coursePrereqs = this->getCoursesFromJSON(prerequisites);
-
-            std::unordered_set<ds::RoomFeature*> roomReqs;
-
-            // Create a course object. Make sure that we only have one copy of
-            // the newly generated course object throughout the program.
-            std::unique_ptr<ds::Course> coursePtr(
-              std::make_unique<ds::Course>(courseName,
-                                           hasLab,
-                                           coursePrereqs,
-                                           roomReqs));
-            planCourses.insert(coursePtr.get());
-            divisionCourses.insert(coursePtr.get());
-            this->courseNameToObject.insert({courseName, coursePtr.get()});
-            this->courses.insert(std::move(coursePtr));
-          }
-
-          // Create a StudentGroup. Similar to the course object, we have to
-          // make sure that there is only one copy for each StudentGroup object.
-          auto sgPtr(std::make_unique<ds::StudentGroup>(degreePtr.get(),
-                                                        yearLevel,
-                                                        planCourses));
-          generatedStudentGroups.insert({
-            std::make_pair(degreeName, yearLevel), sgPtr.get()
-          });
-          this->studentGroups.insert(std::move(sgPtr));
-        }
-
-        this->degrees.insert(std::move(degreePtr));
-      }
-
-      std::unique_ptr<ds::Division> divisionPtr(
-        new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
-      this->divisions.insert(std::move(divisionPtr));
-    }
-
-    this->parseGEsElectivesJSON();
     this->parseStudentGroupsJSON(generatedStudentGroups);
     this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
   }
@@ -283,23 +199,22 @@ namespace upvtc_ct::utils
     return courses;
   }
 
-  void DataManager::parseGEsElectivesJSON()
+  void DataManager::parseCoursesJSON()
   {
-    // Get the GEs and electives.
-    const std::string gesElectivesFileName = "ges_electives.json";
-    const std::string gesElectivesFilePath = this->getDataFolderPath()
-                                             + gesElectivesFileName;
-    std::ifstream gesElectivesFile(gesElectivesFilePath, std::ifstream::in);
-    if (!gesElectivesFile) {
-      throw utils::FileNotFoundError("The GEs and Electives JSON file "
-                                     "cannot be found.");
+    const std::string coursesFileName = "courses.json";
+    const std::string coursesFilePath = this->getDataFolderPath()
+                                        + coursesFileName;
+    std::ifstream coursesFile(coursesFilePath, std::ifstream::in);
+    if (!coursesFile) {
+      throw utils::FileNotFoundError("The Courses JSON file cannot be found.");
     }
 
-    json gesElectives;
-    gesElectivesFile >> gesElectives;
+    json courses;
+    coursesFile >> courses;
 
-    for (const auto& [_, course] : gesElectives.items()) {
+    for (const auto& [_, course] : courses.items()) {
       const std::string courseName = course["course_name"];
+      const bool hasLab = course["has_lab"].get<bool>();
 
       const auto& prerequisites = course["prerequisites"];
       const auto coursePrereqs = this->getCoursesFromJSON(prerequisites);
@@ -310,7 +225,7 @@ namespace upvtc_ct::utils
       // the newly generated course object throughout the program.
       std::unique_ptr<ds::Course> coursePtr(
         std::make_unique<ds::Course>(courseName,
-                                     false, // No lab for GEs and electives.
+                                     hasLab,
                                      coursePrereqs,
                                      roomReqs));
       this->courseNameToObject.insert({courseName, coursePtr.get()});
@@ -318,41 +233,56 @@ namespace upvtc_ct::utils
     }
   }
 
-  void DataManager::parseStudentGroupsJSON(
-      const std::unordered_map<std::pair<std::string, unsigned int>,
-                               ds::StudentGroup*,
-                               utils::PairHash>& generatedStudentGroups)
+  void DataManager::parseStudyPlansJSON(
+      const unsigned int semester,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         ds::StudentGroup*,
+                         PairHash>& generatedStudentGroups)
   {
-    const std::string studentGroupsFileName = "student_groups.json";
-    const std::string studentGroupsFilePath = this->getDataFolderPath()
-                                              + studentGroupsFileName;
-    std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
-    if (!studentGroupsFile) {
-      throw utils::FileNotFoundError("The Student Groups JSON file cannot "
-                                     "be found.");
+    const std::string studyPlanFileName = "study_plans.json";
+    const std::string studyPlanFilePath = this->getDataFolderPath()
+                                          + studyPlanFileName;
+    
+    std::ifstream studyPlanFile(studyPlanFilePath, std::ifstream::in);
+    if (!studyPlanFile) {
+      throw utils::FileNotFoundError("The Study Plans JSON file cannot be "
+                                     "found.");
     }
 
-    json studentGroups;
-    studentGroupsFile >> studentGroups;
+    json studyPlan;
+    studyPlanFile >> studyPlan;
 
-    for (const auto& [_, studentGroup] : studentGroups.items()) {
-      const std::string degreeName = studentGroup["degree_name"];
-      const unsigned int yearLevel = studentGroup["year_level"].get<int>();
-      const unsigned int numMembers = studentGroup["num_members"].get<int>();
+    // Go through divisions first.
+    for (const auto& [_, studyPlanItem] : studyPlan.items()) {
+      const std::string divisionName = studyPlanItem["division_name"];
+      std::unordered_set<ds::Course*> divisionCourses;
+      std::unordered_set<ds::Degree*> divisionDegrees;
 
-      const auto& sgItem = generatedStudentGroups.find(
-        std::make_pair(degreeName, yearLevel));
-      if (sgItem == generatedStudentGroups.end()) {
-        std::cout << "Encountered a non-existing student group, with the"
-                  << "following details:"
-                  << "  Degree:\t" << degreeName
-                  << "  Year Level:\t" << yearLevel
-                  << "Skipping…"
-                  << std::endl;
-      } else {
-        ds::StudentGroup* sg = sgItem->second;
-        sg->setNumMembers(numMembers);
+      // Now go through each degree offered by the division.
+      const auto& divisionItemDegrees = studyPlanItem["degrees"];
+      for (const auto& [_, degreeItem] : divisionItemDegrees.items()) {
+        const std::string degreeName = degreeItem["degree_name"];
+
+        std::unique_ptr<ds::Degree> degreePtr(
+          std::make_unique<ds::Degree>(degreeName));
+        divisionDegrees.insert(degreePtr.get());
+
+        // Now go through each year level in the study plan of a degree.
+        const auto& degreePlans = degreeItem["plans"];
+        for (const auto& [_, planItem] : degreePlans.items()) {
+          this->parsePlanFromStudyPlansJSON(planItem,
+                                            semester,
+                                            degreePtr.get(),
+                                            divisionCourses,
+                                            generatedStudentGroups);
+        }
+
+        this->degrees.insert(std::move(degreePtr));
       }
+
+      std::unique_ptr<ds::Division> divisionPtr(
+        new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
+      this->divisions.insert(std::move(divisionPtr));
     }
   }
 
@@ -397,5 +327,83 @@ namespace upvtc_ct::utils
         parentGroup->addSubGroup(assignedCourses, numMembers);
       }
     }
+  }
+
+  void DataManager::parseStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               ds::StudentGroup*,
+                               utils::PairHash>& generatedStudentGroups)
+  {
+    const std::string studentGroupsFileName = "student_groups.json";
+    const std::string studentGroupsFilePath = this->getDataFolderPath()
+                                              + studentGroupsFileName;
+    std::ifstream studentGroupsFile(studentGroupsFilePath, std::ifstream::in);
+    if (!studentGroupsFile) {
+      throw utils::FileNotFoundError("The Student Groups JSON file cannot "
+                                     "be found.");
+    }
+
+    json studentGroups;
+    studentGroupsFile >> studentGroups;
+
+    for (const auto& [_, studentGroup] : studentGroups.items()) {
+      const std::string degreeName = studentGroup["degree_name"];
+      const unsigned int yearLevel = studentGroup["year_level"].get<int>();
+      const unsigned int numMembers = studentGroup["num_members"].get<int>();
+
+      const auto& sgItem = generatedStudentGroups.find(
+        std::make_pair(degreeName, yearLevel));
+      if (sgItem == generatedStudentGroups.end()) {
+        std::cout << "Encountered a non-existing student group, with the"
+                  << "following details:"
+                  << "  Degree:\t" << degreeName
+                  << "  Year Level:\t" << yearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        ds::StudentGroup* sg = sgItem->second;
+        sg->setNumMembers(numMembers);
+      }
+    }
+  }
+
+  void DataManager::parsePlanFromStudyPlansJSON(
+      const json planItemJSON,
+      const unsigned int semester,
+      ds::Degree* const degree,
+      std::unordered_set<ds::Course*>& divisionCourses,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         ds::StudentGroup*,
+                         PairHash>& generatedStudentGroups)
+  {
+    // NOTE: Plans must be sorted ascendingly by year level, then by
+    //       semester.
+    const int yearLevel = planItemJSON["year_level"].get<int>();
+    const int planSemester = planItemJSON["semester"].get<int>();
+
+    if (planSemester != semester) {
+      // If the plan is assigned to a semester that we are not currently
+      // scheduling, then we should just skip.
+      return;
+    }
+
+    const auto& degreeItemCourses = planItemJSON["courses"];
+    std::unordered_set<ds::Course*> planCourses;
+    for (const auto& [_, courseName] : degreeItemCourses.items()) {
+      const char* errorMsg = "Referenced a non-existent course.";
+      ds::Course* course = this->getCourseNameObject(courseName, errorMsg);
+      planCourses.insert(course);
+      divisionCourses.insert(course);
+    }
+
+    // Create a StudentGroup. Similar to the course object, we have to
+    // make sure that there is only one copy for each StudentGroup object.
+    auto sgPtr(std::make_unique<ds::StudentGroup>(degree,
+                                                  yearLevel,
+                                                  planCourses));
+    generatedStudentGroups.insert({
+      std::make_pair(degree->name, yearLevel), sgPtr.get()
+    });
+    this->studentGroups.insert(std::move(sgPtr));
   }
 }
