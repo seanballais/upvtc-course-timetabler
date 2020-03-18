@@ -54,11 +54,16 @@ namespace upvtc_ct::utils
 
     const std::unordered_map<std::string, std::string> getConfigData();
 
-    const std::unordered_set<ds::Course*> getCoursesFromJSON(
+    const std::unordered_set<ds::Course*> getCoursesFromJSONArray(
       const json coursesJSON,
       const char* errorMsg = "Referenced another course that was not "
                              "yet generated. Please check your Study "
                              "Plans JSON file.");
+    const std::unordered_set<ds::RoomFeature*> getRoomFeaturesFromJSONArray(
+      const json roomFeaturesJSON,
+      const char* errorMsg = "Referenced a room feature that was not "
+                             "yet generated. Please check your Room Features "
+                             "JSON file.");
 
     void parseCoursesJSON();
     void parseRoomFeaturesJSON();
@@ -84,6 +89,21 @@ namespace upvtc_ct::utils
       std::unordered_map<std::pair<std::string, unsigned int>,
                          ds::StudentGroup*,
                          PairHash>& generatedStudentGroups);
+
+    template <typename T>
+    const std::unordered_set<T*> getDataFromJSONArray(
+      const json jsonArray,
+      const char* errorMsg,
+      std::function<T*(const std::string, const char*)> mapperFunc)
+    {
+      std::unordered_set<T*> collection;
+      for (const auto& [_, dataName] : jsonArray.items()) {
+        T* data = mapperFunc(dataName, errorMsg);
+        collection.insert(data);
+      }
+
+      return collection;
+    }
 
     ds::Config config;
     std::unordered_set<std::unique_ptr<ds::Course>> courses;

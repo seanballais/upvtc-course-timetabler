@@ -30,8 +30,8 @@ namespace upvtc_ct::utils
     ds::Config config = this->getConfig();
     const unsigned int semester = config.get<int>("semester");
 
-    this->parseCoursesJSON();
     this->parseRoomFeaturesJSON();
+    this->parseCoursesJSON();
 
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
@@ -206,15 +206,30 @@ namespace upvtc_ct::utils
   }
 
   const std::unordered_set<ds::Course*>
-  DataManager::getCoursesFromJSON(const json coursesJSON, const char* errorMsg)
+  DataManager::getCoursesFromJSONArray(const json coursesJSON,
+                                       const char* errorMsg)
   {
-    std::unordered_set<ds::Course*> courses;
-    for (const auto& [_, courseName] : coursesJSON.items()) {
-      ds::Course* course = this->getCourseNameObject(courseName, errorMsg);
-      courses.insert(course);
-    }
+    return this->getDataFromJSONArray<ds::Course>(
+      coursesJSON,
+      errorMsg,
+      [&] (const std::string courseName, const char* errorMsg) -> ds::Course*
+      {
+        return this->getCourseNameObject(courseName, errorMsg);
+      });
+  }
 
-    return courses;
+  const std::unordered_set<ds::RoomFeature*>
+  DataManager::getRoomFeaturesFromJSONArray(const json roomFeaturesJSON,
+                                            const char* errorMsg)
+  {
+    return this->getDataFromJSONArray<ds::RoomFeature>(
+      roomFeaturesJSON,
+      errorMsg,
+      [&] (const std::string roomFeatureName, const char* errorMsg)
+        -> ds::RoomFeature*
+      {
+        return this->getRoomFeatureObject(roomFeatureName, errorMsg);
+      });
   }
 
   void DataManager::parseCoursesJSON()
@@ -234,10 +249,11 @@ namespace upvtc_ct::utils
       const std::string courseName = course["course_name"];
       const bool hasLab = course["has_lab"].get<bool>();
 
-      const auto& prerequisites = course["prerequisites"];
-      const auto coursePrereqs = this->getCoursesFromJSON(prerequisites);
-
-      std::unordered_set<ds::RoomFeature*> roomReqs;
+      const auto& prereqsJSON = course["prerequisites"];
+      const auto coursePrereqs = this->getCoursesFromJSONArray(prereqsJSON);
+      
+      const auto& roomReqsJSON = course["room_requirements"];
+      const auto roomReqs = this->getRoomFeaturesFromJSONArray(roomReqsJSON);
 
       // Create a course object. Make sure that we only have one copy of
       // the newly generated course object throughout the program.
@@ -359,7 +375,7 @@ namespace upvtc_ct::utils
                   << std::endl;
       } else {
         const auto& courses = group["courses"];
-        const auto assignedCourses = this->getCoursesFromJSON(courses);
+        const auto assignedCourses = this->getCoursesFromJSONArray(courses);
 
         ds::StudentGroup* parentGroup = sgItem->second;
         parentGroup->addSubGroup(assignedCourses, numMembers);
