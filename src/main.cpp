@@ -28,6 +28,13 @@ int main(int argc, char* argv[])
               << std::endl;
   }
 
+  std::cout << "ROOM FEATURES" << std::endl;
+  for (const auto& roomFeature : dm.getRoomFeatures()) {
+    std::cout << "\t"
+              << roomFeature->name
+              << std::endl;
+  }
+
   std::cout << "STUDENT GROUPS" << std::endl;
   for (const auto& group : dm.getStudentGroups()) {
     std::cout << "----------------------------" << std::endl;

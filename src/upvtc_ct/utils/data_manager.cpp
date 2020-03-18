@@ -31,12 +31,12 @@ namespace upvtc_ct::utils
     const unsigned int semester = config.get<int>("semester");
 
     this->parseCoursesJSON();
+    this->parseRoomFeaturesJSON();
 
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
                        PairHash> generatedStudentGroups;
     this->parseStudyPlansJSON(semester, generatedStudentGroups);
-
     this->parseStudentGroupsJSON(generatedStudentGroups);
     this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
   }
@@ -86,6 +86,24 @@ namespace upvtc_ct::utils
     }
 
     return courseItem->second;
+  }
+
+  const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
+  DataManager::getRoomFeatures()
+  {
+    return this->roomFeatures;
+  }
+
+  ds::RoomFeature* const DataManager::getRoomFeatureObject(
+        const std::string roomFeatureName,
+        const char* errorMsg)
+  {
+    auto roomFeatureItem = this->roomFeatureToObject.find(roomFeatureName);
+    if (roomFeatureItem == this->roomFeatureToObject.end()) {
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return roomFeatureItem->second;
   }
 
   const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
@@ -223,13 +241,33 @@ namespace upvtc_ct::utils
 
       // Create a course object. Make sure that we only have one copy of
       // the newly generated course object throughout the program.
-      std::unique_ptr<ds::Course> coursePtr(
-        std::make_unique<ds::Course>(courseName,
-                                     hasLab,
-                                     coursePrereqs,
-                                     roomReqs));
+      auto coursePtr(std::make_unique<ds::Course>(courseName,
+                                                  hasLab,
+                                                  coursePrereqs,
+                                                  roomReqs));
       this->courseNameToObject.insert({courseName, coursePtr.get()});
       this->courses.insert(std::move(coursePtr));
+    }
+  }
+
+  void DataManager::parseRoomFeaturesJSON()
+  {
+    const std::string roomFeaturesFileName = "room_features.json";
+    const std::string roomFeaturesFilePath = this->getDataFolderPath()
+                                             + roomFeaturesFileName;
+    std::ifstream roomFeaturesFile(roomFeaturesFilePath, std::ifstream::in);
+    if (!roomFeaturesFile) {
+      throw utils::FileNotFoundError("The Room Features JSON file cannot be "
+                                     "found.");
+    }
+
+    json roomFeatures;
+    roomFeaturesFile >> roomFeatures;
+
+    for (const auto& [_, roomFeatureName] : roomFeatures.items()) {
+      auto roomFeaturePtr(std::make_unique<ds::RoomFeature>(roomFeatureName));
+      this->roomFeatureToObject.insert({roomFeatureName, roomFeaturePtr.get()});
+      this->roomFeatures.insert(std::move(roomFeaturePtr));
     }
   }
 

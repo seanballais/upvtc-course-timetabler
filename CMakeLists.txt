@@ -38,6 +38,11 @@ configure_file(
     COPYONLY)
 
 configure_file(
+    "${CMAKE_SOURCE_DIR}/data/room_features.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/room_features.json"
+    COPYONLY)
+
+configure_file(
     "${CMAKE_SOURCE_DIR}/data/regular_student_ges_electives.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/regular_student_ges_electives.json"
     COPYONLY)

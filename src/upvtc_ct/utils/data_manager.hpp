@@ -32,8 +32,13 @@ namespace upvtc_ct::utils
     const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
+    const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
+      getRoomFeatures();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
+    ds::RoomFeature* const getRoomFeatureObject(
+      const std::string roomFeatureName,
+      const char* errorMsg);
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
       getClassGroups();
     const std::unordered_map<size_t, std::unordered_set<size_t>>&
@@ -56,6 +61,7 @@ namespace upvtc_ct::utils
                              "Plans JSON file.");
 
     void parseCoursesJSON();
+    void parseRoomFeaturesJSON();
     void parseStudyPlansJSON(
       const unsigned int semester,
       std::unordered_map<std::pair<std::string, unsigned int>,
@@ -84,9 +90,11 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Class>> classes;
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
+    std::unordered_set<std::unique_ptr<ds::RoomFeature>> roomFeatures;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
     
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
+    std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
 
     // NOte that the key is the class group ID.
     std::unordered_map<size_t, std::unordered_set<ds::Class*>> classGroups;
