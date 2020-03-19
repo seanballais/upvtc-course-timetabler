@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
   for (const auto& course : dm.getCourses()) {
     std::cout << "\t"
               << course->name
-              << ((course->hasLab) ? " (Has lab)" : "")
+              << ((course->isLab) ? " (Lab)" : "")
               << std::endl;
     std::cout << "\t "
               << "Number of Timeslots: " << course->numTimeslots

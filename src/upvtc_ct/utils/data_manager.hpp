@@ -90,6 +90,8 @@ namespace upvtc_ct::utils
                          ds::StudentGroup*,
                          PairHash>& generatedStudentGroups);
 
+    void createCourseObject(const json courseJSON, const bool isLab);
+
     template <typename T>
     const std::unordered_set<T*> getDataFromJSONArray(
       const json jsonArray,

@@ -246,25 +246,12 @@ namespace upvtc_ct::utils
     coursesFile >> courses;
 
     for (const auto& [_, course] : courses.items()) {
-      const std::string courseName = course["course_name"];
+      this->createCourseObject(course, false);
+
       const bool hasLab = course["has_lab"].get<bool>();
-      const unsigned int numTimeslots = course["num_timeslots"].get<int>();
-
-      const auto& prereqsJSON = course["prerequisites"];
-      const auto coursePrereqs = this->getCoursesFromJSONArray(prereqsJSON);
-      
-      const auto& roomReqsJSON = course["room_requirements"];
-      const auto roomReqs = this->getRoomFeaturesFromJSONArray(roomReqsJSON);
-
-      // Create a course object. Make sure that we only have one copy of
-      // the newly generated course object throughout the program.
-      auto coursePtr(std::make_unique<ds::Course>(courseName,
-                                                  hasLab,
-                                                  numTimeslots,
-                                                  coursePrereqs,
-                                                  roomReqs));
-      this->courseNameToObject.insert({courseName, coursePtr.get()});
-      this->courses.insert(std::move(coursePtr));
+      if (hasLab) {
+        this->createCourseObject(course, true);
+      }
     }
   }
 
@@ -461,5 +448,36 @@ namespace upvtc_ct::utils
       std::make_pair(degree->name, yearLevel), sgPtr.get()
     });
     this->studentGroups.insert(std::move(sgPtr));
+  }
+
+  void DataManager::createCourseObject(const json courseJSON, const bool isLab)
+  {
+    const std::string courseName = courseJSON["course_name"];
+    const bool hasLab = (isLab) ? false : courseJSON["has_lab"].get<bool>();
+
+    const char* timeslotsKey = (isLab) ? "num_lab_timeslots" : "num_timeslots";
+    const unsigned int numTimeslots = courseJSON[timeslotsKey].get<int>();
+
+    std::unordered_set<ds::Course*> coursePrereqs;
+    if (!isLab) {
+      const auto& prereqsJSON = courseJSON["prerequisites"];
+      coursePrereqs = this->getCoursesFromJSONArray(prereqsJSON);
+    }
+    
+    const char* roomReqsKey = (isLab) ? "lab_requirements"
+                                      : "room_requirements";
+    const auto& roomReqsJSON = courseJSON[roomReqsKey];
+    const auto roomReqs = this->getRoomFeaturesFromJSONArray(roomReqsJSON);
+
+    // Create a course object. Make sure that we only have one copy of
+    // the newly generated course object throughout the program.
+    auto coursePtr(std::make_unique<ds::Course>(courseName,
+                                                hasLab,
+                                                isLab,
+                                                numTimeslots,
+                                                coursePrereqs,
+                                                roomReqs));
+    this->courseNameToObject.insert({courseName, coursePtr.get()});
+    this->courses.insert(std::move(coursePtr)); 
   }
 }

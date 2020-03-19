@@ -19,7 +19,7 @@ namespace upvtc_ct::ds
 
   struct Course
   {
-    Course(const std::string name, const bool hasLab,
+    Course(const std::string name, const bool hasLab, const bool isLab,
            const unsigned int numTimeslots,
            const std::unordered_set<Course*> prerequisites,
            const std::unordered_set<RoomFeature*> roomRequirements);
@@ -27,6 +27,7 @@ namespace upvtc_ct::ds
 
     const std::string name;
     const bool hasLab;
+    const bool isLab;
     const unsigned int numTimeslots;
     const std::unordered_set<Course*> prerequisites;
     const std::unordered_set<RoomFeature*> roomRequirements;
