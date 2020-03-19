@@ -26,6 +26,9 @@ int main(int argc, char* argv[])
               << course->name
               << ((course->hasLab) ? " (Has lab)" : "")
               << std::endl;
+    std::cout << "\t "
+              << "Number of Timeslots: " << course->numTimeslots
+              << std::endl;
     std::cout << "\t " << "Room Requirements:" << std::endl;
     for (const auto& roomReq : course->roomRequirements) {
       std::cout << "\t\t" << roomReq->name << std::endl;

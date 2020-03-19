@@ -9,10 +9,12 @@ namespace upvtc_ct::ds
 {
   // Model Definitions
   Course::Course(const std::string name, const bool hasLab,
+                 const unsigned int numTimeslots,
                  const std::unordered_set<Course*> prerequisites,
                  const std::unordered_set<RoomFeature*> roomRequirements)
     : name(name),
       hasLab(hasLab),
+      numTimeslots(numTimeslots),
       prerequisites(prerequisites),
       roomRequirements(roomRequirements) {}
 

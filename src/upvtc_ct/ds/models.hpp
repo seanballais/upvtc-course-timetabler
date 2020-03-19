@@ -20,12 +20,14 @@ namespace upvtc_ct::ds
   struct Course
   {
     Course(const std::string name, const bool hasLab,
+           const unsigned int numTimeslots,
            const std::unordered_set<Course*> prerequisites,
            const std::unordered_set<RoomFeature*> roomRequirements);
     bool operator==(const Course& c) const;
 
     const std::string name;
     const bool hasLab;
+    const unsigned int numTimeslots;
     const std::unordered_set<Course*> prerequisites;
     const std::unordered_set<RoomFeature*> roomRequirements;
   };

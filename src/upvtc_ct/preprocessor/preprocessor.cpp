@@ -125,7 +125,7 @@ namespace upvtc_ct::preprocessor
     this->courseNameToClassGroupsMap[course->name].insert(classID);
 
     // Assume for now that a course requires three timeslots.
-    const unsigned int numTimeslots = 3;
+    const unsigned int numTimeslots = course->numTimeslots;
     for (int ctr = 0; ctr < numTimeslots; ctr++) {
       std::unique_ptr<ds::Class> clsPtr(
       std::make_unique<ds::Class>(idStart + ctr, classID, course, nullptr,

@@ -248,6 +248,7 @@ namespace upvtc_ct::utils
     for (const auto& [_, course] : courses.items()) {
       const std::string courseName = course["course_name"];
       const bool hasLab = course["has_lab"].get<bool>();
+      const unsigned int numTimeslots = course["num_timeslots"].get<int>();
 
       const auto& prereqsJSON = course["prerequisites"];
       const auto coursePrereqs = this->getCoursesFromJSONArray(prereqsJSON);
@@ -259,6 +260,7 @@ namespace upvtc_ct::utils
       // the newly generated course object throughout the program.
       auto coursePtr(std::make_unique<ds::Course>(courseName,
                                                   hasLab,
+                                                  numTimeslots,
                                                   coursePrereqs,
                                                   roomReqs));
       this->courseNameToObject.insert({courseName, coursePtr.get()});
