@@ -27,10 +27,12 @@ namespace upvtc_ct::preprocessor
     void identifyGroupMemberClassConflicts(
       const ds::BaseStudentGroup& group,
       const std::unordered_set<ds::Course*>& additionalCourses);
+    void generateClassGroupsForClasses(ds::Course* course,
+                                       const int numClasses,
+                                       unsigned int& numClassesGenerated);
     void generateClassGroup(const unsigned int idStart,
                             size_t classID,
                             ds::Course* course);
-
     size_t selectClassGroup(std::string courseName);
 
     std::unordered_map<std::string, int> getNumEnrolleesPerCourse();

@@ -39,6 +39,7 @@ namespace upvtc_ct::utils
     ds::RoomFeature* const getRoomFeatureObject(
       const std::string roomFeatureName,
       const char* errorMsg);
+    ds::Course* const getCourseLab(ds::Course* const course);
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
       getClassGroups();
     const std::unordered_map<size_t, std::unordered_set<size_t>>&
@@ -90,7 +91,8 @@ namespace upvtc_ct::utils
                          ds::StudentGroup*,
                          PairHash>& generatedStudentGroups);
 
-    void createCourseObject(const json courseJSON, const bool isLab);
+    ds::Course* const createCourseObject(const json courseJSON,
+                                         const bool isLab);
 
     template <typename T>
     const std::unordered_set<T*> getDataFromJSONArray(
@@ -114,9 +116,10 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
     std::unordered_set<std::unique_ptr<ds::RoomFeature>> roomFeatures;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
-    
+
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
     std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
+    std::unordered_map<ds::Course*, ds::Course*> courseToLabObject;
 
     // NOte that the key is the class group ID.
     std::unordered_map<size_t, std::unordered_set<ds::Class*>> classGroups;

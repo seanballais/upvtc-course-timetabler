@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -76,6 +77,12 @@ namespace upvtc_ct::utils
     return this->studentGroups;
   }
 
+  const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
+  DataManager::getRoomFeatures()
+  {
+    return this->roomFeatures;
+  }
+
   ds::Course* const DataManager::getCourseNameObject(
       const std::string courseName,
       const char* errorMsg)
@@ -88,12 +95,6 @@ namespace upvtc_ct::utils
     return courseItem->second;
   }
 
-  const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
-  DataManager::getRoomFeatures()
-  {
-    return this->roomFeatures;
-  }
-
   ds::RoomFeature* const DataManager::getRoomFeatureObject(
         const std::string roomFeatureName,
         const char* errorMsg)
@@ -104,6 +105,20 @@ namespace upvtc_ct::utils
     }
 
     return roomFeatureItem->second;
+  }
+
+  ds::Course* const DataManager::getCourseLab(ds::Course* const course)
+  {
+    auto labCourseItem = this->courseToLabObject.find(course);
+    if (labCourseItem == this->courseToLabObject.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Course, " << course->name << "does not have a lab "
+                     << "unit.";
+
+      throw utils::InvalidContentsError((errorMsgStream.str()).c_str());
+    }
+
+    return labCourseItem->second;
   }
 
   const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
@@ -246,11 +261,11 @@ namespace upvtc_ct::utils
     coursesFile >> courses;
 
     for (const auto& [_, course] : courses.items()) {
-      this->createCourseObject(course, false);
-
+      auto* const lecCoursePtr = this->createCourseObject(course, false);
       const bool hasLab = course["has_lab"].get<bool>();
       if (hasLab) {
-        this->createCourseObject(course, true);
+        auto* const labCoursePtr = this->createCourseObject(course, true);
+        this->courseToLabObject.insert({lecCoursePtr, labCoursePtr});
       }
     }
   }
@@ -450,7 +465,8 @@ namespace upvtc_ct::utils
     this->studentGroups.insert(std::move(sgPtr));
   }
 
-  void DataManager::createCourseObject(const json courseJSON, const bool isLab)
+  ds::Course* const DataManager::createCourseObject(const json courseJSON,
+                                                    const bool isLab)
   {
     const std::string courseName = courseJSON["course_name"];
     const bool hasLab = (isLab) ? false : courseJSON["has_lab"].get<bool>();
@@ -477,7 +493,10 @@ namespace upvtc_ct::utils
                                                 numTimeslots,
                                                 coursePrereqs,
                                                 roomReqs));
+    ds::Course* const outputCoursePtr = coursePtr.get();
     this->courseNameToObject.insert({courseName, coursePtr.get()});
     this->courses.insert(std::move(coursePtr)); 
+
+    return outputCoursePtr;
   }
 }

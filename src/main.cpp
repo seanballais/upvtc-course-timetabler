@@ -93,13 +93,19 @@ int main(int argc, char* argv[])
   auto pp = upvtc_ct::preprocessor::Preprocessor(&dm);
   pp.preprocess();
   for (const auto& classGroup : dm.getClassGroups()) {
+    // The class instance you select doesn't matter as long as it is in the same
+    // class group.
     const upvtc_ct::ds::Class* cls = *(classGroup.second.begin());
     std::cout << "---------------------------------" << std::endl;
     std::cout << "\tClass ID: " << cls->classID << std::endl;
 
     std::cout << "\tCourse: ";
     if (cls->course != nullptr) {
-      std::cout << cls->course->name << std::endl;
+      if (cls->course->isLab) {
+        std::cout << cls->course->name << " (Lab)" << std::endl;
+      } else {
+        std::cout << cls->course->name << std::endl;
+      }      
     } else {
       std::cout << "None" << std::endl;
     }
@@ -132,7 +138,9 @@ int main(int argc, char* argv[])
     // and the course name.
     const upvtc_ct::ds::Class* cls = *(classGroups.at(item.first).begin());
     std::cout << cls->course->name
-              << " (" << item.first << ")"
+              << " ("
+              << ((cls->course->isLab) ? "Lab, " : "") << item.first
+              << ")"
               << " is in conflict with:" << std::endl;
     for (const auto classGrpID : item.second) {
       // We don't care which class we get, as long as it's in the correct

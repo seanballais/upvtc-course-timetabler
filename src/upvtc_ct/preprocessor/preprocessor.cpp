@@ -32,21 +32,27 @@ namespace upvtc_ct::preprocessor
     // Generate the classes.
     ds::Config config = dataManager->getConfig();
     const unsigned int maxLecCapacity = config.get<int>("max_lecture_capacity");
+    const unsigned int maxLabCapacity = config.get<int>("max_lab_capacity");
     const auto numCourseEnrolleesMap = this->getNumEnrolleesPerCourse();
 
-    size_t numClassesGenerated = 0;
+    unsigned int numClassesGenerated = 0;
     for (const auto item : numCourseEnrolleesMap) {
-      int numCourseEnrollees = item.second;
-      int numClasses = ceil(static_cast<float>(numCourseEnrollees)
-                            / static_cast<float>(maxLecCapacity));      
       const char* errorMsg = "Referenced a non-existent course.";
       ds::Course* course = this->dataManager
                                ->getCourseNameObject(item.first, errorMsg);
-      for (int i = 0; i < numClasses; i++) {
-        size_t classID = std::hash<std::string>()(
-          item.first + std::to_string(i));
-        this->generateClassGroup(numClassesGenerated, classID, course);        
-        numClassesGenerated += 3; // Assume a course needs 3 timeslots, for now.
+      
+      const int numCourseEnrollees = item.second;
+      const int numClasses = ceil(static_cast<float>(numCourseEnrollees)
+                                  / static_cast<float>(maxLecCapacity));;
+      this->generateClassGroupsForClasses(course, numClasses,
+                                          numClassesGenerated);
+
+      if (course->hasLab) {
+        ds::Course* courseLab = this->dataManager->getCourseLab(course);
+        const int numClasses = ceil(static_cast<float>(numCourseEnrollees)
+                                    / static_cast<float>(maxLabCapacity));
+        this->generateClassGroupsForClasses(courseLab, numClasses,
+                                            numClassesGenerated);
       }
     }
   }
@@ -65,8 +71,8 @@ namespace upvtc_ct::preprocessor
       // Let's deal with the regular members first. Regular members are members
       // of the group that do not belong to any sub-student groups, i.e. those
       // that follow only the study plan.
-      const
-      unsigned int numRegMembers = group->getNumMembers() - numSubGroupMembers;
+      const unsigned int
+        numRegMembers = group->getNumMembers() - numSubGroupMembers;
       for (int i = 0; i < numRegMembers; i++) {
         this->identifyGroupMemberClassConflicts(*group);
       }
@@ -117,12 +123,17 @@ namespace upvtc_ct::preprocessor
                                         size_t classID,
                                         ds::Course* course)
   {
-    const auto item = this->courseNameToClassGroupsMap.find(course->name);
-    if (item == this->courseNameToClassGroupsMap.end()) {
-      this->courseNameToClassGroupsMap[course->name] = {};
+    std::string classGroupName = course->name;
+    if (course->isLab) {
+      classGroupName += " (Lab)";
     }
 
-    this->courseNameToClassGroupsMap[course->name].insert(classID);
+    const auto item = this->courseNameToClassGroupsMap.find(classGroupName);
+    if (item == this->courseNameToClassGroupsMap.end()) {
+      this->courseNameToClassGroupsMap[classGroupName] = {};
+    }
+
+    this->courseNameToClassGroupsMap[classGroupName].insert(classID);
 
     // Assume for now that a course requires three timeslots.
     const unsigned int numTimeslots = course->numTimeslots;
@@ -146,6 +157,7 @@ namespace upvtc_ct::preprocessor
   {
     // Get all the courses that a student of a group will be enrolled in.
     std::unordered_set<ds::Course*> assignedCourses;
+
     for (const auto& course : group.assignedCourses) {
       assignedCourses.insert(course);
     }
@@ -160,6 +172,12 @@ namespace upvtc_ct::preprocessor
       // Pick a class group of a course to assign the student to.
       size_t studentClassGroup = this->selectClassGroup(course->name);
       studentClassGroups.push_back(studentClassGroup);
+
+      if (course->hasLab) {
+        size_t studentClassGroup = this->selectClassGroup(
+          course->name + std::string(" (Lab)"));
+        studentClassGroups.push_back(studentClassGroup);
+      }
     }
 
     // All class groups inside studentClassGroupsare are now known to be
@@ -173,6 +191,23 @@ namespace upvtc_ct::preprocessor
                                               conflictedGroup);
         }
       }
+    }
+  }
+
+  void Preprocessor::generateClassGroupsForClasses(
+      ds::Course* course,
+      const int numClasses,
+      unsigned int& numClassesGenerated)
+  {
+    std::string courseName = course->name;
+    if (course->isLab) {
+      courseName += std::string{" (Lab)"};
+    }
+
+    for (int i = 0; i < numClasses; i++) {
+      size_t classID = std::hash<std::string>()(courseName + std::to_string(i));
+      this->generateClassGroup(numClassesGenerated, classID, course);
+      numClassesGenerated += course->numTimeslots;
     }
   }
 
@@ -190,6 +225,7 @@ namespace upvtc_ct::preprocessor
       }
 
       unsigned int classGroupSize = this->classGroupSizes[candidate];
+
       if (classGroupSize < maxLecCapacity) {
         // We can still fit another student to the class group.
         this->classGroupSizes[candidate]++;
