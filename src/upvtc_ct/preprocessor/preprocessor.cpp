@@ -91,27 +91,46 @@ namespace upvtc_ct::preprocessor
   {
     std::unordered_map<std::string, int> numCourseEnrolleesMap;
     for (const auto& group : this->dataManager->getStudentGroups()) {
-      // Get all courses that are going to be attended by members of the group.
-      std::unordered_set<ds::Course*> assignedCourses;
-      
-      // Go through the courses in the study plan first.
-      for (ds::Course* coursePtr : group->assignedCourses) {
-        assignedCourses.insert(coursePtr);
+      unsigned int numSubGroupMembers = 0;
+      for (const auto& subGroup : group->getSubGroups()) {
+        numSubGroupMembers += subGroup->getNumMembers();
       }
 
-      // And then the assigned courses of each sub-student groups.
-      for (const auto& subGroup : group->getSubGroups()) {
-        for (ds::Course* coursePtr : subGroup->assignedCourses) {
-          assignedCourses.insert(coursePtr);
+      // Let's deal with the regular members first. Regular members are members
+      // of the group that do not belong to any sub-student groups, i.e. those
+      // that follow only the study plan.
+      const unsigned int
+        numRegMembers = group->getNumMembers() - numSubGroupMembers;
+      for (ds::Course* course : group->assignedCourses) {
+        auto numCourseEnrolleesItem = numCourseEnrolleesMap.find(
+          course->name);
+        if (numCourseEnrolleesItem != numCourseEnrolleesMap.end()) {
+          numCourseEnrolleesMap[course->name] += numRegMembers;
+        } else {
+          numCourseEnrolleesMap[course->name] = numRegMembers;
         }
       }
+      
+      // Now, let's deal with the members that are part of sub-student groups.
+      for (const auto& subGroup : group->getSubGroups()) {
+        for (ds::Course* course : group->assignedCourses) {
+          auto numCourseEnrolleesItem = numCourseEnrolleesMap.find(
+            course->name);
+          if (numCourseEnrolleesItem != numCourseEnrolleesMap.end()) {
+            numCourseEnrolleesMap[course->name] += subGroup->getNumMembers();
+          } else {
+            numCourseEnrolleesMap[course->name] = subGroup->getNumMembers();
+          }
+        }
 
-      for (const ds::Course* course : assignedCourses) {
-        auto numCourseEnrolleesItem = numCourseEnrolleesMap.find(course->name);
-        if (numCourseEnrolleesItem != numCourseEnrolleesMap.end()) {
-          numCourseEnrolleesMap[course->name] += group->getNumMembers();
-        } else {
-          numCourseEnrolleesMap[course->name] = group->getNumMembers();
+        for (ds::Course* course : subGroup->assignedCourses) {
+          auto numCourseEnrolleesItem = numCourseEnrolleesMap.find(
+            course->name);
+          if (numCourseEnrolleesItem != numCourseEnrolleesMap.end()) {
+            numCourseEnrolleesMap[course->name] += subGroup->getNumMembers();
+          } else {
+            numCourseEnrolleesMap[course->name] = subGroup->getNumMembers();
+          }
         }
       }
     }
