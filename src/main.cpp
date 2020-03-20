@@ -150,7 +150,9 @@ int main(int argc, char* argv[])
                                                                  .begin());
       std::cout << "\t"
                 << conflictingClass->course->name
-                << " (" << classGrpID << ")"
+                << " ("
+                << ((conflictingClass->course->isLab) ? "Lab, " : "")
+                << classGrpID << ")"
                 << std::endl;
     }
   }

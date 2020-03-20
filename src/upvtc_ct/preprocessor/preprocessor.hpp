@@ -33,7 +33,7 @@ namespace upvtc_ct::preprocessor
     void generateClassGroup(const unsigned int idStart,
                             size_t classID,
                             ds::Course* course);
-    size_t selectClassGroup(std::string courseName);
+    size_t selectClassGroup(ds::Course* course);
 
     std::unordered_map<std::string, int> getNumEnrolleesPerCourse();
 

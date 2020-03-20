@@ -170,12 +170,12 @@ namespace upvtc_ct::preprocessor
     std::vector<size_t> studentClassGroups;
     for (const auto& course : assignedCourses) {
       // Pick a class group of a course to assign the student to.
-      size_t studentClassGroup = this->selectClassGroup(course->name);
+      size_t studentClassGroup = this->selectClassGroup(course);
       studentClassGroups.push_back(studentClassGroup);
 
       if (course->hasLab) {
-        size_t studentClassGroup = this->selectClassGroup(
-          course->name + std::string(" (Lab)"));
+        ds::Course* courseLab = this->dataManager->getCourseLab(course);
+        size_t studentClassGroup = this->selectClassGroup(courseLab);
         studentClassGroups.push_back(studentClassGroup);
       }
     }
@@ -211,10 +211,17 @@ namespace upvtc_ct::preprocessor
     }
   }
 
-  size_t Preprocessor::selectClassGroup(std::string courseName)
+  size_t Preprocessor::selectClassGroup(ds::Course* course)
   {
+    std::string courseName = course->name;
+    if (course->isLab) {
+      courseName += std::string{" (Lab)"};
+    }
+
     ds::Config config = this->dataManager->getConfig();
-    const unsigned int maxLecCapacity = config.get<int>("max_lecture_capacity");
+    const unsigned int maxGroupCapacity = (course->isLab)
+      ? config.get<int>("max_lab_capacity")
+      : config.get<int>("max_lecture_capacity");
 
     std::unordered_set<size_t>
       candidates = this->courseNameToClassGroupsMap[courseName];
@@ -224,9 +231,8 @@ namespace upvtc_ct::preprocessor
         this->classGroupSizes[candidate] = 0;
       }
 
-      unsigned int classGroupSize = this->classGroupSizes[candidate];
-
-      if (classGroupSize < maxLecCapacity) {
+      const unsigned int classGroupSize = this->classGroupSizes[candidate];
+      if (classGroupSize < maxGroupCapacity) {
         // We can still fit another student to the class group.
         this->classGroupSizes[candidate]++;
         return candidate;
