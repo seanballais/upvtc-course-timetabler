@@ -53,6 +53,11 @@ configure_file(
     COPYONLY)
 
 configure_file(
+    "${CMAKE_SOURCE_DIR}/data/irregular_student_groups.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/irregular_student_groups.json"
+    COPYONLY)
+
+configure_file(
     "${CMAKE_SOURCE_DIR}/data/study_plans.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/study_plans.json"
     COPYONLY)

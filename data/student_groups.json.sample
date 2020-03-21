@@ -3,5 +3,10 @@
     "degree_name": "BSCS",
     "year_level": 0,
     "num_members": 65
+  },
+  {
+    "degree_name": "BSCS",
+    "year_level": 1,
+    "num_members": 85
   }
 ]

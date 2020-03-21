@@ -26,7 +26,8 @@ namespace upvtc_ct::utils
   namespace utils = upvtc_ct::utils;
 
   DataManager::DataManager()
-    : config(this->getConfigData())
+    : config(this->getConfigData()),
+      currStudentGroupID(0)
   {
     ds::Config config = this->getConfig();
     const unsigned int semester = config.get<int>("semester");
@@ -37,9 +38,13 @@ namespace upvtc_ct::utils
     std::unordered_map<std::pair<std::string, unsigned int>,
                        ds::StudentGroup*,
                        PairHash> generatedStudentGroups;
-    this->parseStudyPlansJSON(semester, generatedStudentGroups);
+    std::unordered_map<std::pair<std::string, unsigned int>,
+                       std::unordered_set<ds::Course*>,
+                       PairHash> studyPlans;
+    this->parseStudyPlansJSON(semester, generatedStudentGroups, studyPlans);
     this->parseStudentGroupsJSON(generatedStudentGroups);
     this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
+    this->parseIrregularStudentGroupsJSON(studyPlans);
   }
 
   const ds::Config& DataManager::getConfig()
@@ -93,6 +98,22 @@ namespace upvtc_ct::utils
     }
 
     return courseItem->second;
+  }
+
+  ds::Degree* const DataManager::getDegreeNameObject(
+      const std::string degreeName)
+  {
+    auto degreeItem = this->degreeNameToObject.find(degreeName);
+    if (degreeItem == this->degreeNameToObject.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Degree, " << degreeName
+                     << ", cannot be found. Degree object must not have been "
+                     << "created yet.";
+      const char* errorMsg = (errorMsgStream.str()).c_str();
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return degreeItem->second;
   }
 
   ds::RoomFeature* const DataManager::getRoomFeatureObject(
@@ -295,7 +316,10 @@ namespace upvtc_ct::utils
       const unsigned int semester,
       std::unordered_map<std::pair<std::string, unsigned int>,
                          ds::StudentGroup*,
-                         PairHash>& generatedStudentGroups)
+                         PairHash>& generatedStudentGroups,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         std::unordered_set<ds::Course*>,
+                         PairHash>& studyPlans)
   {
     const std::string studyPlanFileName = "study_plans.json";
     const std::string studyPlanFilePath = this->getDataFolderPath()
@@ -320,7 +344,6 @@ namespace upvtc_ct::utils
       const auto& divisionItemDegrees = studyPlanItem["degrees"];
       for (const auto& [_, degreeItem] : divisionItemDegrees.items()) {
         const std::string degreeName = degreeItem["degree_name"];
-
         std::unique_ptr<ds::Degree> degreePtr(
           std::make_unique<ds::Degree>(degreeName));
         divisionDegrees.insert(degreePtr.get());
@@ -332,15 +355,93 @@ namespace upvtc_ct::utils
                                             semester,
                                             degreePtr.get(),
                                             divisionCourses,
-                                            generatedStudentGroups);
+                                            generatedStudentGroups,
+                                            studyPlans);
         }
 
+        this->degreeNameToObject.insert({degreeName, degreePtr.get()});
         this->degrees.insert(std::move(degreePtr));
       }
 
       std::unique_ptr<ds::Division> divisionPtr(
         new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
       this->divisions.insert(std::move(divisionPtr));
+    }
+  }
+
+  void DataManager::parseIrregularStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               std::unordered_set<ds::Course*>,
+                               PairHash>& studyPlans)
+  {
+    const std::string jsonFileName = "irregular_student_groups.json";
+    const std::string irregStudentGroupFilePath = this->getDataFolderPath()
+                                                  + jsonFileName;
+    std::ifstream irregStudentGroupFile(irregStudentGroupFilePath,
+                                        std::ifstream::in);
+    if (!irregStudentGroupFile) {
+      throw utils::FileNotFoundError("The Irregular Student Groups JSON file "
+                                     "cannot be found.");
+    }
+
+    json irregStudentGroups;
+    irregStudentGroupFile >> irregStudentGroups;
+
+    for (const auto& [_, group] : irregStudentGroups.items()) {
+      const std::string degreeName = group["degree_name"];
+      const unsigned int yearLevel = group["year_level"].get<int>();
+
+      const auto studyPlanKey = std::make_pair(degreeName, yearLevel);
+      const auto& studyPlanItem = studyPlans.find(studyPlanKey);
+      if (studyPlanItem == studyPlans.end()) {
+        std::cout << "Study plan with the following details:"
+                  << "  Degree:\t" << degreeName
+                  << "  Year Level:\t" << yearLevel
+                  << "Skipping…"
+                  << std::endl;
+      } else {
+        auto assignedCourses = studyPlanItem->second;
+        const auto additionalCourses = group["additional_courses"];
+        for (std::string additionalCourse : additionalCourses) {
+          std::stringstream errorMsgStream;
+          errorMsgStream << "Object for course, "
+                         << additionalCourse
+                         << ", cannot be found.";
+          const char* errorMsg = (errorMsgStream.str()).c_str();
+          ds::Course* course = this->getCourseNameObject(additionalCourse,
+                                                         errorMsg);
+          assignedCourses.insert(course);
+        }
+
+        std::unordered_set<ds::Course*> disallowedCourses{};
+        const auto uncompletedCoursesJSON = group["uncompleted_courses"];
+        auto uncompletedCourses = this->getCoursesFromJSONArray(
+          uncompletedCoursesJSON);
+        for (auto* const course : assignedCourses) {
+          if (this->courseSetsHaveIntersections(&uncompletedCourses,
+                                                &(course->prerequisites))) {
+            // The current course cannot be enrolled by the irregular student
+            // group since they do not have finished all of the required
+            // prerequisites.
+            disallowedCourses.insert(course);
+          }
+        }
+
+        // Remove all courses that cannot be enrolled by the student group from
+        // the list of assigned courses for the group.
+        for (auto* const course : disallowedCourses) {
+          assignedCourses.erase(course);
+        }
+
+        ds::Degree* degree = this->getDegreeNameObject(degreeName);
+        auto irregSgPtr(std::make_unique<ds::StudentGroup>(
+          this->getNewStudentGroupID(), degree, yearLevel, assignedCourses));
+
+        const unsigned int numMembers = group["num_members"].get<int>();
+        irregSgPtr->setNumMembers(numMembers);
+
+        this->studentGroups.insert(std::move(irregSgPtr));
+      }
     }
   }
 
@@ -432,11 +533,18 @@ namespace upvtc_ct::utils
       std::unordered_set<ds::Course*>& divisionCourses,
       std::unordered_map<std::pair<std::string, unsigned int>,
                          ds::StudentGroup*,
-                         PairHash>& generatedStudentGroups)
+                         PairHash>& generatedStudentGroups,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         std::unordered_set<ds::Course*>,
+                         PairHash>& studyPlans)
   {
     // NOTE: Plans must be sorted ascendingly by year level, then by
     //       semester.
     const int yearLevel = planItemJSON["year_level"].get<int>();
+
+    auto key = std::make_pair(degree->name, yearLevel);
+    studyPlans.insert({key, {}});
+
     const int planSemester = planItemJSON["semester"].get<int>();
 
     if (planSemester != semester) {
@@ -452,11 +560,13 @@ namespace upvtc_ct::utils
       ds::Course* course = this->getCourseNameObject(courseName, errorMsg);
       planCourses.insert(course);
       divisionCourses.insert(course);
+      studyPlans[key].insert(course);
     }
 
     // Create a StudentGroup. Similar to the course object, we have to
     // make sure that there is only one copy for each StudentGroup object.
-    auto sgPtr(std::make_unique<ds::StudentGroup>(degree,
+    auto sgPtr(std::make_unique<ds::StudentGroup>(this->getNewStudentGroupID(),
+                                                  degree,
                                                   yearLevel,
                                                   planCourses));
     generatedStudentGroups.insert({
@@ -498,5 +608,32 @@ namespace upvtc_ct::utils
     this->courses.insert(std::move(coursePtr)); 
 
     return outputCoursePtr;
+  }
+
+  bool DataManager::courseSetsHaveIntersections(
+      const std::unordered_set<ds::Course*>* set0,
+      const std::unordered_set<ds::Course*>* set1)
+  {
+    const std::unordered_set<ds::Course*>* tempSet;
+    if (set0->size() > set1->size()) {
+      tempSet = set0;
+      set0 = set1;
+      set1 = tempSet;
+    }
+
+    for (auto i = set0->begin(); i != set0->end(); i++) {
+      if (set1->find(*i) != set1->end()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  unsigned int DataManager::getNewStudentGroupID()
+  {
+    unsigned int newID = this->currStudentGroupID;
+    this->currStudentGroupID++;
+    return newID;
   }
 }

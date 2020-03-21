@@ -6,8 +6,6 @@
 
 int main(int argc, char* argv[])
 {
-  std::cout << "I'm working!" << std::endl;
-
   upvtc_ct::utils::DataManager dm;
 
   std::cout << "DIVISIONS" << std::endl;
@@ -92,7 +90,11 @@ int main(int argc, char* argv[])
   std::cout << "CLASSES" << std::endl;
   auto pp = upvtc_ct::preprocessor::Preprocessor(&dm);
   pp.preprocess();
+
+  unsigned int numClassesGenerated = 0;
   for (const auto& classGroup : dm.getClassGroups()) {
+    numClassesGenerated++;
+
     // The class instance you select doesn't matter as long as it is in the same
     // class group.
     const upvtc_ct::ds::Class* cls = *(classGroup.second.begin());
@@ -128,11 +130,17 @@ int main(int argc, char* argv[])
 
     std::cout << "\tTimeslot: " << cls->timeslot << std::endl;
   }
+
+  std::cout << "Number of Classes Generated: " << numClassesGenerated
+            << std::endl;
   std::cout << "-----------------------------------" << std::endl;
 
   std::cout << "CLASS CONFLICTS" << std::endl;
+  
+  unsigned int numClassesWithConflicts = 0;
   const auto& classGroups = dm.getClassGroups();
   for (const auto item : dm.getClassConflicts()) {
+    numClassesWithConflicts++;
     // We don't care which class we get, as long as it's in the correct
     // class group. We only need the class group information, like the class ID
     // and the course name.
@@ -156,6 +164,8 @@ int main(int argc, char* argv[])
                 << std::endl;
     }
   }
+  std::cout << "Number of Classes with Conflicts: "
+            << numClassesWithConflicts << std::endl;
   std::cout << "-----------------------------------" << std::endl;
 
   return 0;

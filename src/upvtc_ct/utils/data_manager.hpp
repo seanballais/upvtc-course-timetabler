@@ -36,6 +36,7 @@ namespace upvtc_ct::utils
       getRoomFeatures();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
+    ds::Degree* const getDegreeNameObject(const std::string degreeName);
     ds::RoomFeature* const getRoomFeatureObject(
       const std::string roomFeatureName,
       const char* errorMsg);
@@ -72,7 +73,14 @@ namespace upvtc_ct::utils
       const unsigned int semester,
       std::unordered_map<std::pair<std::string, unsigned int>,
                          ds::StudentGroup*,
-                         PairHash>& generatedStudentGroups);
+                         PairHash>& generatedStudentGroups,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         std::unordered_set<ds::Course*>,
+                         PairHash>& studyPlans);
+    void parseIrregularStudentGroupsJSON(
+      const std::unordered_map<std::pair<std::string, unsigned int>,
+                               std::unordered_set<ds::Course*>,
+                               PairHash>& studyPlans);
     void parseRegularStudentGroupsGEsElectivesJSON(
       const std::unordered_map<std::pair<std::string, unsigned int>,
                                ds::StudentGroup*,
@@ -89,10 +97,19 @@ namespace upvtc_ct::utils
       std::unordered_set<ds::Course*>& divisionCourses,
       std::unordered_map<std::pair<std::string, unsigned int>,
                          ds::StudentGroup*,
-                         PairHash>& generatedStudentGroups);
+                         PairHash>& generatedStudentGroups,
+      std::unordered_map<std::pair<std::string, unsigned int>,
+                         std::unordered_set<ds::Course*>,
+                         PairHash>& studyPlans);
 
     ds::Course* const createCourseObject(const json courseJSON,
                                          const bool isLab);
+
+    bool courseSetsHaveIntersections(
+      const std::unordered_set<ds::Course*>* set0,
+      const std::unordered_set<ds::Course*>* set1);
+
+    unsigned int getNewStudentGroupID();
 
     template <typename T>
     const std::unordered_set<T*> getDataFromJSONArray(
@@ -118,6 +135,7 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
 
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
+    std::unordered_map<std::string, ds::Degree*> degreeNameToObject;
     std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
     std::unordered_map<ds::Course*, ds::Course*> courseToLabObject;
 
@@ -127,6 +145,8 @@ namespace upvtc_ct::utils
     // Note that the key is the class group ID, and the values are the class
     // groups that are in conflict with the class group referred to by the key.
     std::unordered_map<size_t, std::unordered_set<size_t>> classConflicts;
+
+    unsigned int currStudentGroupID;
   };
 }
 

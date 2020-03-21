@@ -1,0 +1,9 @@
+[
+  {
+    "degree_name": "BSCS",
+    "year_level": 1,
+    "num_members": 5,
+    "additional_courses": [ "HIST 1" ],
+    "uncompleted_courses": [ "MATH 17" ]
+  }
+]

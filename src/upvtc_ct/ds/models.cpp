@@ -72,9 +72,11 @@ namespace upvtc_ct::ds
     }
   }
 
-  StudentGroup::StudentGroup(Degree* const degree, const unsigned int yearLevel,
+  StudentGroup::StudentGroup(const unsigned int id, Degree* const degree,
+                             const unsigned int yearLevel,
                              const std::unordered_set<Course*> assignedCourses)
     : BaseStudentGroup(assignedCourses),
+      id(id),
       degree(degree),
       yearLevel(yearLevel) {}
 
@@ -96,9 +98,7 @@ namespace upvtc_ct::ds
 
   bool StudentGroup::operator==(const StudentGroup& sg) const
   {
-    return this->degree == sg.degree
-           && this->yearLevel == sg.yearLevel
-           && this->assignedCourses == sg.assignedCourses;
+    return this->id == sg.id;
   }
 
   SubStudentGroup::SubStudentGroup(

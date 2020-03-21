@@ -11,20 +11,12 @@
           {
             "year_level": 0,
             "semester": 0,
-            "courses": [
-              {
-                "course_name": "CMSC 11",
-                "has_lab": true,
-                "prerequisites": [],
-                "lab_requirements": []
-              },
-              {
-                "course_name": "MATH 17",
-                "has_lab": false,
-                "prerequisites": [],
-                "lab_requirements": []
-              }
-            ]
+            "courses": [ "CMSC 11", "MATH 17" ]
+          },
+          {
+            "year_level": 1,
+            "semester": 0,
+            "courses": [ "CMSC 22", "MATH 54", "PHYSICS 1" ]
           }
         ]
       }

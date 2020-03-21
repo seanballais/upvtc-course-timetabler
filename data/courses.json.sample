@@ -31,5 +31,31 @@
     "num_lab_timeslots": 0,
     "prerequisites": [],
     "room_requirements": []
+  },
+  {
+    "course_name": "CMSC 22",
+    "has_lab": true,
+    "num_timeslots": 3,
+    "num_lab_timeslots": 2,
+    "prerequisites": [ "CMSC 11" ],
+    "room_requirements": [ "Projector" ],
+    "lab_requirements": [ "Computers" ]
+  },
+  {
+    "course_name": "MATH 54",
+    "has_lab": false,
+    "num_timeslots": 3,
+    "num_lab_timeslots": 0,
+    "prerequisites": [ "MATH 17" ],
+    "room_requirements": []
+  },
+  {
+    "course_name": "PHYSICS 1",
+    "has_lab": true,
+    "num_timeslots": 3,
+    "num_lab_timeslots": 2,
+    "prerequisites": [],
+    "room_requirements": [ "Projector" ],
+    "lab_requirements": [ "Physics Lab" ]
   }
 ]
