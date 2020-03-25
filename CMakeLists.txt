@@ -38,6 +38,11 @@ configure_file(
     COPYONLY)
 
 configure_file(
+    "${CMAKE_SOURCE_DIR}/data/rooms.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/rooms.json"
+    COPYONLY)
+
+configure_file(
     "${CMAKE_SOURCE_DIR}/data/room_features.json"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/room_features.json"
     COPYONLY)

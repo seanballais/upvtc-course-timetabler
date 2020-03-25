@@ -32,14 +32,19 @@ namespace upvtc_ct::utils
     const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
       getStudentGroups();
+    const std::unordered_set<std::unique_ptr<ds::Room>>& getRooms();
     const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
       getRoomFeatures();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
     ds::Degree* const getDegreeNameObject(const std::string degreeName);
+    ds::Division* const getDivisionNameObject(const std::string divisionName);
+    ds::Room* const getRoomNameObject(const std::string roomName);
     ds::RoomFeature* const getRoomFeatureObject(
       const std::string roomFeatureName,
-      const char* errorMsg);
+      const char* errorMsg = "Referenced a room feature that was not "
+                             "yet generated. PLease check your Room Features "
+                             "JSON file.");
     ds::Course* const getCourseLab(ds::Course* const course);
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
       getClassGroups();
@@ -68,6 +73,7 @@ namespace upvtc_ct::utils
                              "JSON file.");
 
     void parseCoursesJSON();
+    void parseRoomsJSON();
     void parseRoomFeaturesJSON();
     void parseStudyPlansJSON(
       const unsigned int semester,
@@ -131,11 +137,14 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Class>> classes;
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;
     std::unordered_set<std::unique_ptr<ds::Division>> divisions;
+    std::unordered_set<std::unique_ptr<ds::Room>> rooms;
     std::unordered_set<std::unique_ptr<ds::RoomFeature>> roomFeatures;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
 
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
     std::unordered_map<std::string, ds::Degree*> degreeNameToObject;
+    std::unordered_map<std::string, ds::Division*> divisionNameToObject;
+    std::unordered_map<std::string, ds::Room*> roomNameToObject;
     std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
     std::unordered_map<ds::Course*, ds::Course*> courseToLabObject;
 

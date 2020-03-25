@@ -33,6 +33,19 @@ int main(int argc, char* argv[])
     }
   }
 
+  std::cout << "ROOMS" << std::endl;
+  for (const auto& room  : dm.getRooms()) {
+    std::cout << "-------------------------------------------" << std::endl;
+    std::cout << "\tName: " << room->name << std::endl;
+    std::cout << "\tCapacity: " << room->capacity << std::endl;
+    std::cout << "\tFeatures: " << std::endl;
+
+    for (const auto& feature : room->roomFeatures) {
+      std::cout << "\t  " << feature->name << std::endl;
+    }
+  }
+  std::cout << "-------------------------------------------" << std::endl;
+
   std::cout << "ROOM FEATURES" << std::endl;
   for (const auto& roomFeature : dm.getRoomFeatures()) {
     std::cout << "\t"

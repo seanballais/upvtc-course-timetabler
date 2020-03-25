@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Room 11",
+    "features": [
+      "Projector"
+    ],
+    "capacity": 30,
+    "division": "DNSM"
+  },
+  {
+    "name": "CS Lec Room 1",
+    "features": [
+      "Projector",
+      "Computers"
+    ],
+    "capacity": 30,
+    "division": "DNSM"
+  },
+  {
+    "name": "Physics Lab",
+    "features": [
+      "Physics Lab"
+    ],
+    "capacity": 40,
+    "division": "DNSM"
+  }
+]

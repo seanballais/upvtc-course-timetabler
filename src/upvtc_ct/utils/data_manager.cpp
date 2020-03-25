@@ -45,6 +45,8 @@ namespace upvtc_ct::utils
     this->parseStudentGroupsJSON(generatedStudentGroups);
     this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
     this->parseIrregularStudentGroupsJSON(studyPlans);
+
+    this->parseRoomsJSON();
   }
 
   const ds::Config& DataManager::getConfig()
@@ -82,6 +84,12 @@ namespace upvtc_ct::utils
     return this->studentGroups;
   }
 
+  const std::unordered_set<std::unique_ptr<ds::Room>>&
+  DataManager::getRooms()
+  {
+    return this->rooms;
+  }
+
   const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
   DataManager::getRoomFeatures()
   {
@@ -114,6 +122,37 @@ namespace upvtc_ct::utils
     }
 
     return degreeItem->second;
+  }
+
+  ds::Division* const DataManager::getDivisionNameObject(
+      const std::string divisionName)
+  {
+    auto divisionItem = this->divisionNameToObject.find(divisionName);
+    if (divisionItem == this->divisionNameToObject.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Division, " << divisionName
+                     << ", cannot be found. Division object must not have "
+                     << "been created yet.";
+      const char* errorMsg = (errorMsgStream.str()).c_str();
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return divisionItem->second;
+  }
+
+  ds::Room* const DataManager::getRoomNameObject(
+      const std::string roomName)
+  {
+    auto roomItem = this->roomNameToObject.find(roomName);
+    if (roomItem == this->roomNameToObject.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Room, " << roomName << ", cannot be found. Room "
+                     << "object must not have been created yet.";
+      const char* errorMsg = (errorMsgStream.str()).c_str();
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return roomItem->second;
   }
 
   ds::RoomFeature* const DataManager::getRoomFeatureObject(
@@ -291,6 +330,37 @@ namespace upvtc_ct::utils
     }
   }
 
+  void DataManager::parseRoomsJSON()
+  {
+    const std::string roomsFileName = "rooms.json";
+    const std::string roomsFilePath = this->getDataFolderPath()
+                                      + roomsFileName;
+
+    std::ifstream roomsFile(roomsFilePath, std::ifstream::in);
+    if (!roomsFile) {
+      throw utils::FileNotFoundError("The Rooms JSON file cannot be found.");
+    }
+
+    json rooms;
+    roomsFile >> rooms;
+
+    for (const auto& [_, room] : rooms.items()) {
+      const std::string name = room["name"];
+      const unsigned int capacity = room["capacity"].get<int>();
+      auto* const divisionPtr = this->getDivisionNameObject(room["division"]);
+
+      std::unordered_set<ds::RoomFeature*> roomFeatures;
+      for (const auto& featureName : room["features"]) {
+        auto* const roomFeature = this->getRoomFeatureObject(featureName);
+        roomFeatures.insert(roomFeature);
+      }
+
+      auto roomPtr(std::make_unique<ds::Room>(name, capacity, roomFeatures));
+      this->roomNameToObject.insert({name, roomPtr.get()});
+      this->rooms.insert(std::move(roomPtr));
+    }
+  }
+
   void DataManager::parseRoomFeaturesJSON()
   {
     const std::string roomFeaturesFileName = "room_features.json";
@@ -365,6 +435,7 @@ namespace upvtc_ct::utils
 
       std::unique_ptr<ds::Division> divisionPtr(
         new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
+      this->divisionNameToObject.insert({divisionName, divisionPtr.get()});
       this->divisions.insert(std::move(divisionPtr));
     }
   }
