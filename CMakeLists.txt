@@ -68,6 +68,11 @@ configure_file(
     COPYONLY)
 
 configure_file(
+    "${CMAKE_SOURCE_DIR}/data/teachers.json"
+    "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/data/teachers.json"
+    COPYONLY)
+
+configure_file(
     "${CMAKE_SOURCE_DIR}/config/app.config"
     "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config/app.config"
     COPYONLY)

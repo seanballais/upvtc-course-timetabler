@@ -47,6 +47,7 @@ namespace upvtc_ct::utils
     this->parseIrregularStudentGroupsJSON(studyPlans);
 
     this->parseRoomsJSON();
+    this->parseTeachersJSON();
   }
 
   const ds::Config& DataManager::getConfig()
@@ -94,6 +95,12 @@ namespace upvtc_ct::utils
   DataManager::getRoomFeatures()
   {
     return this->roomFeatures;
+  }
+
+  const std::unordered_set<std::unique_ptr<ds::Teacher>>&
+  DataManager::getTeachers()
+  {
+    return this->teachers;
   }
 
   ds::Course* const DataManager::getCourseNameObject(
@@ -165,6 +172,21 @@ namespace upvtc_ct::utils
     }
 
     return roomFeatureItem->second;
+  }
+
+  ds::Teacher* const DataManager::getTeacherNameObject(
+      const std::string teacherName)
+  {
+    auto teacherItem = this->teacherNameToObject.find(teacherName);
+    if (teacherItem == this->teacherNameToObject.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Teacher, " << teacherName << ", cannot be found. "
+                     << "Teacher object must not have been created yet.";
+      const char* errorMsg = (errorMsgStream.str()).c_str();
+      throw utils::InvalidContentsError(errorMsg);
+    }
+
+    return teacherItem->second;
   }
 
   ds::Course* const DataManager::getCourseLab(ds::Course* const course)
@@ -379,6 +401,26 @@ namespace upvtc_ct::utils
       auto roomFeaturePtr(std::make_unique<ds::RoomFeature>(roomFeatureName));
       this->roomFeatureToObject.insert({roomFeatureName, roomFeaturePtr.get()});
       this->roomFeatures.insert(std::move(roomFeaturePtr));
+    }
+  }
+
+  void DataManager::parseTeachersJSON()
+  {
+    const std::string teachersFileName = "teachers.json";
+    const std::string teachersFilePath = this->getDataFolderPath()
+                                         + teachersFileName;
+    std::ifstream teachersFile(teachersFilePath, std::ifstream::in);
+    if (!teachersFile) {
+      throw utils::FileNotFoundError("The Teachers JSON file cannot be found.");
+    }
+
+    json teachers;
+    teachersFile >> teachers;
+
+    for (const auto& [_, teacherName] : teachers.items()) {
+      auto teacherPtr{std::make_unique<ds::Teacher>(teacherName)};
+      this->teacherNameToObject.insert({teacherName, teacherPtr.get()});
+      this->teachers.insert(std::move(teacherPtr));
     }
   }
 

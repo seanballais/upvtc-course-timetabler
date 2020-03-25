@@ -52,6 +52,13 @@ int main(int argc, char* argv[])
               << roomFeature->name
               << std::endl;
   }
+  std::cout << "-------------------------------------------" << std::endl;
+
+  std::cout << "TEACHERS" << std::endl;
+  for (const auto& teacher : dm.getTeachers()) {
+    std::cout << "\t" << teacher->name << std::endl;
+  }
+  std::cout << "-------------------------------------------" << std::endl;
 
   std::cout << "STUDENT GROUPS" << std::endl;
   for (const auto& group : dm.getStudentGroups()) {

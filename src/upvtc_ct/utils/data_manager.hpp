@@ -35,6 +35,7 @@ namespace upvtc_ct::utils
     const std::unordered_set<std::unique_ptr<ds::Room>>& getRooms();
     const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
       getRoomFeatures();
+    const std::unordered_set<std::unique_ptr<ds::Teacher>>& getTeachers();
     ds::Course* const getCourseNameObject(const std::string courseName,
                                           const char* errorMsg);
     ds::Degree* const getDegreeNameObject(const std::string degreeName);
@@ -45,6 +46,7 @@ namespace upvtc_ct::utils
       const char* errorMsg = "Referenced a room feature that was not "
                              "yet generated. PLease check your Room Features "
                              "JSON file.");
+    ds::Teacher* const getTeacherNameObject(const std::string teacherName);
     ds::Course* const getCourseLab(ds::Course* const course);
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
       getClassGroups();
@@ -75,6 +77,8 @@ namespace upvtc_ct::utils
     void parseCoursesJSON();
     void parseRoomsJSON();
     void parseRoomFeaturesJSON();
+    void parseTeachersJSON();
+
     void parseStudyPlansJSON(
       const unsigned int semester,
       std::unordered_map<std::pair<std::string, unsigned int>,
@@ -140,12 +144,14 @@ namespace upvtc_ct::utils
     std::unordered_set<std::unique_ptr<ds::Room>> rooms;
     std::unordered_set<std::unique_ptr<ds::RoomFeature>> roomFeatures;
     std::unordered_set<std::unique_ptr<ds::StudentGroup>> studentGroups;
+    std::unordered_set<std::unique_ptr<ds::Teacher>> teachers;
 
     std::unordered_map<std::string, ds::Course*> courseNameToObject;
     std::unordered_map<std::string, ds::Degree*> degreeNameToObject;
     std::unordered_map<std::string, ds::Division*> divisionNameToObject;
     std::unordered_map<std::string, ds::Room*> roomNameToObject;
     std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
+    std::unordered_map<std::string, ds::Teacher*> teacherNameToObject;
     std::unordered_map<ds::Course*, ds::Course*> courseToLabObject;
 
     // NOte that the key is the class group ID.
