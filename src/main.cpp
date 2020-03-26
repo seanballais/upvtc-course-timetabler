@@ -10,8 +10,24 @@ int main(int argc, char* argv[])
 
   std::cout << "DIVISIONS" << std::endl;
   for (const auto& division : dm.getDivisions()) {
+    std::cout << "-------------------------------------------" << std::endl;
     std::cout << "\t" << division->name << std::endl;
+    std::cout << "\t  Courses:" << std::endl;
+    for (const auto course : division->getCourses()) {
+      std::cout << "\t\t    " << course->name << std::endl;
+    }
+
+    std::cout << "\t  Degrees:" << std::endl;
+    for (const auto degree : division->getDegrees()) {
+      std::cout << "\t\t    " << degree->name << std::endl;
+    }
+
+    std::cout << "\t  Rooms:" << std::endl;
+    for (const auto room : division->getRooms()) {
+      std::cout << "\t\t    " << room->name << std::endl;
+    }
   }
+  std::cout << "-------------------------------------------" << std::endl;
 
   std::cout << "DEGREES" << std::endl;
   for (const auto& degree : dm.getDegrees()) {
@@ -25,11 +41,18 @@ int main(int argc, char* argv[])
               << ((course->isLab) ? " (Lab)" : "")
               << std::endl;
     std::cout << "\t "
+              << "Division: " << course->division->name
+              << std::endl;
+    std::cout << "\t "
               << "Number of Timeslots: " << course->numTimeslots
               << std::endl;
     std::cout << "\t " << "Room Requirements:" << std::endl;
     for (const auto& roomReq : course->roomRequirements) {
       std::cout << "\t\t" << roomReq->name << std::endl;
+    }
+    std::cout << "\t " << "Candidate Teachers:" << std::endl;
+    for (const auto& teacher : course->candidateTeachers) {
+      std::cout << "\t\t" << teacher->name << std::endl;
     }
   }
 

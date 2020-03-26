@@ -15,21 +15,26 @@ namespace upvtc_ct::ds
 
   // Note that these models, except Class, are and should be read-only. There is
   // no reason at the moment that most of these models should be mutable.
-  class RoomFeature;
+  class Division;
+  class RoomFeature; 
+  class Teacher;
 
   struct Course
   {
-    Course(const std::string name, const bool hasLab, const bool isLab,
-           const unsigned int numTimeslots,
+    Course(const std::string name, Division* const division, const bool hasLab,
+           const bool isLab, const unsigned int numTimeslots,
            const std::unordered_set<Course*> prerequisites,
+           const std::unordered_set<Teacher*> candidateTeachers,
            const std::unordered_set<RoomFeature*> roomRequirements);
     bool operator==(const Course& c) const;
 
     const std::string name;
+    Division* const division;
     const bool hasLab;
     const bool isLab;
     const unsigned int numTimeslots;
     const std::unordered_set<Course*> prerequisites;
+    const std::unordered_set<Teacher*> candidateTeachers;
     const std::unordered_set<RoomFeature*> roomRequirements;
   };
 
@@ -173,16 +178,27 @@ namespace upvtc_ct::ds
 
   struct Division
   {
-    Division(const std::string name,
-             const std::unordered_set<Course*> courses,
-             const std::unordered_set<Degree*> degrees,
-             const std::unordered_set<Room*> rooms);
+  public:
+    Division(const std::string name);
     bool operator==(const Division& d) const;
 
+    std::unordered_set<Course*> getCourses();
+    std::unordered_set<Degree*> getDegrees();
+    std::unordered_set<Room*> getRooms();
+
+    void setCourses(const std::unordered_set<Course*> courses);
+    void setDegrees(const std::unordered_set<Degree*> degrees);
+    void setRooms(const std::unordered_set<Room*> rooms);
+
     const std::string name;
-    const std::unordered_set<Course*> courses;
-    const std::unordered_set<Degree*> degrees;
-    const std::unordered_set<Room*> rooms;
+  private:
+    std::unordered_set<Course*> courses;
+    std::unordered_set<Degree*> degrees;
+    std::unordered_set<Room*> rooms;
+
+    bool hasSetCourses;
+    bool hasSetDegrees;
+    bool hasSetRooms;
   };
 
   class DivisionHashFunction

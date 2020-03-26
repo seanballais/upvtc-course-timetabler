@@ -73,8 +73,14 @@ namespace upvtc_ct::utils
       const char* errorMsg = "Referenced a room feature that was not "
                              "yet generated. Please check your Room Features "
                              "JSON file.");
+    const std::unordered_set<ds::Teacher*> getTeachersFromJSONArray(
+      const json teachersJSON,
+      const char* errorMsg = "Referenced a teacher that was not yet "
+                             "generated. Please check your Teachers JSON "
+                             "file.");
 
     void parseCoursesJSON();
+    void parseDivisionsJSON();
     void parseRoomsJSON();
     void parseRoomFeaturesJSON();
     void parseTeachersJSON();

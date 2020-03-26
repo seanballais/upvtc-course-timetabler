@@ -33,6 +33,9 @@ namespace upvtc_ct::utils
     const unsigned int semester = config.get<int>("semester");
 
     this->parseRoomFeaturesJSON();
+    this->parseTeachersJSON();
+    this->parseDivisionsJSON();
+    this->parseRoomsJSON();
     this->parseCoursesJSON();
 
     std::unordered_map<std::pair<std::string, unsigned int>,
@@ -45,9 +48,6 @@ namespace upvtc_ct::utils
     this->parseStudentGroupsJSON(generatedStudentGroups);
     this->parseRegularStudentGroupsGEsElectivesJSON(generatedStudentGroups);
     this->parseIrregularStudentGroupsJSON(studyPlans);
-
-    this->parseRoomsJSON();
-    this->parseTeachersJSON();
   }
 
   const ds::Config& DataManager::getConfig()
@@ -329,6 +329,20 @@ namespace upvtc_ct::utils
       });
   }
 
+  const std::unordered_set<ds::Teacher*>
+  DataManager::getTeachersFromJSONArray(const json teachersJSON,
+                                        const char* errorMsg)
+  {
+    return this->getDataFromJSONArray<ds::Teacher>(
+      teachersJSON,
+      errorMsg,
+      [&] (const std::string teacherName, const char* _)
+        -> ds::Teacher*
+      {
+        return this->getTeacherNameObject(teacherName);
+      });
+  }
+
   void DataManager::parseCoursesJSON()
   {
     const std::string coursesFileName = "courses.json";
@@ -352,6 +366,27 @@ namespace upvtc_ct::utils
     }
   }
 
+  void DataManager::parseDivisionsJSON()
+  {
+    const std::string divisionsFileName = "divisions.json";
+    const std::string divisionsFilePath = this->getDataFolderPath()
+                                          + divisionsFileName;
+    std::ifstream divisionsFile(divisionsFilePath, std::ifstream::in);
+    if (!divisionsFile) {
+      throw utils::FileNotFoundError("The Divisions JSON file cannot be "
+                                     "found.");
+    }
+
+    json divisions;
+    divisionsFile >> divisions;
+
+    for (const auto& [_, division] : divisions.items()) {
+      auto divisionPtr(std::make_unique<ds::Division>(division));
+      this->divisionNameToObject.insert({division, divisionPtr.get()});
+      this->divisions.insert(std::move(divisionPtr));
+    }
+  }
+
   void DataManager::parseRoomsJSON()
   {
     const std::string roomsFileName = "rooms.json";
@@ -366,10 +401,14 @@ namespace upvtc_ct::utils
     json rooms;
     roomsFile >> rooms;
 
+    std::unordered_map<std::string, std::unordered_set<ds::Room*>>
+      divisionRooms;
+
     for (const auto& [_, room] : rooms.items()) {
       const std::string name = room["name"];
       const unsigned int capacity = room["capacity"].get<int>();
-      auto* const divisionPtr = this->getDivisionNameObject(room["division"]);
+      const std::string divisionName = room["division"];
+      auto* const divisionPtr = this->getDivisionNameObject(divisionName);
 
       std::unordered_set<ds::RoomFeature*> roomFeatures;
       for (const auto& featureName : room["features"]) {
@@ -379,7 +418,21 @@ namespace upvtc_ct::utils
 
       auto roomPtr(std::make_unique<ds::Room>(name, capacity, roomFeatures));
       this->roomNameToObject.insert({name, roomPtr.get()});
+
+      auto item = divisionRooms.find(divisionName);
+      if (item == divisionRooms.end()) {
+        divisionRooms.insert({ divisionName, {}});
+      }
+
+      divisionRooms[divisionName].insert(roomPtr.get());
+
       this->rooms.insert(std::move(roomPtr));
+    }
+
+    // Add the set of room pointers to the appropriate divisions.
+    for (const auto [divisionName, rooms] : divisionRooms) {
+      auto* const divisionPtr = this->getDivisionNameObject(divisionName);
+      divisionPtr->setRooms(rooms);
     }
   }
 
@@ -473,12 +526,11 @@ namespace upvtc_ct::utils
 
         this->degreeNameToObject.insert({degreeName, degreePtr.get()});
         this->degrees.insert(std::move(degreePtr));
-      }
 
-      std::unique_ptr<ds::Division> divisionPtr(
-        new ds::Division(divisionName, divisionCourses, divisionDegrees, {}));
-      this->divisionNameToObject.insert({divisionName, divisionPtr.get()});
-      this->divisions.insert(std::move(divisionPtr));
+        auto* const divisionPtr = this->getDivisionNameObject(divisionName);
+        divisionPtr->setCourses(divisionCourses);
+        divisionPtr->setDegrees(divisionDegrees);
+      }
     }
   }
 
@@ -692,6 +744,10 @@ namespace upvtc_ct::utils
                                                     const bool isLab)
   {
     const std::string courseName = courseJSON["course_name"];
+
+    const std::string divisionName = courseJSON["division"];
+    ds::Division* division = this->getDivisionNameObject(divisionName);
+
     const bool hasLab = (isLab) ? false : courseJSON["has_lab"].get<bool>();
 
     const char* timeslotsKey = (isLab) ? "num_lab_timeslots" : "num_timeslots";
@@ -702,6 +758,10 @@ namespace upvtc_ct::utils
       const auto& prereqsJSON = courseJSON["prerequisites"];
       coursePrereqs = this->getCoursesFromJSONArray(prereqsJSON);
     }
+
+    const auto& candidateTeachersJSON = courseJSON["candidate_teachers"];
+    const auto candidateTeachers = this->getTeachersFromJSONArray(
+      candidateTeachersJSON);
     
     const char* roomReqsKey = (isLab) ? "lab_requirements"
                                       : "room_requirements";
@@ -711,10 +771,12 @@ namespace upvtc_ct::utils
     // Create a course object. Make sure that we only have one copy of
     // the newly generated course object throughout the program.
     auto coursePtr(std::make_unique<ds::Course>(courseName,
+                                                division,
                                                 hasLab,
                                                 isLab,
                                                 numTimeslots,
                                                 coursePrereqs,
+                                                candidateTeachers,
                                                 roomReqs));
     ds::Course* const outputCoursePtr = coursePtr.get();
     this->courseNameToObject.insert({courseName, coursePtr.get()});

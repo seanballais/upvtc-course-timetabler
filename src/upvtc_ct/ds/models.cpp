@@ -8,15 +8,19 @@
 namespace upvtc_ct::ds
 {
   // Model Definitions
-  Course::Course(const std::string name, const bool hasLab, const bool isLab,
+  Course::Course(const std::string name, Division* const division,
+                 const bool hasLab, const bool isLab,
                  const unsigned int numTimeslots,
                  const std::unordered_set<Course*> prerequisites,
+                 const std::unordered_set<Teacher*> candidateTeachers,
                  const std::unordered_set<RoomFeature*> roomRequirements)
     : name(name),
+      division(division),
       hasLab(hasLab),
       isLab(isLab),
       numTimeslots(numTimeslots),
       prerequisites(prerequisites),
+      candidateTeachers(candidateTeachers),
       roomRequirements(roomRequirements) {}
 
   bool Course::operator==(const Course& c) const
@@ -123,18 +127,57 @@ namespace upvtc_ct::ds
     return this->name == t.name;
   }
 
-  Division::Division(const std::string name,
-                     const std::unordered_set<Course*> courses,
-                     const std::unordered_set<Degree*> degrees,
-                     const std::unordered_set<Room*> rooms)
+  Division::Division(const std::string name)
     : name(name),
-      courses(courses),
-      degrees(degrees),
-      rooms(rooms) {}
+      courses({}),
+      degrees({}),
+      rooms({}),
+      hasSetCourses(false),
+      hasSetDegrees(false),
+      hasSetRooms(false) {}
   
   bool Division::operator==(const Division& d) const
   {
     return this->name == d.name;
+  }
+
+  std::unordered_set<Course*> Division::getCourses()
+  {
+    return this->courses;
+  }
+
+  std::unordered_set<Degree*> Division::getDegrees()
+  {
+    return this->degrees;
+  }
+
+  std::unordered_set<Room*> Division::getRooms()
+  {
+    return this->rooms;
+  }
+
+  void Division::setCourses(const std::unordered_set<Course*> courses)
+  {
+    if (!hasSetCourses) {
+      this->courses = courses;
+      hasSetCourses = true;
+    }
+  }
+
+  void Division::setDegrees(const std::unordered_set<Degree*> degrees)
+  {
+    if (!hasSetDegrees) {
+      this->degrees = degrees;
+      hasSetDegrees = true;
+    }
+  }
+
+  void Division::setRooms(const std::unordered_set<Room*> rooms)
+  {
+    if (!hasSetRooms) {
+      this->rooms = rooms;
+      hasSetRooms = true;
+    }
   }
 
   Class::Class(const size_t id, const size_t classID, Course* const course,
