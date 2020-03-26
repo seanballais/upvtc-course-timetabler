@@ -8,6 +8,22 @@
     "division": "DNSM"
   },
   {
+    "name": "Room 21",
+    "features": [
+      "Projector"
+    ],
+    "capacity": 30,
+    "division": "DSS"
+  },
+  {
+    "name": "Room 25",
+    "features": [
+      "Projector"
+    ],
+    "capacity": 30,
+    "division": "DH"
+  },
+  {
     "name": "CS Lec Room 1",
     "features": [
       "Projector",

@@ -356,6 +356,9 @@ namespace upvtc_ct::utils
     json courses;
     coursesFile >> courses;
 
+    std::unordered_map<std::string, std::unordered_set<ds::Course*>>
+      divisionCourses;
+
     for (const auto& [_, course] : courses.items()) {
       auto* const lecCoursePtr = this->createCourseObject(course, false);
       const bool hasLab = course["has_lab"].get<bool>();
@@ -363,6 +366,20 @@ namespace upvtc_ct::utils
         auto* const labCoursePtr = this->createCourseObject(course, true);
         this->courseToLabObject.insert({lecCoursePtr, labCoursePtr});
       }
+
+      const std::string divisionName = course["division"];
+      auto item = divisionCourses.find(divisionName);
+      if (item == divisionCourses.end()) {
+        divisionCourses.insert({ divisionName, {}});
+      }
+
+      divisionCourses[divisionName].insert(lecCoursePtr);
+    }
+
+    // Add the set of course pointers to the appropriate divisions.
+    for (const auto [divisionName, courses] : divisionCourses) {
+      auto* const divisionPtr = this->getDivisionNameObject(divisionName);
+      divisionPtr->setCourses(courses);
     }
   }
 
@@ -528,7 +545,6 @@ namespace upvtc_ct::utils
         this->degrees.insert(std::move(degreePtr));
 
         auto* const divisionPtr = this->getDivisionNameObject(divisionName);
-        divisionPtr->setCourses(divisionCourses);
         divisionPtr->setDegrees(divisionDegrees);
       }
     }
