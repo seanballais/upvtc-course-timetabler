@@ -4,18 +4,11 @@
 cmake_minimum_required(VERSION 3.13)
 
 ################################################################################
-# Set up compilation of the upvtc_ct module.                                   #
+# Set up compilation of the timetabler module.                                 #
 ################################################################################
-add_subdirectory(ds)
-add_subdirectory(preprocessor)
-add_subdirectory(timetabler)
-add_subdirectory(utils)
-
-add_library(upvtc_ct-lib INTERFACE)
-target_link_libraries(upvtc_ct-lib
-    INTERFACE
-        upvtc_ct-lib-ds
-        upvtc_ct-lib-preprocessor
-        upvtc_ct-lib-timetabler
-        upvtc_ct-lib-utils
+add_library(upvtc_ct-lib-timetabler STATIC "")
+target_sources(upvtc_ct-lib-timetabler
+    PRIVATE
+        timetabler.cpp
 )
+
