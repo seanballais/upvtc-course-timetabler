@@ -1,0 +1,33 @@
+[
+  {
+    "name": "Emmanuel",
+    "previous_load": 12,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 0
+      }
+    ]
+  },
+  {
+    "name": "Juan",
+    "previous_load": 8,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 12
+      }
+    ]
+  },
+  {
+    "name": "Pedro",
+    "previous_load": 12,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 0
+      }
+    ]
+  }
+]
+

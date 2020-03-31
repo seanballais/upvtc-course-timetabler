@@ -161,13 +161,45 @@ namespace upvtc_ct::ds
     size_t operator()(const SubStudentGroup& ssg) const;
   };
 
+  struct UnpreferredTimeslot
+  {
+    bool operator==(const UnpreferredTimeslot& ut) const;
+
+    const unsigned int day;
+    const unsigned int timeslot;
+  };
+
+  class UnpreferredTimeslotHashFunction
+  {
+  public:
+    size_t operator()(const UnpreferredTimeslot& ut) const;
+  };
+
   struct Teacher
   {
-    Teacher(const std::string name);
+  public:
+    Teacher(
+      const std::string name,
+      const unsigned int previousLoad,
+      const std::unordered_set<
+        UnpreferredTimeslot, UnpreferredTimeslotHashFunction>
+          unpreferredTimeslots);
     bool operator==(const Teacher& t) const;
 
+    std::unordered_set<Course*> getPotentialCourses();
+
+    void setPotentialCourses(const std::unordered_set<Course*> courses);
+
     const std::string name;
-    const std::unordered_set<Course*> potentialCourses;
+    const unsigned int previousLoad;
+    const std::unordered_set<
+      UnpreferredTimeslot, UnpreferredTimeslotHashFunction>
+        unpreferredTimeslots;
+
+  private:
+    std::unordered_set<Course*> potentialCourses;
+
+    bool hasSetCourses;
   };
 
   class TeacherHashFunction

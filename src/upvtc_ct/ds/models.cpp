@@ -118,13 +118,38 @@ namespace upvtc_ct::ds
            && this->getNumMembers() == ssg.getNumMembers();
   }
 
-  Teacher::Teacher(const std::string name)
-    : name(name),
-      potentialCourses({}) {}
+  bool UnpreferredTimeslot::operator==(const UnpreferredTimeslot& ut) const
+  {
+    return this->day == ut.day && this->timeslot == ut.timeslot;
+  }
+
+  Teacher::Teacher(
+      const std::string name,
+      const unsigned int previousLoad,
+      const std::unordered_set<
+        UnpreferredTimeslot,
+        UnpreferredTimeslotHashFunction> unpreferredTimeslots)
+    : name(name)
+    , previousLoad(previousLoad)
+    , unpreferredTimeslots(unpreferredTimeslots)
+    , hasSetCourses(false) {}
 
   bool Teacher::operator==(const Teacher& t) const
   {
     return this->name == t.name;
+  }
+
+  std::unordered_set<Course*> Teacher::getPotentialCourses()
+  {
+    return this->potentialCourses;
+  }
+
+  void Teacher::setPotentialCourses(const std::unordered_set<Course*> courses)
+  {
+    if (!hasSetCourses) {
+      this->potentialCourses = potentialCourses;
+      this->hasSetCourses = true;
+    }
   }
 
   Division::Division(const std::string name)
@@ -234,6 +259,16 @@ namespace upvtc_ct::ds
                   << "-"
                   << std::to_string(ssg.getNumMembers());
 
+    return std::hash<std::string>()(objIdentifier.str());
+  }
+
+  size_t UnpreferredTimeslotHashFunction::operator()(
+      const UnpreferredTimeslot& ut) const
+  {
+    std::stringstream objIdentifier;
+    objIdentifier << std::to_string(ut.day)
+                  << ", "
+                  << std::to_string(ut.timeslot);
     return std::hash<std::string>()(objIdentifier.str());
   }
 

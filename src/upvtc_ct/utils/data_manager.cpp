@@ -358,12 +358,16 @@ namespace upvtc_ct::utils
 
     std::unordered_map<std::string, std::unordered_set<ds::Course*>>
       divisionCourses;
+    std::unordered_map<std::string, std::unordered_set<ds::Course*>>
+      teacherToPotentialCourseMap;
 
     for (const auto& [_, course] : courses.items()) {
-      auto* const lecCoursePtr = this->createCourseObject(course, false);
+      auto* const lecCoursePtr = this->createCourseObject(
+        course, false, teacherToPotentialCourseMap);
       const bool hasLab = course["has_lab"].get<bool>();
       if (hasLab) {
-        auto* const labCoursePtr = this->createCourseObject(course, true);
+        auto* const labCoursePtr = this->createCourseObject(
+          course, true, teacherToPotentialCourseMap);
         this->courseToLabObject.insert({lecCoursePtr, labCoursePtr});
       }
 
@@ -374,6 +378,12 @@ namespace upvtc_ct::utils
       }
 
       divisionCourses[divisionName].insert(lecCoursePtr);
+    }
+
+    // Add the set of course pointers to the appropriate teachers.
+    for (const auto [teacherName, courses] : teacherToPotentialCourseMap) {
+      auto* const teacherPtr = this->getTeacherNameObject(teacherName);
+      teacherPtr->setPotentialCourses(courses);
     }
 
     // Add the set of course pointers to the appropriate divisions.
@@ -487,8 +497,25 @@ namespace upvtc_ct::utils
     json teachers;
     teachersFile >> teachers;
 
-    for (const auto& [_, teacherName] : teachers.items()) {
-      auto teacherPtr{std::make_unique<ds::Teacher>(teacherName)};
+    for (const auto& [_, teacher] : teachers.items()) {
+      const std::string teacherName = teacher["name"];
+      const unsigned int previousLoad = teacher["previous_load"].get<int>();
+
+      std::unordered_set<
+        ds::UnpreferredTimeslot, ds::UnpreferredTimeslotHashFunction>
+          unpreferredTimeslots;
+
+      const auto& unpreferredTimeslotsJSON = teacher["unpreferred_timeslots"];
+      for (const auto& [_, ut] : unpreferredTimeslotsJSON.items()) {
+        const unsigned int day = ut["day"].get<int>();
+        const unsigned int timeslot = ut["timeslot"].get<int>();
+
+        ds::UnpreferredTimeslot utObj{ day, timeslot };
+        unpreferredTimeslots.insert(utObj);
+      }
+
+      auto teacherPtr{std::make_unique<ds::Teacher>(
+        teacherName, previousLoad, unpreferredTimeslots)};
       this->teacherNameToObject.insert({teacherName, teacherPtr.get()});
       this->teachers.insert(std::move(teacherPtr));
     }
@@ -756,8 +783,11 @@ namespace upvtc_ct::utils
     this->studentGroups.insert(std::move(sgPtr));
   }
 
-  ds::Course* const DataManager::createCourseObject(const json courseJSON,
-                                                    const bool isLab)
+  ds::Course* const DataManager::createCourseObject(
+      const json courseJSON,
+      const bool isLab,
+      std::unordered_map<std::string, std::unordered_set<ds::Course*>>&
+        teacherToPotentialCourseMap)
   {
     const std::string courseName = courseJSON["course_name"];
 
@@ -797,6 +827,15 @@ namespace upvtc_ct::utils
     ds::Course* const outputCoursePtr = coursePtr.get();
     this->courseNameToObject.insert({courseName, coursePtr.get()});
     this->courses.insert(std::move(coursePtr)); 
+
+    for (const auto& [_, teacherName] : candidateTeachersJSON.items()) {
+      auto item = teacherToPotentialCourseMap.find(teacherName);
+      if (item == teacherToPotentialCourseMap.end()) {
+        teacherToPotentialCourseMap[teacherName] = {};
+      }
+
+      teacherToPotentialCourseMap[teacherName].insert(outputCoursePtr);
+    }
 
     return outputCoursePtr;
   }

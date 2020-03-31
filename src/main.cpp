@@ -80,6 +80,18 @@ int main(int argc, char* argv[])
   std::cout << "TEACHERS" << std::endl;
   for (const auto& teacher : dm.getTeachers()) {
     std::cout << "\t" << teacher->name << std::endl;
+    std::cout << "\t" << "Previous Load: "
+              << teacher->previousLoad << std::endl;
+
+    std::cout << "\tUnpreferred Timeslots:" << std::endl;
+    for (const auto& ut : teacher->unpreferredTimeslots) {
+      std::cout << "\t  (" << ut.day << ", " << ut.timeslot << ")" << std::endl;
+    }
+
+    std::cout << "\tPotential Courses:" << std::endl;
+    for (const auto& course : teacher->getPotentialCourses()) {
+      std::cout << "\t  " << course->name << std::endl;
+    }
   }
   std::cout << "-------------------------------------------" << std::endl;
 

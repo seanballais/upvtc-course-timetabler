@@ -118,8 +118,11 @@ namespace upvtc_ct::utils
                          std::unordered_set<ds::Course*>,
                          PairHash>& studyPlans);
 
-    ds::Course* const createCourseObject(const json courseJSON,
-                                         const bool isLab);
+    ds::Course* const createCourseObject(
+      const json courseJSON,
+      const bool isLab,
+      std::unordered_map<std::string, std::unordered_set<ds::Course*>>&
+        teacherToPotentialCourseMap);
 
     bool courseSetsHaveIntersections(
       const std::unordered_set<ds::Course*>* set0,
