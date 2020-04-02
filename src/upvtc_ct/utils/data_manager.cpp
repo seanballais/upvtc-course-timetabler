@@ -50,62 +50,62 @@ namespace upvtc_ct::utils
     this->parseIrregularStudentGroupsJSON(studyPlans);
   }
 
-  const ds::Config& DataManager::getConfig()
+  const ds::Config& DataManager::getConfig() const
   {
     return this->config;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Course>>&
-  DataManager::getCourses()
+  DataManager::getCourses() const
   {
     return this->courses;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Class>>&
-  DataManager::getClasses()
+  DataManager::getClasses() const
   {
     return this->classes;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Degree>>&
-  DataManager::getDegrees()
+  DataManager::getDegrees() const
   {
     return this->degrees;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Division>>&
-  DataManager::getDivisions()
+  DataManager::getDivisions() const
   {
     return this->divisions;
   }
 
   const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
-  DataManager::getStudentGroups()
+  DataManager::getStudentGroups() const
   {
     return this->studentGroups;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Room>>&
-  DataManager::getRooms()
+  DataManager::getRooms() const
   {
     return this->rooms;
   }
 
   const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
-  DataManager::getRoomFeatures()
+  DataManager::getRoomFeatures() const
   {
     return this->roomFeatures;
   }
 
   const std::unordered_set<std::unique_ptr<ds::Teacher>>&
-  DataManager::getTeachers()
+  DataManager::getTeachers() const
   {
     return this->teachers;
   }
 
   ds::Course* const DataManager::getCourseNameObject(
       const std::string courseName,
-      const char* errorMsg)
+      const char* errorMsg) const
   {
     auto courseItem = this->courseNameToObject.find(courseName);
     if (courseItem == this->courseNameToObject.end()) {
@@ -116,7 +116,7 @@ namespace upvtc_ct::utils
   }
 
   ds::Degree* const DataManager::getDegreeNameObject(
-      const std::string degreeName)
+      const std::string degreeName) const
   {
     auto degreeItem = this->degreeNameToObject.find(degreeName);
     if (degreeItem == this->degreeNameToObject.end()) {
@@ -132,7 +132,7 @@ namespace upvtc_ct::utils
   }
 
   ds::Division* const DataManager::getDivisionNameObject(
-      const std::string divisionName)
+      const std::string divisionName) const
   {
     auto divisionItem = this->divisionNameToObject.find(divisionName);
     if (divisionItem == this->divisionNameToObject.end()) {
@@ -148,7 +148,7 @@ namespace upvtc_ct::utils
   }
 
   ds::Room* const DataManager::getRoomNameObject(
-      const std::string roomName)
+      const std::string roomName) const
   {
     auto roomItem = this->roomNameToObject.find(roomName);
     if (roomItem == this->roomNameToObject.end()) {
@@ -164,7 +164,7 @@ namespace upvtc_ct::utils
 
   ds::RoomFeature* const DataManager::getRoomFeatureObject(
         const std::string roomFeatureName,
-        const char* errorMsg)
+        const char* errorMsg) const
   {
     auto roomFeatureItem = this->roomFeatureToObject.find(roomFeatureName);
     if (roomFeatureItem == this->roomFeatureToObject.end()) {
@@ -175,7 +175,7 @@ namespace upvtc_ct::utils
   }
 
   ds::Teacher* const DataManager::getTeacherNameObject(
-      const std::string teacherName)
+      const std::string teacherName) const
   {
     auto teacherItem = this->teacherNameToObject.find(teacherName);
     if (teacherItem == this->teacherNameToObject.end()) {
@@ -189,7 +189,7 @@ namespace upvtc_ct::utils
     return teacherItem->second;
   }
 
-  ds::Course* const DataManager::getCourseLab(ds::Course* const course)
+  ds::Course* const DataManager::getCourseLab(ds::Course* const course) const
   {
     auto labCourseItem = this->courseToLabObject.find(course);
     if (labCourseItem == this->courseToLabObject.end()) {
@@ -204,13 +204,13 @@ namespace upvtc_ct::utils
   }
 
   const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
-  DataManager::getClassGroups()
+  DataManager::getClassGroups() const
   {
     return this->classGroups;
   }
 
   const std::unordered_map<size_t, std::unordered_set<size_t>>&
-  DataManager::getClassConflicts()
+  DataManager::getClassConflicts() const
   {
     return this->classConflicts;
   }

@@ -25,33 +25,36 @@ namespace upvtc_ct::utils
     // Returning them by value will be expensive. As such, we will be returning
     // them by references instead. We are returning const references of them
     // to prevent unwanted manipulations.
-    const ds::Config& getConfig();
-    const std::unordered_set<std::unique_ptr<ds::Course>>& getCourses();
-    const std::unordered_set<std::unique_ptr<ds::Class>>& getClasses();
-    const std::unordered_set<std::unique_ptr<ds::Degree>>& getDegrees();
-    const std::unordered_set<std::unique_ptr<ds::Division>>& getDivisions();
+    const ds::Config& getConfig() const;
+    const std::unordered_set<std::unique_ptr<ds::Course>>& getCourses() const;
+    const std::unordered_set<std::unique_ptr<ds::Class>>& getClasses() const;
+    const std::unordered_set<std::unique_ptr<ds::Degree>>& getDegrees() const;
+    const std::unordered_set<std::unique_ptr<ds::Division>>&
+      getDivisions() const;
     const std::unordered_set<std::unique_ptr<ds::StudentGroup>>&
-      getStudentGroups();
-    const std::unordered_set<std::unique_ptr<ds::Room>>& getRooms();
+      getStudentGroups() const;
+    const std::unordered_set<std::unique_ptr<ds::Room>>& getRooms() const;
     const std::unordered_set<std::unique_ptr<ds::RoomFeature>>&
-      getRoomFeatures();
-    const std::unordered_set<std::unique_ptr<ds::Teacher>>& getTeachers();
+      getRoomFeatures() const;
+    const std::unordered_set<std::unique_ptr<ds::Teacher>>& getTeachers() const;
     ds::Course* const getCourseNameObject(const std::string courseName,
-                                          const char* errorMsg);
-    ds::Degree* const getDegreeNameObject(const std::string degreeName);
-    ds::Division* const getDivisionNameObject(const std::string divisionName);
-    ds::Room* const getRoomNameObject(const std::string roomName);
+                                          const char* errorMsg) const;
+    ds::Degree* const getDegreeNameObject(const std::string degreeName) const;
+    ds::Division* const
+      getDivisionNameObject(const std::string divisionName) const;
+    ds::Room* const getRoomNameObject(const std::string roomName) const;
     ds::RoomFeature* const getRoomFeatureObject(
       const std::string roomFeatureName,
       const char* errorMsg = "Referenced a room feature that was not "
                              "yet generated. PLease check your Room Features "
-                             "JSON file.");
-    ds::Teacher* const getTeacherNameObject(const std::string teacherName);
-    ds::Course* const getCourseLab(ds::Course* const course);
+                             "JSON file.") const;
+    ds::Teacher* const
+      getTeacherNameObject(const std::string teacherName) const;
+    ds::Course* const getCourseLab(ds::Course* const course) const;
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
-      getClassGroups();
+      getClassGroups() const;
     const std::unordered_map<size_t, std::unordered_set<size_t>>&
-      getClassConflicts();
+      getClassConflicts() const;
 
     void addClass(std::unique_ptr<ds::Class>&& cls);
     void addClassConflict(const size_t classGroup,
