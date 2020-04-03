@@ -27,7 +27,10 @@ namespace upvtc_ct::timetabler
       classGroupsToClassesMap.insert({clsGroup, classes});
     }
 
-    return Solution{classGroups, classGroupsToClassesMap};
+    Solution solution{classGroups, classGroupsToClassesMap};
+    this->applySimpleMove(solution);
+
+    return solution;
   }
 
   void Timetabler::applySimpleMove(Solution& solution)
