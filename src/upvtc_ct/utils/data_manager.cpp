@@ -322,6 +322,12 @@ namespace upvtc_ct::utils
     config.addConfig("max_semestral_teacher_load",
                      toml::find<const unsigned int>(
                        configData, "max_semestral_teacher_load"));
+    config.addConfig("num_generations",
+                     toml::find<const unsigned int>(configData,
+                                                    "num_generations"));
+    config.addConfig("num_offsprings_per_generation",
+                     toml::find<const unsigned int>(
+                       configData, "num_offsprings_per_generation"));
   }
 
   const std::unordered_set<ds::Course*>

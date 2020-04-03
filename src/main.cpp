@@ -167,6 +167,17 @@ int main(int argc, char* argv[])
   std::cout << "\tMax Semestral Teacher Load: "
             << maxSemTeacherLoad
             << std::endl;
+
+  const unsigned int& numGenerations = config.get<const unsigned int>(
+                                         "num_generations");
+  std::cout << "\tNo. of Generations: " << numGenerations << std::endl;
+
+  const unsigned int& numOffspringsPerGen = config.get<const unsigned int>(
+                                              "num_offsprings_per_generation");
+  std::cout << "\tNo. of Offsprings Per Generation: "
+            << numOffspringsPerGen
+            << std::endl;
+
   std::cout << "-----------------------------------" << std::endl;
 
   std::cout << "CLASSES" << std::endl;

@@ -8,3 +8,7 @@ max_lecture_capacity = 35
 max_lab_capacity = 25
 max_annual_teacher_load = 24
 max_semestral_teacher_load = 12
+
+num_generations = 100
+num_offsprings_per_generation = 30
+

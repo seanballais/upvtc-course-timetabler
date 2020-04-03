@@ -18,9 +18,9 @@ namespace upvtc_ct::timetabler
   public:
     Timetabler(utils::DataManager& dataManager);
 
+  private:
     Solution generateRandomSolution();
 
-  private:
     void applySimpleMove(Solution& solution);
     void applySimpleSwap(Solution& solution);
 
