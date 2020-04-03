@@ -32,14 +32,43 @@ namespace upvtc_ct::timetabler
 
   void Timetabler::applySimpleMove(Solution& solution)
   {
-    
+    std::vector<size_t>& classGroups = solution.getClassGroups();
+
+    const size_t numClassGroups = classGroups.size();
+
+    std::random_device randDevice;
+    std::mt19937 mt{randDevice()};
+
+    std::uniform_int_distribution<int> classGrpDistrib(0, numClassGroups - 1);
+
+    size_t classGroup = classGrpDistrib(mt);
+
+    const utils::Config& config = this->dataManager.getConfig();
+    const unsigned int numUniqueDays = config.get<const unsigned int>(
+                                         "num_unique_days");
+    const unsigned int numTimeslots = config.get<const unsigned int>(
+                                         "num_timeslots");
+    std::uniform_int_distribution<int> daysDistrib(0, numUniqueDays - 1);
+    std::uniform_int_distribution<int> timeslotsDistrib(0, numTimeslots - 1);
+
+    const unsigned int prevDay = solution.getClassDay(classGroup);
+    const unsigned int prevTimeslot = solution.getClassTimeslot(classGroup);
+    unsigned int newDay;
+    unsigned int newTimeslot;
+    do {
+      newDay = daysDistrib(mt);
+      newTimeslot = timeslotsDistrib(mt);
+    } while (newDay == prevDay || newTimeslot == prevTimeslot);
+
+    solution.changeClassDay(classGroup, newDay);
+    solution.changeClassTimeslot(classGroup, newTimeslot);
   }
 
   void Timetabler::applySimpleSwap(Solution& solution)
   {
     std::vector<size_t>& classGroups = solution.getClassGroups();
 
-    size_t numClassGroups = classGroups.size();
+    const size_t numClassGroups = classGroups.size();
     std::uniform_int_distribution<int> distribution(0, numClassGroups - 1);
 
     std::random_device randDevice;
