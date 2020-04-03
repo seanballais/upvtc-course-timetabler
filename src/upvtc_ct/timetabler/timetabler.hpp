@@ -19,6 +19,7 @@ namespace upvtc_ct::timetabler
     Timetabler(utils::DataManager& dataManager);
 
   private:
+    std::vector<Solution> generateInitialGeneration();
     Solution generateRandomSolution();
 
     void applySimpleMove(Solution& solution);
@@ -29,6 +30,7 @@ namespace upvtc_ct::timetabler
 
   class Solution
   {
+    // TODO: Add solution cost member.
   public:
     Solution(const std::vector<size_t> classGroups,
              const std::unordered_map<size_t, std::unordered_set<ds::Class*>>

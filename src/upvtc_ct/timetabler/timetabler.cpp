@@ -15,6 +15,19 @@ namespace upvtc_ct::timetabler
   Timetabler::Timetabler(utils::DataManager& dataManager)
     : dataManager(dataManager) {}
 
+  std::vector<Solution> Timetabler::generateInitialGeneration()
+  {
+    const utils::Config& config = this->dataManager.getConfig();
+    const unsigned int numOffsprings = config.get<const unsigned int>(
+                                         "num_offsprings_per_generation");
+    std::vector<Solution> generation;
+    for (size_t i = 0; i < numOffsprings; i++) {
+      generation.push_back(this->generateRandomSolution());
+    }
+
+    return generation;
+  }
+
   Solution Timetabler::generateRandomSolution()
   {
     std::vector<size_t> classGroups;
