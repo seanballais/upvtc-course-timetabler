@@ -286,31 +286,4 @@ namespace upvtc_ct::ds
   {
     return c.id;
   }
-
-  Config::Config(const std::unordered_map<std::string, std::string> configData)
-    : configData(configData) {}
-
-  bool Config::empty() const
-  {
-    return this->configData.empty();
-  }
-
-  template<>
-  int Config::get<int>(const std::string key)
-  {
-    return std::stoi(this->getValue(key));
-  }
-
-  const std::string Config::getValue(const std::string key) const
-  {
-    auto configPair = this->configData.find(key);
-    if (configPair == this->configData.end()) {
-      throw ConfigError("Attempted to access a non-existent key.");
-    }
-
-    return configPair->second;
-  }
-
-  ConfigError::ConfigError(const char* what_arg)
-    : std::runtime_error(what_arg) {}
 }

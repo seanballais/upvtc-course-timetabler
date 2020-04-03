@@ -261,30 +261,6 @@ namespace upvtc_ct::ds
   public:
     size_t operator()(const Class& c) const;
   };
-
-  class Config
-  {
-  public:
-    Config(const std::unordered_map<std::string, std::string> configData);
-    bool empty() const;
-
-    template<typename T>
-    T get(const std::string key)
-    {
-      throw utils::DisallowedFunctionError();
-    }
-
-  private:
-    const std::string getValue(const std::string key) const;
-
-    const std::unordered_map<std::string, std::string> configData;
-  };
-
-  class ConfigError : public std::runtime_error
-  {
-  public:
-    ConfigError(const char* what_arg);
-  };
 }
 
 #endif

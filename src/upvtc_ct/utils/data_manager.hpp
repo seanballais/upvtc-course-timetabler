@@ -1,8 +1,11 @@
 #ifndef UPVTC_CT_UTILS_DATA_MANAGER_HPP_
 #define UPVTC_CT_UTILS_DATA_MANAGER_HPP_
 
-#include <string>
+#include <any>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <typeinfo>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -15,6 +18,36 @@ namespace upvtc_ct::utils
 {
   using json = nlohmann::json;
   namespace ds = upvtc_ct::ds;
+  class ConfigError : public std::runtime_error
+  {
+  public:
+    ConfigError(const char* what_arg);
+  };
+
+  class Config
+  {
+  public:
+    Config() = default;
+    bool isEmpty() const;
+
+    void addConfig(const std::string key, std::any value);
+
+    template<typename T>
+    const T& get(const std::string key) const
+    {
+      const auto& item = this->configData.find(key);
+      if (item == this->configData.end()) {
+        std::stringstream errorMsgStream;
+        errorMsgStream << "No configuration with key, " << key << ".";
+        const char* errorMsg = (errorMsgStream.str()).c_str();
+        throw ConfigError{errorMsg};
+      }
+
+      return std::any_cast<T&>(item->second);
+    }
+  private:
+    std::unordered_map<std::string, std::any> configData;
+  };
 
   class DataManager
   {
@@ -25,7 +58,7 @@ namespace upvtc_ct::utils
     // Returning them by value will be expensive. As such, we will be returning
     // them by references instead. We are returning const references of them
     // to prevent unwanted manipulations.
-    const ds::Config& getConfig() const;
+    const Config& getConfig() const;
     const std::unordered_set<std::unique_ptr<ds::Course>>& getCourses() const;
     const std::unordered_set<std::unique_ptr<ds::Class>>& getClasses() const;
     const std::unordered_set<std::unique_ptr<ds::Degree>>& getDegrees() const;
@@ -64,8 +97,6 @@ namespace upvtc_ct::utils
     const std::string getBinFolderPath() const;
     const std::string getDataFolderPath() const;
 
-    const std::unordered_map<std::string, std::string> getConfigData();
-
     const std::unordered_set<ds::Course*> getCoursesFromJSONArray(
       const json coursesJSON,
       const char* errorMsg = "Referenced another course that was not "
@@ -82,6 +113,7 @@ namespace upvtc_ct::utils
                              "generated. Please check your Teachers JSON "
                              "file.");
 
+    void parseConfigFile();
     void parseCoursesJSON();
     void parseDivisionsJSON();
     void parseRoomsJSON();
@@ -148,7 +180,7 @@ namespace upvtc_ct::utils
       return collection;
     }
 
-    ds::Config config;
+    Config config;
     std::unordered_set<std::unique_ptr<ds::Course>> courses;
     std::unordered_set<std::unique_ptr<ds::Class>> classes;
     std::unordered_set<std::unique_ptr<ds::Degree>> degrees;

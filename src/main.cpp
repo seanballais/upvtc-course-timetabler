@@ -124,21 +124,48 @@ int main(int argc, char* argv[])
   }
   std::cout << "----------------------------" << std::endl;
 
-  upvtc_ct::ds::Config config = dm.getConfig();
+  const upvtc_ct::utils::Config& config = dm.getConfig();
 
   std::cout << "CONFIG" << std::endl;
-  std::cout << "\tSemester: " << config.get<int>("semester") << std::endl;
-  std::cout << "\tMax Lecture Capacity: "
-            << config.get<int>("max_lecture_capacity")
-            << std::endl;
-  std::cout << "\tMax Lab Capacity: "
-            << config.get<int>("max_lab_capacity")
-            << std::endl;
+
+  const unsigned int& semester = config.get<const unsigned int>("semester");
+  std::cout << "\tSemester: " << semester << std::endl;
+
+  const unsigned int& numUniqueDays = config.get<const unsigned int>(
+                                        "num_unique_days");
+  std::cout << "\tNo. of Unique Days: "
+            << numUniqueDays << std::endl;
+
+  std::cout << "\tDays with Double Timeslots: " << std::endl;
+  auto& daysWithDoubleTimeslots = config.get<const std::vector<unsigned int>>(
+                                    "days_with_double_timeslots");
+  for (auto day : daysWithDoubleTimeslots) {
+    std::cout << "\t  " << day << std::endl;
+  }
+
+  const unsigned int& numTimeslots = config.get<const unsigned int>(
+                                       "num_timeslots");
+  std::cout << "\tNo. of Timeslots: "
+            << numTimeslots << std::endl;
+
+  const unsigned int& maxLecCapacity = config.get<const unsigned int>(
+                                         "max_lecture_capacity");
+  std::cout << "\tMax Lecture Capacity: " << maxLecCapacity << std::endl;
+
+  const unsigned int& maxLabCapacity = config.get<const unsigned int>(
+                                         "max_lab_capacity");
+  std::cout << "\tMax Lab Capacity: " << maxLabCapacity << std::endl;
+
+  const unsigned int& maxAnnualTeacherLoad = config.get<const unsigned int>(
+                                               "max_annual_teacher_load");
   std::cout << "\tMax Annual Teacher Load: "
-            << config.get<int>("max_annual_teacher_load")
+            << maxAnnualTeacherLoad
             << std::endl;
+
+  const unsigned int& maxSemTeacherLoad = config.get<const unsigned int>(
+                                            "max_semestral_teacher_load");
   std::cout << "\tMax Semestral Teacher Load: "
-            << config.get<int>("max_semestral_teacher_load")
+            << maxSemTeacherLoad
             << std::endl;
   std::cout << "-----------------------------------" << std::endl;
 

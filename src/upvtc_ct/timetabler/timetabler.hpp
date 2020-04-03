@@ -36,6 +36,9 @@ namespace upvtc_ct::timetabler
     std::vector<size_t>& getClassGroups();
     std::unordered_set<ds::Class*>& getClasses(size_t classGroup);
 
+    const unsigned int getClassDay(const size_t classGroup);
+    const unsigned int getClassTimeslot(const size_t classGroup);
+
     void changeClassTeacher(const size_t classGroup,
                             ds::Teacher* const teacher);
     void changeClassDay(const size_t classGroup, const unsigned int day);

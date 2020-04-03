@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <limits.h>
 #include <unistd.h>
@@ -25,12 +26,33 @@ namespace upvtc_ct::utils
   namespace ds = upvtc_ct::ds;
   namespace utils = upvtc_ct::utils;
 
+  unsigned int DataManager::getNewStudentGroupID()
+  {
+    unsigned int newID = this->currStudentGroupID;
+    this->currStudentGroupID++;
+    return newID;
+  }
+
+  bool Config::isEmpty() const
+  {
+    return this->configData.size() == 0;
+  }
+
+  void Config::addConfig(const std::string key, std::any value)
+  {
+    this->configData[key] = value;
+  }
+
+  ConfigError::ConfigError(const char* what_arg)
+    : std::runtime_error(what_arg) {}
+
   DataManager::DataManager()
-    : config(this->getConfigData()),
+    : config(),
       currStudentGroupID(0)
   {
-    ds::Config config = this->getConfig();
-    const unsigned int semester = config.get<int>("semester");
+    this->parseConfigFile();
+    const Config& config = this->getConfig();
+    const unsigned int& semester = config.get<const unsigned int>("semester");
 
     this->parseRoomFeaturesJSON();
     this->parseTeachersJSON();
@@ -50,7 +72,7 @@ namespace upvtc_ct::utils
     this->parseIrregularStudentGroupsJSON(studyPlans);
   }
 
-  const ds::Config& DataManager::getConfig() const
+  const Config& DataManager::getConfig() const
   {
     return this->config;
   }
@@ -263,8 +285,7 @@ namespace upvtc_ct::utils
     return this->getBinFolderPath() + std::string("/data/");
   }
 
-  const std::unordered_map<std::string, std::string>
-  DataManager::getConfigData()
+  void DataManager::parseConfigFile()
   {
     const std::string configFolder = this->getBinFolderPath()
                                      + std::string("/config/");
@@ -277,29 +298,30 @@ namespace upvtc_ct::utils
       throw utils::FileNotFoundError("The configuration file cannot be found.");
     }
 
-    return std::unordered_map<std::string, std::string>({
-      {
-        "semester",
-        std::to_string(toml::find<int>(configData, "semester"))
-      },
-      {
-        "max_lecture_capacity",
-        std::to_string(toml::find<int>(configData, "max_lecture_capacity"))
-      },
-      {
-        "max_lab_capacity",
-        std::to_string(toml::find<int>(configData, "max_lab_capacity"))
-      },
-      {
-        "max_annual_teacher_load",
-        std::to_string(toml::find<int>(configData, "max_annual_teacher_load"))
-      },
-      {
-        "max_semestral_teacher_load",
-        std::to_string(
-          toml::find<int>(configData, "max_semestral_teacher_load"))
-      }
-    });
+    Config& config = this->config;
+    config.addConfig("semester",
+                     toml::find<const unsigned int>(configData, "semester"));
+    config.addConfig("num_unique_days",
+                     toml::find<const unsigned int>(configData,
+                                                    "num_unique_days"));
+    config.addConfig("days_with_double_timeslots",
+                     toml::find<std::vector<unsigned int>>(
+                       configData, "days_with_double_timeslots"));
+    config.addConfig("num_timeslots",
+                     toml::find<const unsigned int>(
+                       configData, "num_timeslots"));
+    config.addConfig("max_lecture_capacity",
+                     toml::find<const unsigned int>(configData,
+                                                    "max_lecture_capacity"));
+    config.addConfig("max_lab_capacity",
+                     toml::find<const unsigned int>(configData,
+                                                    "max_lab_capacity"));
+    config.addConfig("max_annual_teacher_load",
+                     toml::find<const unsigned int>(configData,
+                                                    "max_annual_teacher_load"));
+    config.addConfig("max_semestral_teacher_load",
+                     toml::find<const unsigned int>(
+                       configData, "max_semestral_teacher_load"));
   }
 
   const std::unordered_set<ds::Course*>
@@ -858,12 +880,5 @@ namespace upvtc_ct::utils
     }
 
     return false;
-  }
-
-  unsigned int DataManager::getNewStudentGroupID()
-  {
-    unsigned int newID = this->currStudentGroupID;
-    this->currStudentGroupID++;
-    return newID;
   }
 }

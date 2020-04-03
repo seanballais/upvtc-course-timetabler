@@ -9,6 +9,9 @@
 
 namespace upvtc_ct::timetabler
 {
+  namespace ds = upvtc_ct::ds;
+  namespace utils = upvtc_ct::utils;
+
   Timetabler::Timetabler(utils::DataManager& dataManager)
     : dataManager(dataManager) {}
 
@@ -29,7 +32,7 @@ namespace upvtc_ct::timetabler
 
   void Timetabler::applySimpleMove(Solution& solution)
   {
-
+    
   }
 
   void Timetabler::applySimpleSwap(Solution& solution)
@@ -37,28 +40,26 @@ namespace upvtc_ct::timetabler
     std::vector<size_t>& classGroups = solution.getClassGroups();
 
     size_t numClassGroups = classGroups.size();
-    std::uniform_real_distribution<size_t> distribution(0, numClassGroups - 1);
+    std::uniform_int_distribution<int> distribution(0, numClassGroups - 1);
 
     std::random_device randDevice;
-    std::mt19937 mt{randDevice{}};
+    std::mt19937 mt{randDevice()};
 
-    size_t solutionAIndex = distribution(mt);
+    size_t classGroupA = distribution(mt);
 
     // Make sure solutionBIndex is not the same as solutionAIndex.
-    size_t solutionBIndex;
+    size_t classGroupB;
     do {
-      solutionBIndex = distribution(mt);
-    } while (solutionBIndex == solutionAIndex);
+      classGroupB = distribution(mt);
+    } while (classGroupB == classGroupA);
 
-    Solution& solutionA = classGroups[solutionAIndex];
-    Solution& solutionB = classGroups[solutionBIndex];
-
-    unsigned int tempDay = solutionA.day;
-    unsigned int tempTimeslot = solutionA.timeslot;
-    solutionA.day = solutionB.day;
-    solutionA.timeslot = solutionB.timeslot;
-    solutionB.day = tempDay;
-    solutionB.timeslot = tempTimeslot;
+    unsigned int tempDay = solution.getClassDay(classGroupA);
+    unsigned int tempTimeslot = solution.getClassTimeslot(classGroupA);
+    solution.changeClassDay(classGroupA, solution.getClassDay(classGroupB));
+    solution.changeClassTimeslot(classGroupA,
+                                 solution.getClassTimeslot(classGroupB));
+    solution.changeClassDay(classGroupB, tempDay);
+    solution.changeClassTimeslot(classGroupB, tempTimeslot);
   }
 
   Solution::Solution(
@@ -85,6 +86,20 @@ namespace upvtc_ct::timetabler
     }
 
     return item->second;
+  }
+
+  const unsigned int Solution::getClassDay(const size_t classGroup)
+  {
+    auto& classes = this->getClasses(classGroup);
+    ds::Class* cls = *(classes.begin());
+    return cls->day;
+  }
+
+  const unsigned int Solution::getClassTimeslot(const size_t classGroup)
+  {
+    auto& classes = this->getClasses(classGroup);
+    ds::Class* cls = *(classes.begin());
+    return cls->timeslot;
   }
 
   void Solution::changeClassTeacher(const size_t classGroup,

@@ -30,9 +30,11 @@ namespace upvtc_ct::preprocessor
   void Preprocessor::generateClasses()
   {
     // Generate the classes.
-    ds::Config config = dataManager->getConfig();
-    const unsigned int maxLecCapacity = config.get<int>("max_lecture_capacity");
-    const unsigned int maxLabCapacity = config.get<int>("max_lab_capacity");
+    const utils::Config& config = dataManager->getConfig();
+    const unsigned int maxLecCapacity = config.get<const unsigned int>(
+                                          "max_lecture_capacity");
+    const unsigned int maxLabCapacity = config.get<const unsigned int>(
+                                          "max_lab_capacity");
     const auto numCourseEnrolleesMap = this->getNumEnrolleesPerCourse();
 
     unsigned int numClassesGenerated = 0;
@@ -237,10 +239,10 @@ namespace upvtc_ct::preprocessor
       courseName += std::string{" (Lab)"};
     }
 
-    ds::Config config = this->dataManager->getConfig();
+    const utils::Config& config = this->dataManager->getConfig();
     const unsigned int maxGroupCapacity = (course->isLab)
-      ? config.get<int>("max_lab_capacity")
-      : config.get<int>("max_lecture_capacity");
+      ? config.get<const unsigned int>("max_lab_capacity")
+      : config.get<const unsigned int>("max_lecture_capacity");
 
     std::unordered_set<size_t>
       candidates = this->courseNameToClassGroupsMap[courseName];
