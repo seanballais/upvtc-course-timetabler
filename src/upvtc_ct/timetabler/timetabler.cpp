@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -5,7 +6,9 @@
 #include <unordered_set>
 #include <vector>
 
+#include <upvtc_ct/ds/models.hpp>
 #include <upvtc_ct/timetabler/timetabler.hpp>
+#include <upvtc_ct/utils/data_manager.hpp>
 
 namespace upvtc_ct::timetabler
 {
@@ -44,6 +47,17 @@ namespace upvtc_ct::timetabler
     this->applySimpleMove(solution);
 
     return solution;
+  }
+
+  void computeSolutionCost(Solution& solution)
+  {
+    int cost = this->getHC0Cost(solution)
+               + this->getHC1Cost(solution)
+               + this->getHC2Cost(solution)
+               + this->getSC0Cost(solution)
+               + this->getSC1Cost(solution)
+               + this->getSC2Cost(solution);
+    solution.setCost(cost);
   }
 
   void Timetabler::applySimpleMove(Solution& solution)
@@ -107,19 +121,81 @@ namespace upvtc_ct::timetabler
     solution.changeClassTimeslot(classGroupB, tempTimeslot);
   }
 
+  int Timetabler::getHC0Cost(Solution& solution)
+  {
+    // Hard Constraint 0
+    // No two classes must have share the same timeslots.
+
+    // Using a reference since the order in the classGroups doesn't really
+    // matter in typical usage of Solution objects. Doing so will also benefit
+    // performance.
+    std::vector<ds::Class* const> classes{};
+    for (const size_t classGroup : solution.getClassGroups()) {
+      for (const auto& classes : solution.getClasses()) {
+        for (Class* const cls : classes) {
+          classes.push_back(cls);
+        }
+      }
+    }
+
+    std::sort(classes.begin(), classes.end(),
+              [] (const Class* const clsA, const Class* const clsB) -> bool {
+                return (clsA->day < clsB->day)
+                       || ((clsA->day == clsB->day)
+                           && (clsA->timeslot < clsB->timeslot));
+              });
+
+    int cost = 0;
+    for (size_t i = 0; i < classes.size() - 1; i++) {
+      if ((classes[i]->day == classes[i + 1]->day)
+          && (classes[i]->timeslot == classes[i + 1]->timeslot)
+          && (classes[i]->classID != classes[i + 1]->classID)) {
+        cost++;
+      }
+    }
+
+    return cost;
+  }
+
+  int Timetabler::getHC1Cost(Solution& solution)
+  {
+
+  }
+
+  int Timetabler::getHC2Cost(Solution& solution)
+  {
+
+  }
+
+  int Timetabler::getSC0Cost(Solution& solution)
+  {
+
+  }
+
+  int Timetabler::getSC1Cost(Solution& solution)
+  {
+
+  }
+
+  int Timetabler::getSC2Cost(Solution& solution)
+  {
+
+  }
+
   Solution::Solution(
       const std::vector<size_t> classGroups,
       const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
         classGroupsToClassesMap)
     : classGroups(classGroups)
-    , classGroupsToClassesMap(classGroupsToClassesMap) {}
+    , classGroupsToClassesMap(classGroupsToClassesMap)
+    , cost(0) {}
 
   std::vector<size_t>& Solution::getClassGroups()
   {
     return this->classGroups;
   }
 
-  std::unordered_set<ds::Class*>& Solution::getClasses(size_t classGroup)
+  std::unordered_set<ds::Class*>& Solution::getClasses(const size_t classGroup)
   {
     auto item = this->classGroupsToClassesMap.find(classGroup);
     if (item == this->classGroupsToClassesMap.end()) {
@@ -179,6 +255,16 @@ namespace upvtc_ct::timetabler
     for (ds::Class* cls : classes) {
       cls->timeslot = timeslot;
     }
+  }
+
+  int Solution::getCost() const
+  {
+    return this->cost;
+  }
+
+  void Solution::setCost(const int cost)
+  {
+    this->cost = cost;
   }
 
   UnknownClassGroupError::UnknownClassGroupError(const char* what_arg)

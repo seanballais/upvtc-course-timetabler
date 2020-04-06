@@ -22,8 +22,16 @@ namespace upvtc_ct::timetabler
     std::vector<Solution> generateInitialGeneration();
     Solution generateRandomSolution();
 
+    void computeSolutionCost(Solution& solution);
     void applySimpleMove(Solution& solution);
     void applySimpleSwap(Solution& solution);
+
+    int getHC0Cost(Solution& solution);
+    int getHC1Cost(Solution& solution);
+    int getHC2Cost(Solution& solution);
+    int getSC0Cost(Solution& solution);
+    int getSC1Cost(Solution& solution);
+    int getSC2Cost(Solution& solution);
 
     const utils::DataManager& dataManager;
   };
@@ -36,11 +44,14 @@ namespace upvtc_ct::timetabler
              const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
                classGroupsToClassesMap);
     std::vector<size_t>& getClassGroups();
-    std::unordered_set<ds::Class*>& getClasses(size_t classGroup);
+    std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
 
     const unsigned int getClassDay(const size_t classGroup);
     const unsigned int getClassTimeslot(const size_t classGroup);
 
+    int getCost() const;
+
+    void setCost(const int cost);
     void changeClassTeacher(const size_t classGroup,
                             ds::Teacher* const teacher);
     void changeClassDay(const size_t classGroup, const unsigned int day);
@@ -49,6 +60,7 @@ namespace upvtc_ct::timetabler
                              const unsigned int timeslot);
 
   private:
+    int cost;
     std::vector<size_t> classGroups;
     std::unordered_map<size_t, std::unordered_set<ds::Class*>>
       classGroupsToClassesMap;
