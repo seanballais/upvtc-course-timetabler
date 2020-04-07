@@ -16,7 +16,8 @@ namespace upvtc_ct::timetabler
   namespace utils = upvtc_ct::utils;
 
   Timetabler::Timetabler(utils::DataManager& dataManager)
-    : dataManager(dataManager) {}
+    : dataManager(dataManager)
+    , discouragedTimeslots({0, 1, 9, 10, 11, 21, 22, 23}) {}
 
   std::vector<Solution> Timetabler::generateInitialGeneration()
   {
@@ -51,9 +52,9 @@ namespace upvtc_ct::timetabler
 
   void computeSolutionCost(Solution& solution)
   {
-    int cost = this->getHC0Cost(solution)
-               + this->getHC1Cost(solution)
-               + this->getHC2Cost(solution)
+    int cost = (this->getHC0Cost(solution) * 100)
+               + (this->getHC1Cost(solution) * 100)
+               + (this->getHC2Cost(solution) * 100)
                + this->getSC0Cost(solution)
                + this->getSC1Cost(solution)
                + this->getSC2Cost(solution);
@@ -129,15 +130,7 @@ namespace upvtc_ct::timetabler
     // Using a reference since the order in the classGroups doesn't really
     // matter in typical usage of Solution objects. Doing so will also benefit
     // performance.
-    std::vector<ds::Class* const> classes{};
-    for (const size_t classGroup : solution.getClassGroups()) {
-      for (const auto& classes : solution.getClasses()) {
-        for (Class* const cls : classes) {
-          classes.push_back(cls);
-        }
-      }
-    }
-
+    auto classes = solution.getAllClasses();
     std::sort(classes.begin(), classes.end(),
               [] (const Class* const clsA, const Class* const clsB) -> bool {
                 return (clsA->day < clsB->day)
@@ -159,43 +152,141 @@ namespace upvtc_ct::timetabler
 
   int Timetabler::getHC1Cost(Solution& solution)
   {
+    // Hard Constraint 0
+    // A teacher must not have classes that share timeslots.
+    auto classes = solution.getAllClasses();
+    std:::sort(classes.begin(), classes.end(),
+               [] (const Class* const clsA, const Class* const clsB) -> bool {
+                 // At this point, it is assumed that each class has been
+                 // assigned a teacher.
+                 return (clsA->teacher->name < clsB->teacher->name)
+                        || ((clsA->teacher->name == clsB->teacher->name)
+                            && ((clsA->day < clsB->day)
+                                || ((clsA->day == clsB->day)
+                                    && (clsA->timeslot < clsB->timeslot))));
+               });
 
+    int cost = 0;
+    for (size_t i = 0; i < classes.size() - 1; i++) {
+      if ((classes[i]->teacher->name == classes[i + 1]->teacher->name)
+          && (classes[i]->day == classes[i + 1]->day)
+          && (classes[i]->timeslot == classes[i + 1]->timeslot)
+          && (classes[i]->classID != classes[i + 1]->classID)) {
+        cost++;
+      }
+    }
+
+    return cost;
   }
 
   int Timetabler::getHC2Cost(Solution& solution)
   {
-
+    
   }
 
   int Timetabler::getSC0Cost(Solution& solution)
   {
+    // Soft Constraint 0
+    // No classes must be scheduled in the timeslots that are unpreferrable
+    // to the teacher assigned to the class.
 
+    // Note that we are assuming that all classes have been assigned a teacher
+    // already.
+    auto classes = solution.getAllClasses();
+    int cost = 0;
+    for (ds::Class* const cls : classes) {
+      int classDay = cls->day;
+      int classTimeslot = cls->timeslot;
+      const auto& unpreferredTimeslots = cls->teacher->unpreferredTimeslots;
+
+      auto item = unpreferredTimeslots.find({classDay, classTimeslot});
+      if (item != unpreferredTimeslots.end()) {
+        cost++;
+      }
+    }
+
+    return cost;
   }
 
   int Timetabler::getSC1Cost(Solution& solution)
   {
+    // Soft Constraint 1
+    // No classes must be scheduled in between 7AM - 8AM, 11:30AM - 1PM, and
+    // 5:30PM - 7PM.
+    auto classes = solution.getAllClasses();
+    
+    int cost = 0;
+    for (ds::Class* const cls : classes) {
+      auto item = this->discouragedTimeslots.find(cls->timeslot);
+      if (item != this->discouragedTimeslots.end()) {
+        // Class is given timeslots of which some or all are discouraged
+        // timeslots.
+        cost++;
+      }
+    }
 
+    return cost;
   }
 
   int Timetabler::getSC2Cost(Solution& solution)
   {
+    // Soft Constraint 2
+    // Teacher load must exceed the maximum load for a semester, or for a year.
+    std::unordered_map<Teacher* const, unsigned float> currTeacherLoads;
+    for (auto classGroup : solution.getClassGroups()) {
+      auto* sampleClass = *(solution.getClasses(classGroup).begin());
+      auto* teacher = sampleClass->teacher;
+      unsigned float courseUnits = sampleClass->course->numUnits;
 
+      auto item = currTeacherLoads.find(teacher);
+      if (item == currTeacherLoads.end()) {
+        currTeacherLoads[teacher] = 0;
+      }
+
+      currTeacherLoads[teacher] += courseUnits;
+    }
+
+    // Now check if there is a violation.
+    utils::Config& config = this->dataManager.getConfig();
+    const unsigned float maxTeacherSemLoad = config.get<float>(
+                                               "max_semestral_teacher_load");
+    const unsigned float maxTeacherYearLoad = config.get<float>(
+                                                "max_annual_teacher_load");
+    int cost = 0;
+    for (const auto& [teacher, currLoad] : currTeacherLoads) {
+      if ((currLoad > maxTeacherSemLoad)
+          || ((currLoad + teacher->previousLoad) > maxTeacherYearLoad)) {
+        cost++;
+      }
+    }
+
+    return cost;
   }
 
   Solution::Solution(
       const std::vector<size_t> classGroups,
       const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
         classGroupsToClassesMap)
-    : classGroups(classGroups)
-    , classGroupsToClassesMap(classGroupsToClassesMap)
-    , cost(0) {}
+      : classGroups(classGroups)
+      , classGroupsToClassesMap(classGroupsToClassesMap)
+      , cost(0)
+  {
+    for (const size_t classGroup : solution.getClassGroups()) {
+      for (const auto& classes : solution.getClasses()) {
+        for (Class* const cls : classes) {
+          this->classes.push_back(cls);
+        }
+      }
+    }
+  }
 
-  std::vector<size_t>& Solution::getClassGroups()
+  std::vector<size_t>& Solution::getClassGroups() const
   {
     return this->classGroups;
   }
 
-  std::unordered_set<ds::Class*>& Solution::getClasses(const size_t classGroup)
+  std::unordered_set<ds::Class*>&
+  Solution::getClasses(const size_t classGroup) const
   {
     auto item = this->classGroupsToClassesMap.find(classGroup);
     if (item == this->classGroupsToClassesMap.end()) {
@@ -208,6 +299,12 @@ namespace upvtc_ct::timetabler
 
     return item->second;
   }
+
+  std::vector<ds::Class* const>& getAllClasses() const
+  {
+    return this->classes;
+  }
+
 
   const unsigned int Solution::getClassDay(const size_t classGroup)
   {

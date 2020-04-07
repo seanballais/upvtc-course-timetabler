@@ -317,10 +317,10 @@ namespace upvtc_ct::utils
                      toml::find<const unsigned int>(configData,
                                                     "max_lab_capacity"));
     config.addConfig("max_annual_teacher_load",
-                     toml::find<const unsigned int>(configData,
-                                                    "max_annual_teacher_load"));
+                     toml::find<const unsigned float>(
+                       configData, "max_annual_teacher_load"));
     config.addConfig("max_semestral_teacher_load",
-                     toml::find<const unsigned int>(
+                     toml::find<const unsigned float>(
                        configData, "max_semestral_teacher_load"));
     config.addConfig("num_generations",
                      toml::find<const unsigned int>(configData,
@@ -827,6 +827,9 @@ namespace upvtc_ct::utils
     const char* timeslotsKey = (isLab) ? "num_lab_timeslots" : "num_timeslots";
     const unsigned int numTimeslots = courseJSON[timeslotsKey].get<int>();
 
+    const char* numUnitsKey = (isLab) ? "num_lab_units" : "num_units";
+    const unsigned float numUnits = courseJSON[numUnitsKey].get<float>();
+
     std::unordered_set<ds::Course*> coursePrereqs;
     if (!isLab) {
       const auto& prereqsJSON = courseJSON["prerequisites"];
@@ -849,6 +852,7 @@ namespace upvtc_ct::utils
                                                 hasLab,
                                                 isLab,
                                                 numTimeslots,
+                                                numUnits,
                                                 coursePrereqs,
                                                 candidateTeachers,
                                                 roomReqs));
