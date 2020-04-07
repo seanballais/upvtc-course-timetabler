@@ -181,7 +181,38 @@ namespace upvtc_ct::timetabler
 
   int Timetabler::getHC2Cost(Solution& solution)
   {
-    
+    // Hard Constraint 2
+    // A student must not have classes that share timeslots.
+    auto classes = solution.getAllClasses();
+    std::sort(classes.begin(), classes.end(),
+              [] (const Class* const clsA, const Class* const clsB) -> bool {
+                return (clsA->day < clsB->day)
+                       || ((clsA->day == clsB->day)
+                           && (clsA->timeslot < clsB->timeslot));
+              });
+
+    const auto& classConflicts = this->dataManager.getClassConflicts();
+
+    int cost = 0;
+    for (size_t i = 0; i < classes.size() - 1; i++) {
+      // TODO: Create all possible pairs of the group!
+      auto* clsA = classes[i];
+      auto* clsB = classes[i + 1];
+      if (clsA->day == clsB->day && clsA->timeslot == clsB->timeslot) {
+        // Okay, so both classes are in the same partition, as per the
+        // mathematical function of this constraint.
+        auto clsConflictsItem = classConflicts.find(clsA->classID);
+        auto& clsAConflicts = clsConflictsItem->second;
+
+        auto item = clsAConflicts.find(clsB->classID);
+        if (item != clsAConflicts.end()) {
+          // Oops. clsA and clsB share students.
+          cost++;
+        }
+      }
+    }
+
+    return cost;
   }
 
   int Timetabler::getSC0Cost(Solution& solution)
