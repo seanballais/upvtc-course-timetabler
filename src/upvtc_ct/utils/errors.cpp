@@ -15,4 +15,7 @@ namespace upvtc_ct::utils
 
   MaxClassCapacityError::MaxClassCapacityError(const char* what_arg)
     : std::runtime_error(what_arg) {}
+
+  UnknownClassGroupError::UnknownClassGroupError(const char* what_arg)
+    : std::runtime_error(what_arg) {}
 }

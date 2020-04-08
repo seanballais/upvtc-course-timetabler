@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.13)
 add_library(upvtc_ct-lib-utils STATIC "")
 target_sources(upvtc_ct-lib-utils
     PRIVATE
-        errors.cpp
         data_manager.cpp
+        errors.cpp
+        utils.cpp
 )

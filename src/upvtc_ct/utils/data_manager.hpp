@@ -86,6 +86,8 @@ namespace upvtc_ct::utils
     ds::Course* const getCourseLab(ds::Course* const course) const;
     const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
       getClassGroups() const;
+    const std::unordered_set<ds::Class*>&
+      getClasses(const size_t classGroup) const;
     const std::unordered_map<size_t, std::unordered_set<size_t>>&
       getClassConflicts() const;
 

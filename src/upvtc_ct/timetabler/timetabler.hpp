@@ -1,3 +1,6 @@
+#ifndef UPVTC_CT_TIMETABLER_TIMETABLER
+#define UPVTC_CT_TIMETABLER_TIMETABLER
+
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -21,6 +24,8 @@ namespace upvtc_ct::timetabler
   private:
     std::vector<Solution> generateInitialGeneration();
     Solution generateRandomSolution();
+
+    void assignTeachersToClasses();
 
     void computeSolutionCost(Solution& solution);
     void applySimpleMove(Solution& solution);
@@ -68,10 +73,5 @@ namespace upvtc_ct::timetabler
     std::unordered_map<size_t, std::unordered_set<ds::Class*>>
       classGroupsToClassesMap;
   };
-
-  class UnknownClassGroupError : public std::runtime_error
-  {
-  public:
-    UnknownClassGroupError(const char* what_arg);
-  };
 }
+#endif

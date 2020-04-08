@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -9,6 +10,8 @@
 #include <upvtc_ct/ds/models.hpp>
 #include <upvtc_ct/timetabler/timetabler.hpp>
 #include <upvtc_ct/utils/data_manager.hpp>
+#include <upvtc_ct/utils/errors.hpp>
+#include <upvtc_ct/utils/utils.hpp>
 
 namespace upvtc_ct::timetabler
 {
@@ -40,24 +43,49 @@ namespace upvtc_ct::timetabler
     for (const auto item : this->dataManager.getClassGroups()) {
       auto clsGroup = item.first;
       auto classes = item.second;
+      for (auto& cls : classes) {
+        cls.day = 0;
+        cls.timeslot = 0;
+      }
+
       classGroups.push_back(clsGroup);
       classGroupsToClassesMap.insert({clsGroup, classes});
     }
 
     Solution solution{classGroups, classGroupsToClassesMap};
-    this->applySimpleMove(solution);
+    for (size_t i = 0; i < classGroups.size(); i++) {
+      this->applySimpleMove(solution);
+    }
 
     return solution;
   }
 
-  void computeSolutionCost(Solution& solution)
+  void Timetabler::assignTeachersToClasses()
+  {
+    std::vector<size_t> classGroups;
+    for (const auto item : this->dataManager.getClassGroups()) {
+      auto clsGroup = item.first;
+      classGroups.push_back(clsGroup);
+    }
+
+    const unsigned seed = std::chrono::system_clock::now().time_since_epoch()
+                                                          .count();
+    std::shuffle(classGroups.begin(), classGroups.end(),
+                 std::default_random_engine{seed});
+
+    std::unordered_map<Teacher* const, unsigned float> currTeacherLoads;
+    for (const auto clsGroup : classGroups) {
+      auto& 
+    }
+  }
+
+  void Timetabler::computeSolutionCost(Solution& solution)
   {
     int cost = (this->getHC0Cost(solution) * 100)
                + (this->getHC1Cost(solution) * 100)
                + (this->getHC2Cost(solution) * 100)
                + this->getSC0Cost(solution)
-               + this->getSC1Cost(solution)
-               + this->getSC2Cost(solution);
+               + this->getSC1Cost(solution);
     solution.setCost(cost);
   }
 
@@ -394,7 +422,4 @@ namespace upvtc_ct::timetabler
   {
     this->cost = cost;
   }
-
-  UnknownClassGroupError::UnknownClassGroupError(const char* what_arg)
-    : std::runtime_error(what_arg) {}
 }

@@ -231,6 +231,21 @@ namespace upvtc_ct::utils
     return this->classGroups;
   }
 
+  const std::unordered_set<ds::Class*>&
+  DataManager::getClasses(const size_t classGroup) const
+  {
+    auto item = this->classGroups.find(classGroup);
+    if (item == this->classGroups.end()) {
+      std::stringstream errorMsgStream;
+      errorMsgStream << "Attempted to obtain classes using an unknown class "
+                     << "group, " << classGroup << ".";
+      const char* errorMsg = (errorMsgStream.str()).c_str();
+      throw utils::UnknownClassGroupError(errorMsg);
+    }
+
+    return item->second;
+  }
+
   const std::unordered_map<size_t, std::unordered_set<size_t>>&
   DataManager::getClassConflicts() const
   {
