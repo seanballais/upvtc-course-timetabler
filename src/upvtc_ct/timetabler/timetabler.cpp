@@ -73,9 +73,71 @@ namespace upvtc_ct::timetabler
     std::shuffle(classGroups.begin(), classGroups.end(),
                  std::default_random_engine{seed});
 
-    std::unordered_map<Teacher* const, unsigned float> currTeacherLoads;
+    std::unordered_map<ds::Teacher* const, unsigned float> currTeacherLoads;
     for (const auto clsGroup : classGroups) {
-      auto& 
+      auto& classes = this->dataManager.getClasses(clsGroup);
+      auto* sampleClass = *(classes.begin());
+
+      std::vector<ds::Teacher* const> candidateTeachers;
+      for (auto* const teacher : sampleClass->course->candidateTeachers) {
+        candidateTeachers.push_back(teacher);
+      }
+
+      std::shuffle(candidateTeachers.begin(), candidateTeachers.end(),
+                   std::default_random_engine{seed});
+
+      std::stable_sort(
+        candidateTeachers.begin(), candidateTeachers.end(),
+        [&currTeacherLoads] (const Teacher* tA, const Teacher* tB) {
+          auto itemA = currTeacherLoads.find(tA);
+          if (itemA == currTeacherLoads.end()) {
+            itemA.insert({tA, 0.f});
+          }
+
+          auto itemB = currTeacherLoads.find(tB);
+          if (itemB == currTeacherLoads.end()) {
+            itemB.insert({tB, 0.f});
+          }
+
+          const float tALoad = itemA[tA];
+          const float tBLoad = itemB[tB];
+
+          return tALoad < tBLoad;
+      });
+
+      // Get all teachers with the smallest loads, and who will not exceed
+      // load limits for the semester and the year.
+      utils::Config& config = this->dataManager.getConfig();
+      const unsigned float maxTeacherSemLoad = config.get<float>(
+                                                 "max_semestral_teacher_load");
+      const unsigned float maxTeacherYearLoad = config.get<float>(
+                                                  "max_annual_teacher_load");
+      auto* const teacherKey = candidateTeachers[0];
+      const unsigned float smallestLoad = currTeacherLoads[teacherKey];
+      const unsigned float courseLoad = sampleClass->course->numUnits;
+      std::vector<Teacher* const> possibleTeachers;
+      for (auto* const teacher : candidateTeachers) {
+        const float currTeacherLoad = currTeacherLoads[teacher];
+        const float newTeacherLoad = courseLoad + currTeacherLoad;
+        const float prevTeacherLoad = teacher->previousLoad;
+        const float totalLoad = newTeacherLoad + prevTeacherLoad;
+        if (currTeacherLoad == smallestLoad
+            && ((newTeacherLoad <= maxTeacherSemLoad)
+                 && (totalLoad <= maxTeacherYearLoad))) {
+          // Okay, so the teacher may handle the course, since his/her would-be
+          // load is not existing her semestral load and annual load limit.
+          possibleTeachers.push_back(teacher);
+        } else if (currTeacherLoad > smallestLoad) {
+          break;
+        }
+      }
+
+      // Now select a first teacher in the list.
+      auto* const selectedTeacher = possibleTeachers[0];
+      currTeacherLoads[selectedTeacher] += courseLoad;
+      for (auto* const cls : this->dataManager.getClasses(clsGroup)) {
+        cls->teacher = selectedTeacher;
+      }
     }
   }
 
@@ -98,7 +160,7 @@ namespace upvtc_ct::timetabler
     std::random_device randDevice;
     std::mt19937 mt{randDevice()};
 
-    std::uniform_int_distribution<int> classGrpDistrib(0, numClassGroups - 1);
+    std::uniform_int_distribution<int> classGrpDistrib{0, numClassGroups - 1};
 
     size_t classGroup = classGrpDistrib(mt);
 
@@ -347,23 +409,19 @@ namespace upvtc_ct::timetabler
   std::unordered_set<ds::Class*>&
   Solution::getClasses(const size_t classGroup) const
   {
-    auto item = this->classGroupsToClassesMap.find(classGroup);
-    if (item == this->classGroupsToClassesMap.end()) {
-      std::stringstream errorMsgStream;
-      errorMsgStream << "Attempted to obtain classes using an unknown class "
-                     << "group, " << classGroup << ".";
-      const char* errorMsg = (errorMsgStream.str()).c_str();
-      throw UnknownClassGroupError(errorMsg);
-    }
-
-    return item->second;
+    std::stringstream errorMsgStream;
+    errorMsgStream << "Attempted to obtain classes using an unknown class "
+                   << "group, " << classGroup << ".";
+    const char* errorMsg = (errorMsgStream.str()).c_str();
+    return utils::getValueRefFromMap<size_t, std::unordered_set<ds::Class*>,
+                                     utils::UnknownClassGroupError>(
+        classGroup, this->classGroupsToClassesMap, errorMsg);
   }
 
   std::vector<ds::Class* const>& getAllClasses() const
   {
     return this->classes;
   }
-
 
   const unsigned int Solution::getClassDay(const size_t classGroup)
   {

@@ -11,7 +11,7 @@ namespace upvtc_ct::ds
   Course::Course(const std::string name, Division* const division,
                  const bool hasLab, const bool isLab,
                  const unsigned int numTimeslots,
-                 const unsigned float numUnits,
+                 const float numUnits,
                  const std::unordered_set<Course*> prerequisites,
                  const std::unordered_set<Teacher*> candidateTeachers,
                  const std::unordered_set<RoomFeature*> roomRequirements)

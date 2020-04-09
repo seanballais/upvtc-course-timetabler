@@ -23,7 +23,7 @@ namespace upvtc_ct::ds
   {
     Course(const std::string name, Division* const division, const bool hasLab,
            const bool isLab, const unsigned int numTimeslots,
-           const unsigned float numUnits,
+           const float numUnits,
            const std::unordered_set<Course*> prerequisites,
            const std::unordered_set<Teacher*> candidateTeachers,
            const std::unordered_set<RoomFeature*> roomRequirements);
@@ -34,7 +34,7 @@ namespace upvtc_ct::ds
     const bool hasLab;
     const bool isLab;
     const unsigned int numTimeslots;
-    const unsigned float numUnits;
+    const float numUnits;
     const std::unordered_set<Course*> prerequisites;
     const std::unordered_set<Teacher*> candidateTeachers;
     const std::unordered_set<RoomFeature*> roomRequirements;
@@ -193,7 +193,7 @@ namespace upvtc_ct::ds
     void setPotentialCourses(const std::unordered_set<Course*> courses);
 
     const std::string name;
-    const unsigned int previousLoad;
+    const float previousLoad;
     const std::unordered_set<
       UnpreferredTimeslot, UnpreferredTimeslotHashFunction>
         unpreferredTimeslots;

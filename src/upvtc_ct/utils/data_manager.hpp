@@ -84,12 +84,12 @@ namespace upvtc_ct::utils
     ds::Teacher* const
       getTeacherNameObject(const std::string teacherName) const;
     ds::Course* const getCourseLab(ds::Course* const course) const;
-    const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
-      getClassGroups() const;
-    const std::unordered_set<ds::Class*>&
-      getClasses(const size_t classGroup) const;
-    const std::unordered_map<size_t, std::unordered_set<size_t>>&
-      getClassConflicts() const;
+    std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
+      getClassGroups();
+    std::unordered_set<ds::Class*>&
+      getClasses(const size_t classGroup);
+    std::unordered_map<size_t, std::unordered_set<size_t>>&
+      getClassConflicts();
 
     void addClass(std::unique_ptr<ds::Class>&& cls);
     void addClassConflict(const size_t classGroup,

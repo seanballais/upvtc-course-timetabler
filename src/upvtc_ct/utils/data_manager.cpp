@@ -19,6 +19,7 @@
 #include <upvtc_ct/utils/data_manager.hpp>
 #include <upvtc_ct/utils/errors.hpp>
 #include <upvtc_ct/utils/hash_specializations.hpp>
+#include <upvtc_ct/utils/utils.hpp>
 
 namespace upvtc_ct::utils
 {
@@ -225,29 +226,26 @@ namespace upvtc_ct::utils
     return labCourseItem->second;
   }
 
-  const std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
-  DataManager::getClassGroups() const
+  std::unordered_map<size_t, std::unordered_set<ds::Class*>>&
+  DataManager::getClassGroups()
   {
     return this->classGroups;
   }
 
-  const std::unordered_set<ds::Class*>&
-  DataManager::getClasses(const size_t classGroup) const
+  std::unordered_set<ds::Class*>&
+  DataManager::getClasses(const size_t classGroup)
   {
-    auto item = this->classGroups.find(classGroup);
-    if (item == this->classGroups.end()) {
-      std::stringstream errorMsgStream;
-      errorMsgStream << "Attempted to obtain classes using an unknown class "
-                     << "group, " << classGroup << ".";
-      const char* errorMsg = (errorMsgStream.str()).c_str();
-      throw utils::UnknownClassGroupError(errorMsg);
-    }
-
-    return item->second;
+    std::stringstream errorMsgStream;
+    errorMsgStream << "Attempted to obtain classes using an unknown class "
+                   << "group, " << classGroup << ".";
+    const char* errorMsg = (errorMsgStream.str()).c_str();
+    return utils::getValueRefFromMap<size_t, std::unordered_set<ds::Class*>,
+                                     utils::UnknownClassGroupError>(
+        classGroup, this->classGroups, errorMsg);
   }
 
-  const std::unordered_map<size_t, std::unordered_set<size_t>>&
-  DataManager::getClassConflicts() const
+  std::unordered_map<size_t, std::unordered_set<size_t>>&
+  DataManager::getClassConflicts()
   {
     return this->classConflicts;
   }
@@ -332,10 +330,10 @@ namespace upvtc_ct::utils
                      toml::find<const unsigned int>(configData,
                                                     "max_lab_capacity"));
     config.addConfig("max_annual_teacher_load",
-                     toml::find<const unsigned float>(
+                     toml::find<const float>(
                        configData, "max_annual_teacher_load"));
     config.addConfig("max_semestral_teacher_load",
-                     toml::find<const unsigned float>(
+                     toml::find<const float>(
                        configData, "max_semestral_teacher_load"));
     config.addConfig("num_generations",
                      toml::find<const unsigned int>(configData,
@@ -542,7 +540,7 @@ namespace upvtc_ct::utils
 
     for (const auto& [_, teacher] : teachers.items()) {
       const std::string teacherName = teacher["name"];
-      const unsigned int previousLoad = teacher["previous_load"].get<int>();
+      const float previousLoad = teacher["previous_load"].get<float>();
 
       std::unordered_set<
         ds::UnpreferredTimeslot, ds::UnpreferredTimeslotHashFunction>
@@ -843,7 +841,7 @@ namespace upvtc_ct::utils
     const unsigned int numTimeslots = courseJSON[timeslotsKey].get<int>();
 
     const char* numUnitsKey = (isLab) ? "num_lab_units" : "num_units";
-    const unsigned float numUnits = courseJSON[numUnitsKey].get<float>();
+    const float numUnits = courseJSON[numUnitsKey].get<float>();
 
     std::unordered_set<ds::Course*> coursePrereqs;
     if (!isLab) {
