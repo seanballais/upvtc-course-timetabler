@@ -159,13 +159,13 @@ int main(int argc, char* argv[])
                                          "max_lab_capacity");
   std::cout << "\tMax Lab Capacity: " << maxLabCapacity << std::endl;
 
-  const unsigned int& maxAnnualTeacherLoad = config.get<const unsigned int>(
+  const float& maxAnnualTeacherLoad = config.get<const float>(
                                                "max_annual_teacher_load");
   std::cout << "\tMax Annual Teacher Load: "
             << maxAnnualTeacherLoad
             << std::endl;
 
-  const unsigned int& maxSemTeacherLoad = config.get<const unsigned int>(
+  const float& maxSemTeacherLoad = config.get<const float>(
                                             "max_semestral_teacher_load");
   std::cout << "\tMax Semestral Teacher Load: "
             << maxSemTeacherLoad

@@ -43,9 +43,9 @@ namespace upvtc_ct::timetabler
     for (const auto item : this->dataManager.getClassGroups()) {
       auto clsGroup = item.first;
       auto classes = item.second;
-      for (auto& cls : classes) {
-        cls.day = 0;
-        cls.timeslot = 0;
+      for (auto* const cls : classes) {
+        cls->day = 0;
+        cls->timeslot = 0;
       }
 
       classGroups.push_back(clsGroup);
@@ -73,12 +73,12 @@ namespace upvtc_ct::timetabler
     std::shuffle(classGroups.begin(), classGroups.end(),
                  std::default_random_engine{seed});
 
-    std::unordered_map<ds::Teacher* const, unsigned float> currTeacherLoads;
+    std::unordered_map<ds::Teacher*, float> currTeacherLoads;
     for (const auto clsGroup : classGroups) {
       auto& classes = this->dataManager.getClasses(clsGroup);
       auto* sampleClass = *(classes.begin());
 
-      std::vector<ds::Teacher* const> candidateTeachers;
+      std::vector<ds::Teacher*> candidateTeachers;
       for (auto* const teacher : sampleClass->course->candidateTeachers) {
         candidateTeachers.push_back(teacher);
       }
@@ -88,34 +88,34 @@ namespace upvtc_ct::timetabler
 
       std::stable_sort(
         candidateTeachers.begin(), candidateTeachers.end(),
-        [&currTeacherLoads] (const Teacher* tA, const Teacher* tB) {
+        [&currTeacherLoads] (ds::Teacher* tA, ds::Teacher* tB) {
           auto itemA = currTeacherLoads.find(tA);
           if (itemA == currTeacherLoads.end()) {
-            itemA.insert({tA, 0.f});
+            currTeacherLoads.insert({tA, 0.f});
           }
 
           auto itemB = currTeacherLoads.find(tB);
           if (itemB == currTeacherLoads.end()) {
-            itemB.insert({tB, 0.f});
+            currTeacherLoads.insert({tB, 0.f});
           }
 
-          const float tALoad = itemA[tA];
-          const float tBLoad = itemB[tB];
+          const float tALoad = itemA->second;
+          const float tBLoad = itemB->second;
 
           return tALoad < tBLoad;
       });
 
       // Get all teachers with the smallest loads, and who will not exceed
       // load limits for the semester and the year.
-      utils::Config& config = this->dataManager.getConfig();
-      const unsigned float maxTeacherSemLoad = config.get<float>(
-                                                 "max_semestral_teacher_load");
-      const unsigned float maxTeacherYearLoad = config.get<float>(
-                                                  "max_annual_teacher_load");
+      const utils::Config& config = this->dataManager.getConfig();
+      const float maxTeacherSemLoad = config.get<const float>(
+                                        "max_semestral_teacher_load");
+      const float maxTeacherYearLoad = config.get<const float>(
+                                         "max_annual_teacher_load");
       auto* const teacherKey = candidateTeachers[0];
-      const unsigned float smallestLoad = currTeacherLoads[teacherKey];
-      const unsigned float courseLoad = sampleClass->course->numUnits;
-      std::vector<Teacher* const> possibleTeachers;
+      const float smallestLoad = currTeacherLoads[teacherKey];
+      const float courseLoad = sampleClass->course->numUnits;
+      std::vector<ds::Teacher*> possibleTeachers;
       for (auto* const teacher : candidateTeachers) {
         const float currTeacherLoad = currTeacherLoads[teacher];
         const float newTeacherLoad = courseLoad + currTeacherLoad;
@@ -160,7 +160,8 @@ namespace upvtc_ct::timetabler
     std::random_device randDevice;
     std::mt19937 mt{randDevice()};
 
-    std::uniform_int_distribution<int> classGrpDistrib{0, numClassGroups - 1};
+    std::uniform_int_distribution<int> classGrpDistrib{
+      0, static_cast<int>(numClassGroups - 1)};
 
     size_t classGroup = classGrpDistrib(mt);
 
@@ -222,7 +223,8 @@ namespace upvtc_ct::timetabler
     // performance.
     auto classes = solution.getAllClasses();
     std::sort(classes.begin(), classes.end(),
-              [] (const Class* const clsA, const Class* const clsB) -> bool {
+              [] (const ds::Class* const clsA,
+                  const ds::Class* const clsB) -> bool {
                 return (clsA->day < clsB->day)
                        || ((clsA->day == clsB->day)
                            && (clsA->timeslot < clsB->timeslot));
@@ -245,11 +247,12 @@ namespace upvtc_ct::timetabler
     // Hard Constraint 0
     // A teacher must not have classes that share timeslots.
     auto classes = solution.getAllClasses();
-    std:::sort(classes.begin(), classes.end(),
-               [] (const Class* const clsA, const Class* const clsB) -> bool {
-                 // At this point, it is assumed that each class has been
-                 // assigned a teacher.
-                 return (clsA->teacher->name < clsB->teacher->name)
+    std::sort(classes.begin(), classes.end(),
+              [] (const ds::Class* const clsA,
+                  const ds::Class* const clsB) -> bool {
+                // At this point, it is assumed that each class has been
+                // assigned a teacher.
+                return (clsA->teacher->name < clsB->teacher->name)
                         || ((clsA->teacher->name == clsB->teacher->name)
                             && ((clsA->day < clsB->day)
                                 || ((clsA->day == clsB->day)
@@ -275,7 +278,8 @@ namespace upvtc_ct::timetabler
     // A student must not have classes that share timeslots.
     auto classes = solution.getAllClasses();
     std::sort(classes.begin(), classes.end(),
-              [] (const Class* const clsA, const Class* const clsB) -> bool {
+              [] (const ds::Class* const clsA,
+                  const ds::Class* const clsB) -> bool {
                 return (clsA->day < clsB->day)
                        || ((clsA->day == clsB->day)
                            && (clsA->timeslot < clsB->timeslot));
@@ -316,8 +320,8 @@ namespace upvtc_ct::timetabler
     auto classes = solution.getAllClasses();
     int cost = 0;
     for (ds::Class* const cls : classes) {
-      int classDay = cls->day;
-      int classTimeslot = cls->timeslot;
+      const unsigned int classDay = cls->day;
+      const unsigned int classTimeslot = cls->timeslot;
       const auto& unpreferredTimeslots = cls->teacher->unpreferredTimeslots;
 
       auto item = unpreferredTimeslots.find({classDay, classTimeslot});
@@ -353,11 +357,11 @@ namespace upvtc_ct::timetabler
   {
     // Soft Constraint 2
     // Teacher load must exceed the maximum load for a semester, or for a year.
-    std::unordered_map<Teacher* const, unsigned float> currTeacherLoads;
+    std::unordered_map<ds::Teacher*, float> currTeacherLoads;
     for (auto classGroup : solution.getClassGroups()) {
       auto* sampleClass = *(solution.getClasses(classGroup).begin());
       auto* teacher = sampleClass->teacher;
-      unsigned float courseUnits = sampleClass->course->numUnits;
+      float courseUnits = sampleClass->course->numUnits;
 
       auto item = currTeacherLoads.find(teacher);
       if (item == currTeacherLoads.end()) {
@@ -368,11 +372,11 @@ namespace upvtc_ct::timetabler
     }
 
     // Now check if there is a violation.
-    utils::Config& config = this->dataManager.getConfig();
-    const unsigned float maxTeacherSemLoad = config.get<float>(
-                                               "max_semestral_teacher_load");
-    const unsigned float maxTeacherYearLoad = config.get<float>(
-                                                "max_annual_teacher_load");
+    const utils::Config& config = this->dataManager.getConfig();
+    const float maxTeacherSemLoad = config.get<const float>(
+                                      "max_semestral_teacher_load");
+    const float maxTeacherYearLoad = config.get<const float>(
+                                        "max_annual_teacher_load");
     int cost = 0;
     for (const auto& [teacher, currLoad] : currTeacherLoads) {
       if ((currLoad > maxTeacherSemLoad)
@@ -392,22 +396,20 @@ namespace upvtc_ct::timetabler
       , classGroupsToClassesMap(classGroupsToClassesMap)
       , cost(0)
   {
-    for (const size_t classGroup : solution.getClassGroups()) {
-      for (const auto& classes : solution.getClasses()) {
-        for (Class* const cls : classes) {
-          this->classes.push_back(cls);
-        }
+    for (const size_t classGroup : this->getClassGroups()) {
+      for (auto* const cls : this->getClasses(classGroup)) {
+        this->classes.push_back(cls);
       }
     }
   }
 
-  std::vector<size_t>& Solution::getClassGroups() const
+  std::vector<size_t>& Solution::getClassGroups()
   {
     return this->classGroups;
   }
 
   std::unordered_set<ds::Class*>&
-  Solution::getClasses(const size_t classGroup) const
+  Solution::getClasses(const size_t classGroup)
   {
     std::stringstream errorMsgStream;
     errorMsgStream << "Attempted to obtain classes using an unknown class "
@@ -418,21 +420,21 @@ namespace upvtc_ct::timetabler
         classGroup, this->classGroupsToClassesMap, errorMsg);
   }
 
-  std::vector<ds::Class* const>& getAllClasses() const
+  std::vector<ds::Class*>& Solution::getAllClasses()
   {
     return this->classes;
   }
 
   const unsigned int Solution::getClassDay(const size_t classGroup)
   {
-    auto& classes = this->getClasses(classGroup);
+    const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
     return cls->day;
   }
 
   const unsigned int Solution::getClassTimeslot(const size_t classGroup)
   {
-    auto& classes = this->getClasses(classGroup);
+    const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
     return cls->timeslot;
   }

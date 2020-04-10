@@ -38,7 +38,7 @@ namespace upvtc_ct::timetabler
     int getSC1Cost(Solution& solution);
     int getSC2Cost(Solution& solution);
 
-    const utils::DataManager& dataManager;
+    utils::DataManager& dataManager;
     const std::unordered_set<unsigned int> discouragedTimeslots;
   };
 
@@ -49,12 +49,12 @@ namespace upvtc_ct::timetabler
     Solution(const std::vector<size_t> classGroups,
              const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
                classGroupsToClassesMap);
-    std::vector<size_t>& getClassGroups() const;
-    std::unordered_set<ds::Class*>& getClasses(const size_t classGroup) const;
-    std::vector<ds::Class* const>& getAllClasses() const;
+    std::vector<size_t>& getClassGroups();
+    std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
+    std::vector<ds::Class*>& getAllClasses();
 
-    const unsigned int getClassDay(const size_t classGroup) const;
-    const unsigned int getClassTimeslot(const size_t classGroup) const;
+    const unsigned int getClassDay(const size_t classGroup);
+    const unsigned int getClassTimeslot(const size_t classGroup);
 
     int getCost() const;
 
@@ -69,7 +69,7 @@ namespace upvtc_ct::timetabler
   private:
     int cost;
     std::vector<size_t> classGroups;
-    std::vector<ds::Class* const> classes;
+    std::vector<ds::Class*> classes;
     std::unordered_map<size_t, std::unordered_set<ds::Class*>>
       classGroupsToClassesMap;
   };
