@@ -22,6 +22,7 @@ namespace upvtc_ct::timetabler
     Timetabler(utils::DataManager& dataManager);
 
   private:
+    Solution findBestSolutionWithSimpleGA();
     std::vector<Solution> generateInitialGeneration();
     Solution generateRandomSolution();
 

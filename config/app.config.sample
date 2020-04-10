@@ -11,4 +11,4 @@ max_semestral_teacher_load = 12
 
 num_generations = 100
 num_offsprings_per_generation = 30
-
+mutation_rate = 0.2

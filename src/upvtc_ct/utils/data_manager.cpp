@@ -341,6 +341,8 @@ namespace upvtc_ct::utils
     config.addConfig("num_offsprings_per_generation",
                      toml::find<const unsigned int>(
                        configData, "num_offsprings_per_generation"));
+    config.addConfig("mutation_rate",
+                     toml::find<const float>(configData, "mutation_rate"));
   }
 
   const std::unordered_set<ds::Course*>

@@ -22,6 +22,11 @@ namespace upvtc_ct::timetabler
     : dataManager(dataManager)
     , discouragedTimeslots({0, 1, 9, 10, 11, 21, 22, 23}) {}
 
+  Solution Timetabler::findBestSolutionWithSimpleGA()
+  [
+    auto generation = this->generateInitialGeneration();
+  ]
+
   std::vector<Solution> Timetabler::generateInitialGeneration()
   {
     const utils::Config& config = this->dataManager.getConfig();
@@ -30,6 +35,10 @@ namespace upvtc_ct::timetabler
     std::vector<Solution> generation;
     for (size_t i = 0; i < numOffsprings; i++) {
       generation.push_back(this->generateRandomSolution());
+    }
+
+    for (auto& solution : generation) {
+      this->computeSolutionCost(solution);
     }
 
     return generation;
