@@ -23,12 +23,16 @@ namespace upvtc_ct::timetabler
 
   private:
     Solution findBestSolutionWithSimpleGA();
-    std::vector<Solution> generateInitialGeneration();
-    Solution generateRandomSolution();
 
     void assignTeachersToClasses();
 
+    Solution crossOverSolutions(Solution& parentA, Solution& parentB);
+    void mutateSolution(Solutoin& solution);
+
     void computeSolutionCost(Solution& solution);
+    std::vector<Solution> generateInitialGeneration();
+    Solution generateRandomSolution();
+    Solution generateEmptySolution();
     void applySimpleMove(Solution& solution);
     void applySimpleSwap(Solution& solution);
 

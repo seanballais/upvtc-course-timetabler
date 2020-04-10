@@ -24,50 +24,10 @@ namespace upvtc_ct::timetabler
 
   Solution Timetabler::findBestSolutionWithSimpleGA()
   [
+    this->assignTeachersToClasses();
     auto generation = this->generateInitialGeneration();
+
   ]
-
-  std::vector<Solution> Timetabler::generateInitialGeneration()
-  {
-    const utils::Config& config = this->dataManager.getConfig();
-    const unsigned int numOffsprings = config.get<const unsigned int>(
-                                         "num_offsprings_per_generation");
-    std::vector<Solution> generation;
-    for (size_t i = 0; i < numOffsprings; i++) {
-      generation.push_back(this->generateRandomSolution());
-    }
-
-    for (auto& solution : generation) {
-      this->computeSolutionCost(solution);
-    }
-
-    return generation;
-  }
-
-  Solution Timetabler::generateRandomSolution()
-  {
-    std::vector<size_t> classGroups;
-    std::unordered_map<size_t, std::unordered_set<ds::Class*>>
-      classGroupsToClassesMap;
-    for (const auto item : this->dataManager.getClassGroups()) {
-      auto clsGroup = item.first;
-      auto classes = item.second;
-      for (auto* const cls : classes) {
-        cls->day = 0;
-        cls->timeslot = 0;
-      }
-
-      classGroups.push_back(clsGroup);
-      classGroupsToClassesMap.insert({clsGroup, classes});
-    }
-
-    Solution solution{classGroups, classGroupsToClassesMap};
-    for (size_t i = 0; i < classGroups.size(); i++) {
-      this->applySimpleMove(solution);
-    }
-
-    return solution;
-  }
 
   void Timetabler::assignTeachersToClasses()
   {
@@ -148,6 +108,99 @@ namespace upvtc_ct::timetabler
         cls->teacher = selectedTeacher;
       }
     }
+  }
+
+  Solution Timetabler::crossOverSolutions(Solution& parentA, Solution& parentB)
+  {
+    std::random_device randDevice;
+    std::mt19937 mt{randDevice()};
+
+    std::uniform_int_distribution<int> parentDistrib{0, 1};
+    Solution child = this->generateEmptySolution();
+    for (const auto& [classGroup, _] : this->dataManager.getClassGroups()) {
+      Solution* inheriterParent;
+      const int parentSelection = parentDistrib(mt);
+      if (parentSelection == 0) {
+        inheriterParent = &parentA;
+      } else {
+        inheriterParent = &parentB;
+      }
+
+      auto day = inheriterParent->getClassDay(classGroup);
+      auto timeslot = inheriterParent->getClassTimeslot(classGroup);
+      child.changeClassDay(classGroup, day);
+      child.changeClassTimeslot(classGroup, timeslot);
+    }
+
+    return child;
+  }
+
+  void mutateSolution(Solution& solution)
+  {
+    std::random_device randDevice;
+    std::mt19937 mt{randDevice()};
+
+    using std::function<void(Solution&)> = mutatorFunc;
+    std::vector<mutatorFunc> mutators{this->applySimpleMove,
+                                      this->applySimpleSwap};
+    const unsigned int numMutators = mutators.size();
+    std::uniform_int_distribution<int> mutatorDistrib{0, numMutators - 1};
+    const size_t mutatorIndex = mutatorDistrib(mt);
+
+    mutatorFunc mutator = mutators[mutatorIndex];
+    mutator(solution);
+  }
+
+  std::vector<Solution> Timetabler::generateInitialGeneration()
+  {
+    const utils::Config& config = this->dataManager.getConfig();
+    const unsigned int numOffsprings = config.get<const unsigned int>(
+                                         "num_offsprings_per_generation");
+    std::vector<Solution> generation;
+    for (size_t i = 0; i < numOffsprings; i++) {
+      generation.push_back(this->generateRandomSolution());
+    }
+
+    for (auto& solution : generation) {
+      this->computeSolutionCost(solution);
+    }
+
+    std::sort(generation.begin(), generation.end(),
+              [] (Solution& sA, Solution& sB) {
+                return sA.getCost() < sB.getCost();
+              });
+
+    return generation;
+  }
+
+  Solution Timetabler::generateRandomSolution()
+  {
+    Solution solution = this->generateEmptySolution();
+    for (size_t i = 0; i < classGroups.size(); i++) {
+      this->applySimpleMove(solution);
+    }
+
+    return solution;
+  }
+
+  Solution Timetabler::generateEmptySolution()
+  {
+    std::vector<size_t> classGroups;
+    std::unordered_map<size_t, std::unordered_set<ds::Class*>>
+      classGroupsToClassesMap;
+    for (const auto item : this->dataManager.getClassGroups()) {
+      auto clsGroup = item.first;
+      auto classes = item.second;
+      for (auto* const cls : classes) {
+        cls->day = 0;
+        cls->timeslot = 0;
+      }
+
+      classGroups.push_back(clsGroup);
+      classGroupsToClassesMap.insert({clsGroup, classes});
+    }
+
+    return {classGroups, classGroupsToClassesMap};
   }
 
   void Timetabler::computeSolutionCost(Solution& solution)

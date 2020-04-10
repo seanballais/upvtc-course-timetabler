@@ -343,6 +343,8 @@ namespace upvtc_ct::utils
                        configData, "num_offsprings_per_generation"));
     config.addConfig("mutation_rate",
                      toml::find<const float>(configData, "mutation_rate"));
+    config.addConfig("crossover_rate",
+                     toml::find<const float>(configData, "crossover_rate"));
   }
 
   const std::unordered_set<ds::Course*>
