@@ -2,6 +2,7 @@
 
 #include <upvtc_ct/ds/models.hpp>
 #include <upvtc_ct/preprocessor/preprocessor.hpp>
+#include <upvtc_ct/timetabler/timetabler.hpp>
 #include <upvtc_ct/utils/data_manager.hpp>
 
 int main(int argc, char* argv[])
@@ -263,6 +264,11 @@ int main(int argc, char* argv[])
   std::cout << "Number of Classes with Conflicts: "
             << numClassesWithConflicts << std::endl;
   std::cout << "-----------------------------------" << std::endl;
+
+  std::cout << "Timetabling Time!" << std::endl;
+
+  upvtc_ct::timetabler::Timetabler timetabler{dm};
+  timetabler.findBestSolutionWithSimpleGA();
 
   return 0;
 }

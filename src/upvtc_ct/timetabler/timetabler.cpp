@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -24,6 +25,8 @@ namespace upvtc_ct::timetabler
 
   Solution Timetabler::findBestSolutionWithSimpleGA()
   {
+    std::cout << "Finding best timetable with a simple genetic algorithm..."
+              << std::endl;
     this->assignTeachersToClasses();
     auto generation = this->generateInitialGeneration();
 
@@ -32,11 +35,22 @@ namespace upvtc_ct::timetabler
                                           "num_generations");
 
     for (int i = 0; i < numGenerations; i++) {
+      std::cout << "|::| Generation #" << i + 1 << " Costs" << std::endl;
+      std::cout << "  ";
+      for (Solution& solution : generation) {
+        std::cout << solution.getCost() << " ";
+      }
+      std::cout << std::endl << std::endl;
+
+      std::cout << ":: Generation #" << i + 2 <<  std::endl;
       Solution* solutionA = &(this->tournamentSelection(generation, 2));
       Solution* solutionB = nullptr;
       do {
         solutionB = &(this->tournamentSelection(generation, 2));
       } while (solutionB == solutionA);
+
+      std::cout << "\tParent A Cost: " << solutionA->getCost() << std::endl;
+      std::cout << "\tParent B Cost: " << solutionB->getCost() << std::endl;
 
       const float crossoverRate = config.get<const float>("crossover_rate");
 
@@ -69,6 +83,8 @@ namespace upvtc_ct::timetabler
         this->mutateSolution(child);
       }
 
+      this->computeSolutionCost(child);
+
       int worstSolutionIndex = 0;
       long worstCost = 0;
       for (size_t i = 0; i < generation.size(); i++) {
@@ -78,7 +94,20 @@ namespace upvtc_ct::timetabler
         }
       }
 
-      generation[worstSolutionIndex] = child;
+      if (generation[worstSolutionIndex].getCost() > child.getCost()) {
+        generation[worstSolutionIndex] = child;
+      }
+
+      std::cout << "|| Child Cost: " << child.getCost() << std::endl;
+
+      long total = 0;
+      for (Solution& solution : generation) {
+        total += solution.getCost();
+      }
+
+      double averageCost = static_cast<double>(total)
+                           / static_cast<double>(generation.size());
+      std::cout << "|| Average Generation Cost: " << averageCost << std::endl;
     }
 
     Solution* bestSolution = nullptr;
@@ -88,6 +117,8 @@ namespace upvtc_ct::timetabler
         bestSolution = &solution;
       }
     }
+
+    std::cout << "Best solution cost: " << bestSolution->getCost() << std::endl;
 
     return *bestSolution;
   }
@@ -131,8 +162,8 @@ namespace upvtc_ct::timetabler
             currTeacherLoads.insert({tB, 0.f});
           }
 
-          const float tALoad = itemA->second;
-          const float tBLoad = itemB->second;
+          const float tALoad = currTeacherLoads[tA];
+          const float tBLoad = currTeacherLoads[tB];
 
           return tALoad < tBLoad;
       });
@@ -147,8 +178,10 @@ namespace upvtc_ct::timetabler
       auto* const teacherKey = candidateTeachers[0];
       const float smallestLoad = currTeacherLoads[teacherKey];
       const float courseLoad = sampleClass->course->numUnits;
+
       std::vector<ds::Teacher*> possibleTeachers;
       for (auto* const teacher : candidateTeachers) {
+        std::cout << "\t" << teacher->name << std::endl;
         const float currTeacherLoad = currTeacherLoads[teacher];
         const float newTeacherLoad = courseLoad + currTeacherLoad;
         const float prevTeacherLoad = teacher->previousLoad;
@@ -162,6 +195,13 @@ namespace upvtc_ct::timetabler
         } else if (currTeacherLoad > smallestLoad) {
           break;
         }
+      }
+
+      if (possibleTeachers.empty()) {
+        // TODO: Turn this into an exception.
+        const std::string courseName = sampleClass->course->name;
+        std::cout << "ERROR! Too few teachers available for " << courseName
+                  << "." << std::endl;
       }
 
       // Now select a first teacher in the list.
@@ -318,7 +358,8 @@ namespace upvtc_ct::timetabler
     std::uniform_int_distribution<int> classGrpDistrib{
       0, static_cast<int>(numClassGroups - 1)};
 
-    size_t classGroup = classGrpDistrib(mt);
+    size_t classGroupIndex = classGrpDistrib(mt);
+    const size_t classGroup = classGroups[classGroupIndex];
 
     const utils::Config& config = this->dataManager.getConfig();
     const unsigned int numUniqueDays = config.get<const unsigned int>(
@@ -351,13 +392,16 @@ namespace upvtc_ct::timetabler
     std::random_device randDevice;
     std::mt19937 mt{randDevice()};
 
-    size_t classGroupA = distribution(mt);
+    size_t classGroupAIndex = distribution(mt);
+    size_t classGroupA = classGroups[classGroupAIndex];
 
     // Make sure solutionBIndex is not the same as solutionAIndex.
-    size_t classGroupB;
+    size_t classGroupBIndex;
     do {
-      classGroupB = distribution(mt);
-    } while (classGroupB == classGroupA);
+      classGroupBIndex = distribution(mt);
+    } while (classGroupBIndex == classGroupAIndex);
+
+    size_t classGroupB = classGroups[classGroupBIndex];
 
     unsigned int tempDay = solution.getClassDay(classGroupA);
     unsigned int tempTimeslot = solution.getClassTimeslot(classGroupA);

@@ -28,6 +28,35 @@
         "timeslot": 0
       }
     ]
+  },
+  {
+    "name": "Maria",
+    "previous_load": 12,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 0
+      }
+    ]
+  },
+  {
+    "name": "Bob",
+    "previous_load": 12,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 0
+      }
+    ]
+  },
+  {
+    "name": "Josephine",
+    "previous_load": 12,
+    "unpreferred_timeslots": [
+      {
+        "day": 0,
+        "timeslot": 0
+      }
+    ]
   }
 ]
-

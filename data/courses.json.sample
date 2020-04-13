@@ -44,7 +44,9 @@
     "room_requirements": [],
     "candidate_teachers": [
       "Emmanuel",
-      "Pedro"
+      "Pedro",
+      "Maria",
+      "Bob"
     ]
   },
   {
@@ -60,7 +62,9 @@
     "candidate_teachers": [
       "Emmanuel",
       "Juan",
-      "Pedro"
+      "Pedro",
+      "Maria",
+      "Josephine"
     ]
   },
   {
@@ -76,7 +80,9 @@
     "lab_requirements": [ "Computers" ],
     "candidate_teachers": [
       "Juan",
-      "Pedro"
+      "Pedro",
+      "Maria",
+      "Bob"
     ]
   },
   {
@@ -91,7 +97,9 @@
     "room_requirements": [],
     "candidate_teachers": [
       "Juan",
-      "Pedro"
+      "Pedro",
+      "Maria",
+      "Josephine"
     ]
   },
   {
@@ -107,7 +115,10 @@
     "lab_requirements": [ "Physics Lab" ],
     "candidate_teachers": [
       "Emmanuel",
-      "Juan"
+      "Juan",
+      "Maria",
+      "Josephine",
+      "Bob"
     ]
   }
 ]

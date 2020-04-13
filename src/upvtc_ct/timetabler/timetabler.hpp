@@ -20,10 +20,9 @@ namespace upvtc_ct::timetabler
   {
   public:
     Timetabler(utils::DataManager& dataManager);
-
-  private:
     Solution findBestSolutionWithSimpleGA();
 
+  private:
     void assignTeachersToClasses();
     Solution& tournamentSelection(std::vector<Solution>& pop, const int k);
 
