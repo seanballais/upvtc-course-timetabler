@@ -23,11 +23,74 @@ namespace upvtc_ct::timetabler
     , discouragedTimeslots({0, 1, 9, 10, 11, 21, 22, 23}) {}
 
   Solution Timetabler::findBestSolutionWithSimpleGA()
-  [
+  {
     this->assignTeachersToClasses();
     auto generation = this->generateInitialGeneration();
 
-  ]
+    const utils::Config& config = this->dataManager.getConfig();
+    const unsigned int numGenerations = config.get<const unsigned int>(
+                                          "num_generations");
+
+    for (int i = 0; i < numGenerations; i++) {
+      Solution* solutionA = &(this->tournamentSelection(generation, 2));
+      Solution* solutionB = nullptr;
+      do {
+        solutionB = &(this->tournamentSelection(generation, 2));
+      } while (solutionB == solutionA);
+
+      const float crossoverRate = config.get<const float>("crossover_rate");
+
+      std::default_random_engine randGen;
+      std::uniform_real_distribution<float> realDistrib{0.f, 1.f};
+
+      Solution child = this->generateEmptySolution();
+
+      float crossoverChance = realDistrib(randGen);
+      if (crossoverChance <= crossoverRate) {
+        child = this->crossOverSolutions(*solutionA, *solutionB);
+      } else {
+        // No crossover, so let's just clone one of the parents.
+        std::uniform_int_distribution<int> intDistrib{0, 1};
+        Solution* baseParent = nullptr;
+        int parentIndex = intDistrib(randGen);
+        if (parentIndex == 0) {
+          baseParent = solutionA;
+        } else {
+          baseParent = solutionB;
+        }
+
+        child = *baseParent;
+      }
+
+      const float mutationRate = config.get<const float>("mutation_rate");
+
+      float mutationChance = realDistrib(randGen);
+      if (mutationChance <= mutationRate) {
+        this->mutateSolution(child);
+      }
+
+      int worstSolutionIndex = 0;
+      long worstCost = 0;
+      for (size_t i = 0; i < generation.size(); i++) {
+        if (generation[i].getCost() > worstCost) {
+          worstSolutionIndex = i;
+          worstCost = generation[i].getCost();
+        }
+      }
+
+      generation[worstSolutionIndex] = child;
+    }
+
+    Solution* bestSolution = nullptr;
+    for (Solution& solution : generation) {
+      if (bestSolution == nullptr
+          || solution.getCost() < bestSolution->getCost()) {
+        bestSolution = &solution;
+      }
+    }
+
+    return *bestSolution;
+  }
 
   void Timetabler::assignTeachersToClasses()
   {
@@ -110,6 +173,34 @@ namespace upvtc_ct::timetabler
     }
   }
 
+  Solution& Timetabler::tournamentSelection(std::vector<Solution>& pop,
+                                            const int k)
+  {
+    Solution* best = nullptr;
+
+    std::random_device randDevice;
+    std::mt19937 mt{randDevice()};
+
+    std::uniform_int_distribution<size_t> popDistrib{0, pop.size() - 1};
+
+    std::unordered_set<int> selectedIndexes;
+    for (int i = 0; i < k ; i++) {
+      size_t selectedIndex;
+      do {
+        selectedIndex = popDistrib(mt);
+      } while (selectedIndexes.find(selectedIndex) != selectedIndexes.end());
+
+      selectedIndexes.insert(selectedIndex);
+
+      Solution& selectedSolution = pop[selectedIndex];
+      if (best == nullptr || selectedSolution.getCost() > best->getCost()) {
+        best = &selectedSolution;
+      }
+    }
+
+    return *best;
+  }
+
   Solution Timetabler::crossOverSolutions(Solution& parentA, Solution& parentB)
   {
     std::random_device randDevice;
@@ -135,19 +226,21 @@ namespace upvtc_ct::timetabler
     return child;
   }
 
-  void mutateSolution(Solution& solution)
+  void Timetabler::mutateSolution(Solution& solution)
   {
     std::random_device randDevice;
     std::mt19937 mt{randDevice()};
 
-    using std::function<void(Solution&)> = mutatorFunc;
-    std::vector<mutatorFunc> mutators{this->applySimpleMove,
-                                      this->applySimpleSwap};
-    const unsigned int numMutators = mutators.size();
-    std::uniform_int_distribution<int> mutatorDistrib{0, numMutators - 1};
+    typedef std::function<void(Solution&)> mutatorFunc;
+    std::vector<mutatorFunc> mutators{
+      [this] (Solution& solution) { this->applySimpleMove(solution); },
+      [this] (Solution& solution) { this->applySimpleSwap(solution); }
+    };
+    const size_t numMutators = mutators.size();
+    std::uniform_int_distribution<size_t> mutatorDistrib{0, numMutators - 1};
     const size_t mutatorIndex = mutatorDistrib(mt);
 
-    mutatorFunc mutator = mutators[mutatorIndex];
+    auto mutator = mutators[mutatorIndex];
     mutator(solution);
   }
 
@@ -176,7 +269,7 @@ namespace upvtc_ct::timetabler
   Solution Timetabler::generateRandomSolution()
   {
     Solution solution = this->generateEmptySolution();
-    for (size_t i = 0; i < classGroups.size(); i++) {
+    for (size_t i = 0; i < solution.getClassGroups().size(); i++) {
       this->applySimpleMove(solution);
     }
 
@@ -465,6 +558,12 @@ namespace upvtc_ct::timetabler
     }
   }
 
+  Solution::Solution(const Solution& rhs)
+    : classGroups(rhs.classGroups)
+    , classes(rhs.classes)
+    , classGroupsToClassesMap(rhs.classGroupsToClassesMap)
+    , cost(rhs.cost) {}
+
   std::vector<size_t>& Solution::getClassGroups()
   {
     return this->classGroups;
@@ -535,7 +634,7 @@ namespace upvtc_ct::timetabler
     }
   }
 
-  int Solution::getCost() const
+  long Solution::getCost() const
   {
     return this->cost;
   }

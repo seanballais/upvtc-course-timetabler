@@ -25,9 +25,10 @@ namespace upvtc_ct::timetabler
     Solution findBestSolutionWithSimpleGA();
 
     void assignTeachersToClasses();
+    Solution& tournamentSelection(std::vector<Solution>& pop, const int k);
 
     Solution crossOverSolutions(Solution& parentA, Solution& parentB);
-    void mutateSolution(Solutoin& solution);
+    void mutateSolution(Solution& solution);
 
     void computeSolutionCost(Solution& solution);
     std::vector<Solution> generateInitialGeneration();
@@ -54,6 +55,7 @@ namespace upvtc_ct::timetabler
     Solution(const std::vector<size_t> classGroups,
              const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
                classGroupsToClassesMap);
+    Solution(const Solution& rhs);
     std::vector<size_t>& getClassGroups();
     std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
     std::vector<ds::Class*>& getAllClasses();
@@ -61,7 +63,7 @@ namespace upvtc_ct::timetabler
     const unsigned int getClassDay(const size_t classGroup);
     const unsigned int getClassTimeslot(const size_t classGroup);
 
-    int getCost() const;
+    long getCost() const;
 
     void setCost(const int cost);
     void changeClassTeacher(const size_t classGroup,
