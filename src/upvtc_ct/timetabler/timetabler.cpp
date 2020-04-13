@@ -38,7 +38,24 @@ namespace upvtc_ct::timetabler
       std::cout << "|::| Generation #" << i + 1 << " Costs" << std::endl;
       std::cout << "  ";
       for (Solution& solution : generation) {
+        std::cout << "####################" << std::endl;
         std::cout << solution.getCost() << " ";
+
+        for (size_t classGrp : solution.getClassGroups()) {
+          auto* sampleClass = *(solution.getClasses(classGrp).begin());
+          const std::string courseName = sampleClass->course->name;
+          const std::string teacherName = sampleClass->teacher->name;
+          const unsigned int day = sampleClass->day;
+          const unsigned int timeslot = sampleClass->timeslot;
+
+          std::cout << "Solution Details" << std::endl;
+          std::cout << "  Course: " << courseName << std::endl;
+          std::cout << "  Teacher: " << teacherName << std::endl;
+          std::cout << "  Day: " << day << std::endl;
+          std::cout << "  Timeslot: " << timeslot << std::endl;
+        }
+
+        std::cout << "####################" << std::endl;
       }
       std::cout << std::endl << std::endl;
 
@@ -338,11 +355,21 @@ namespace upvtc_ct::timetabler
 
   void Timetabler::computeSolutionCost(Solution& solution)
   {
-    int cost = (this->getHC0Cost(solution) * 100)
-               + (this->getHC1Cost(solution) * 100)
-               + (this->getHC2Cost(solution) * 100)
-               + this->getSC0Cost(solution)
-               + this->getSC1Cost(solution);
+    int hc0Cost = this->getHC0Cost(solution) * 100;
+    int hc1Cost = this->getHC1Cost(solution) * 100;
+    int hc2Cost = this->getHC2Cost(solution) * 100;
+    int sc0Cost = this->getSC0Cost(solution);
+    int sc1Cost = this->getSC1Cost(solution);
+    int cost = hc0Cost + hc1Cost + hc2Cost + sc0Cost + sc1Cost;
+
+    std::cout << "Cost:" << std::endl;
+    std::cout << "-----" << std::endl;
+    std::cout << "HC 0: " << hc0Cost << std::endl;
+    std::cout << "HC 1: " << hc1Cost << std::endl;
+    std::cout << "HC 2: " << hc2Cost << std::endl;
+    std::cout << "SC 0: " << sc0Cost << std::endl;
+    std::cout << "SC 1: " << sc1Cost << std::endl;
+
     solution.setCost(cost);
   }
 
