@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -37,26 +38,6 @@ namespace upvtc_ct::timetabler
     for (int i = 0; i < numGenerations; i++) {
       std::cout << "|::| Generation #" << i + 1 << " Costs" << std::endl;
       std::cout << "  ";
-      for (Solution& solution : generation) {
-        std::cout << "####################" << std::endl;
-        std::cout << solution.getCost() << " ";
-
-        for (size_t classGrp : solution.getClassGroups()) {
-          auto* sampleClass = *(solution.getClasses(classGrp).begin());
-          const std::string courseName = sampleClass->course->name;
-          const std::string teacherName = sampleClass->teacher->name;
-          const unsigned int day = sampleClass->day;
-          const unsigned int timeslot = sampleClass->timeslot;
-
-          std::cout << "Solution Details" << std::endl;
-          std::cout << "  Course: " << courseName << std::endl;
-          std::cout << "  Teacher: " << teacherName << std::endl;
-          std::cout << "  Day: " << day << std::endl;
-          std::cout << "  Timeslot: " << timeslot << std::endl;
-        }
-
-        std::cout << "####################" << std::endl;
-      }
       std::cout << std::endl << std::endl;
 
       std::cout << ":: Generation #" << i + 2 <<  std::endl;
@@ -74,7 +55,7 @@ namespace upvtc_ct::timetabler
       std::default_random_engine randGen;
       std::uniform_real_distribution<float> realDistrib{0.f, 1.f};
 
-      Solution child = this->generateEmptySolution();
+      Solution child{this->generateEmptySolution()};
 
       float crossoverChance = realDistrib(randGen);
       if (crossoverChance <= crossoverRate) {
@@ -198,7 +179,6 @@ namespace upvtc_ct::timetabler
 
       std::vector<ds::Teacher*> possibleTeachers;
       for (auto* const teacher : candidateTeachers) {
-        std::cout << "\t" << teacher->name << std::endl;
         const float currTeacherLoad = currTeacherLoads[teacher];
         const float newTeacherLoad = courseLoad + currTeacherLoad;
         const float prevTeacherLoad = teacher->previousLoad;
@@ -312,7 +292,24 @@ namespace upvtc_ct::timetabler
     }
 
     for (auto& solution : generation) {
-      this->computeSolutionCost(solution);
+      std::cout << "####################" << std::endl;
+      std::cout << "Cost: " << solution.getCost() << std::endl;
+
+      for (size_t classGrp : solution.getClassGroups()) {
+        auto* sampleClass = *(solution.getClasses(classGrp).begin());
+        const std::string courseName = sampleClass->course->name;
+        const std::string teacherName = sampleClass->teacher->name;
+        const unsigned int day = sampleClass->day;
+        const unsigned int timeslot = sampleClass->timeslot;
+
+        std::cout << "Class Group Details" << std::endl;
+        std::cout << "  Course: " << courseName << std::endl;
+        std::cout << "  Teacher: " << teacherName << std::endl;
+        std::cout << "  Day: " << day << std::endl;
+        std::cout << "  Timeslot: " << timeslot << std::endl;
+      }
+
+      std::cout << "####################" << std::endl;
     }
 
     std::sort(generation.begin(), generation.end(),
@@ -330,27 +327,14 @@ namespace upvtc_ct::timetabler
       this->applySimpleMove(solution);
     }
 
+    this->computeSolutionCost(solution);
+
     return solution;
   }
 
   Solution Timetabler::generateEmptySolution()
   {
-    std::vector<size_t> classGroups;
-    std::unordered_map<size_t, std::unordered_set<ds::Class*>>
-      classGroupsToClassesMap;
-    for (const auto item : this->dataManager.getClassGroups()) {
-      auto clsGroup = item.first;
-      auto classes = item.second;
-      for (auto* const cls : classes) {
-        cls->day = 0;
-        cls->timeslot = 0;
-      }
-
-      classGroups.push_back(clsGroup);
-      classGroupsToClassesMap.insert({clsGroup, classes});
-    }
-
-    return {classGroups, classGroupsToClassesMap};
+    return {this->dataManager.getClassGroups()};
   }
 
   void Timetabler::computeSolutionCost(Solution& solution)
@@ -615,25 +599,96 @@ namespace upvtc_ct::timetabler
   }
 
   Solution::Solution(
-      const std::vector<size_t> classGroups,
       const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
         classGroupsToClassesMap)
-      : classGroups(classGroups)
-      , classGroupsToClassesMap(classGroupsToClassesMap)
-      , cost(0)
+      : cost(0)
   {
-    for (const size_t classGroup : this->getClassGroups()) {
-      for (auto* const cls : this->getClasses(classGroup)) {
-        this->classes.push_back(cls);
+    for (const auto& [classGroup, classes] : classGroupsToClassesMap) {
+      this->classGroups.push_back(classGroup);
+      for (auto* const cls : classes) {
+        auto clsObj{std::make_unique<ds::Class>(cls->id, cls->classID,
+                                                cls->course, cls->teacher,
+                                                0, cls->room, 0)};
+        auto* clsObjPtr = clsObj.get();
+        
+        auto item = this->classGroupsToClassesMap.find(classGroup);
+        if (item == this->classGroupsToClassesMap.end()) {
+          this->classGroupsToClassesMap.insert({classGroup, {}});
+        }
+
+        this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
+
+        this->classPtrs.push_back(clsObjPtr);
+        this->classes.push_back(std::move(clsObj));
       }
     }
   }
 
   Solution::Solution(const Solution& rhs)
-    : classGroups(rhs.classGroups)
-    , classes(rhs.classes)
-    , classGroupsToClassesMap(rhs.classGroupsToClassesMap)
-    , cost(rhs.cost) {}
+      : classGroups(rhs.classGroups)
+      , cost(rhs.cost)
+  {
+    for (const auto& [classGroup, classes] : rhs.classGroupsToClassesMap) {
+      for (auto* const cls : classes) {
+        auto clsObj{std::make_unique<ds::Class>(cls->id, cls->classID,
+                                                cls->course, cls->teacher,
+                                                cls->day, cls->room,
+                                                cls->timeslot)};
+        auto* clsObjPtr = clsObj.get();
+        
+        auto item = this->classGroupsToClassesMap.find(classGroup);
+        if (item == this->classGroupsToClassesMap.end()) {
+          this->classGroupsToClassesMap.insert({classGroup, {}});
+        }
+
+        this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
+
+        this->classPtrs.push_back(clsObjPtr);
+        this->classes.push_back(std::move(clsObj));
+      }
+    }
+  }
+
+  Solution::Solution(Solution&& rhs)
+      : classGroups(rhs.classGroups)
+      , classPtrs(rhs.classPtrs)
+      , classGroupsToClassesMap(classGroupsToClassesMap)
+      , classes(std::move(rhs.classes))
+      , cost(rhs.cost)
+  {
+    rhs.classGroups.clear();
+    rhs.classPtrs.clear();
+    rhs.classGroupsToClassesMap.clear();
+    rhs.classes.clear();
+    rhs.cost = 0;
+  }
+
+  Solution& Solution::operator=(const Solution& rhs)
+  {
+    this->cost = rhs.cost;
+    for (const auto& [classGroup, classes] : rhs.classGroupsToClassesMap) {
+      this->classGroups.push_back(classGroup);
+      for (auto* const cls : classes) {
+        auto clsObj{std::make_unique<ds::Class>(cls->id, cls->classID,
+                                                cls->course, cls->teacher,
+                                                cls->day, cls->room,
+                                                cls->timeslot)};
+        auto* clsObjPtr = clsObj.get();
+        
+        auto item = this->classGroupsToClassesMap.find(classGroup);
+        if (item == this->classGroupsToClassesMap.end()) {
+          this->classGroupsToClassesMap.insert({classGroup, {}});
+        }
+
+        this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
+
+        this->classPtrs.push_back(clsObjPtr);
+        this->classes.push_back(std::move(clsObj));
+      }
+    }
+
+    return *this;
+  }
 
   std::vector<size_t>& Solution::getClassGroups()
   {
@@ -654,7 +709,7 @@ namespace upvtc_ct::timetabler
 
   std::vector<ds::Class*>& Solution::getAllClasses()
   {
-    return this->classes;
+    return this->classPtrs;
   }
 
   const unsigned int Solution::getClassDay(const size_t classGroup)

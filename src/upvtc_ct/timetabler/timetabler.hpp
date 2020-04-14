@@ -1,6 +1,7 @@
 #ifndef UPVTC_CT_TIMETABLER_TIMETABLER
 #define UPVTC_CT_TIMETABLER_TIMETABLER
 
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -49,12 +50,14 @@ namespace upvtc_ct::timetabler
 
   class Solution
   {
-    // TODO: Add solution cost member.
   public:
-    Solution(const std::vector<size_t> classGroups,
-             const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
+    Solution(const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
                classGroupsToClassesMap);
     Solution(const Solution& rhs);
+    Solution(Solution&& rhs);
+
+    Solution& operator=(const Solution& rhs);
+
     std::vector<size_t>& getClassGroups();
     std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
     std::vector<ds::Class*>& getAllClasses();
@@ -75,9 +78,11 @@ namespace upvtc_ct::timetabler
   private:
     int cost;
     std::vector<size_t> classGroups;
-    std::vector<ds::Class*> classes;
+    std::vector<ds::Class*> classPtrs;
     std::unordered_map<size_t, std::unordered_set<ds::Class*>>
       classGroupsToClassesMap;
+
+    std::vector<std::unique_ptr<ds::Class>> classes;
   };
 }
 #endif
