@@ -288,7 +288,7 @@ namespace upvtc_ct::timetabler
                                          "num_offsprings_per_generation");
     std::vector<Solution> generation;
     for (size_t i = 0; i < numOffsprings; i++) {
-      generation.push_back(this->generateRandomSolution());
+      generation.push_back(std::move(this->generateRandomSolution()));
     }
 
     for (auto& solution : generation) {
@@ -652,7 +652,7 @@ namespace upvtc_ct::timetabler
   Solution::Solution(Solution&& rhs)
       : classGroups(rhs.classGroups)
       , classPtrs(rhs.classPtrs)
-      , classGroupsToClassesMap(classGroupsToClassesMap)
+      , classGroupsToClassesMap(rhs.classGroupsToClassesMap)
       , classes(std::move(rhs.classes))
       , cost(rhs.cost)
   {
