@@ -1,4 +1,4 @@
-# Note that numbers are 0-indexed.
+# Note that some configuration items are 0-indexed.
 
 semester = 0
 num_unique_days = 3

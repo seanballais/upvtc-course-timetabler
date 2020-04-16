@@ -244,8 +244,8 @@ namespace upvtc_ct::ds
   struct Class
   {
     Class(const size_t id, const size_t classID, Course* const course,
-          Teacher* const teacher, const unsigned int day, Room* const room,
-          const unsigned int timeslot);
+          Teacher* const teacher, const int day, Room* const room,
+          const int timeslot);
     bool operator==(const Class& c) const;
 
     const size_t id; // Used to identify different classes from one another.
@@ -253,9 +253,9 @@ namespace upvtc_ct::ds
                           // same class.
     Course* const course;
     Teacher* teacher;
-    unsigned int day;
+    int day;
     Room* room;
-    unsigned int timeslot;
+    int timeslot;
   };
 
   class ClassHashFunction

@@ -161,7 +161,7 @@ namespace upvtc_ct::preprocessor
     for (int ctr = 0; ctr < numTimeslots; ctr++) {
       std::unique_ptr<ds::Class> clsPtr(
       std::make_unique<ds::Class>(idStart + ctr, classID, course, nullptr,
-                                  0, nullptr, 0));
+                                  -1, nullptr, -1));
       this->dataManager->addClass(std::move(clsPtr));
     }
   }

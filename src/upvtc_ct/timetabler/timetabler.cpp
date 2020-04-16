@@ -43,6 +43,25 @@ namespace upvtc_ct::timetabler
       }
       std::cout << std::endl << std::endl;
 
+      std::cout << "Number of Uninitialized Classes Per Solution: ";
+      for (auto& solution : generation) {
+        int numUninitializedClasses = 0;
+        for (auto& cls : solution.getAllClasses()) {
+          if (cls->day == -1 || cls->timeslot == -1) {
+            numUninitializedClasses++;
+          }
+        }
+
+        std::cout << numUninitializedClasses << " ";
+      }
+      std::cout << std::endl << std::endl;
+
+      std::cout << "Number of Class Groups Per Solution: ";
+      for (auto& solution : generation) {
+        std::cout << solution.getClassGroups().size() << " ";
+      }
+      std::cout << std::endl << std::endl;
+
       std::cout << ":: Generation #" << i + 2 <<  std::endl;
       Solution* solutionA = &(this->tournamentSelection(generation, 2));
       Solution* solutionB = nullptr;
@@ -62,6 +81,7 @@ namespace upvtc_ct::timetabler
 
       float crossoverChance = realDistrib(randGen);
       if (crossoverChance <= crossoverRate) {
+        std::cout << "Crossovered!" << std::endl;
         child = this->crossOverSolutions(*solutionA, *solutionB);
       } else {
         // No crossover, so let's just clone one of the parents.
@@ -69,8 +89,10 @@ namespace upvtc_ct::timetabler
         Solution* baseParent = nullptr;
         int parentIndex = intDistrib(randGen);
         if (parentIndex == 0) {
+          std::cout << "Copied Solution A." << std::endl;
           baseParent = solutionA;
         } else {
+          std::cout << "Copied Solution B." << std::endl;
           baseParent = solutionB;
         }
 
@@ -81,10 +103,27 @@ namespace upvtc_ct::timetabler
 
       float mutationChance = realDistrib(randGen);
       if (mutationChance <= mutationRate) {
+        std::cout << "Mutated!" << std::endl;
         this->mutateSolution(child);
       }
 
       this->computeSolutionCost(child);
+
+      int numChildUninitializedClasses = 0;
+      for (auto& cls : child.getAllClasses()) {
+        if (cls->day == -1 || cls->timeslot == -1) {
+          numChildUninitializedClasses++;
+        }
+      }
+
+      std::cout << "Child, No. of Unitialized Classes (Post-Mutation): "
+                << numChildUninitializedClasses << std::endl;
+
+      std::cout << "Number of Class Groups Per Solution (Post-Mutation): ";
+      for (auto& solution : generation) {
+        std::cout << solution.getClassGroups().size() << " ";
+      }
+      std::cout << std::endl << std::endl;
 
       int worstSolutionIndex = 0;
       long worstCost = 0;
@@ -248,6 +287,26 @@ namespace upvtc_ct::timetabler
 
     std::uniform_int_distribution<int> parentDistrib{0, 1};
     Solution child = this->generateEmptySolution();
+
+    int numParentUnitializedClasses = 0;
+    for (auto& cls : parentA.getAllClasses()) {
+      if (cls->day == -1 || cls->timeslot == -1) {
+        numParentUnitializedClasses++;
+      }
+    }
+
+    std::cout << "Parent A, No. of Uninitialized Classes: "
+              << numParentUnitializedClasses << std::endl;
+
+    numParentUnitializedClasses = 0;
+    for (auto& cls : parentB.getAllClasses()) {
+      if (cls->day == -1 || cls->timeslot == -1) {
+        numParentUnitializedClasses++;
+      }
+    }
+
+    std::cout << "Parent B, No. of Uninitialized Classes: "
+              << numParentUnitializedClasses << std::endl;
     for (const auto& [classGroup, _] : this->dataManager.getClassGroups()) {
       Solution* inheriterParent;
       const int parentSelection = parentDistrib(mt);
@@ -259,9 +318,20 @@ namespace upvtc_ct::timetabler
 
       auto day = inheriterParent->getClassDay(classGroup);
       auto timeslot = inheriterParent->getClassTimeslot(classGroup);
+
       child.changeClassDay(classGroup, day);
       child.changeClassTimeslot(classGroup, timeslot);
     }
+
+    int numChildUninitializedClasses = 0;
+    for (auto& cls : child.getAllClasses()) {
+      if (cls->day == -1 || cls->timeslot == -1) {
+        numChildUninitializedClasses++;
+      }
+    }
+
+    std::cout << "Child, No. of Unitialized Classes: "
+              << numChildUninitializedClasses << std::endl;
 
     return child;
   }
@@ -292,27 +362,6 @@ namespace upvtc_ct::timetabler
     std::vector<Solution> generation;
     for (size_t i = 0; i < numOffsprings; i++) {
       generation.push_back(std::move(this->generateRandomSolution()));
-    }
-
-    for (auto& solution : generation) {
-      std::cout << "####################" << std::endl;
-      std::cout << "Cost: " << solution.getCost() << std::endl;
-
-      for (size_t classGrp : solution.getClassGroups()) {
-        auto* sampleClass = *(solution.getClasses(classGrp).begin());
-        const std::string courseName = sampleClass->course->name;
-        const std::string teacherName = sampleClass->teacher->name;
-        const unsigned int day = sampleClass->day;
-        const unsigned int timeslot = sampleClass->timeslot;
-
-        std::cout << "Class Group Details" << std::endl;
-        std::cout << "  Course: " << courseName << std::endl;
-        std::cout << "  Teacher: " << teacherName << std::endl;
-        std::cout << "  Day: " << day << std::endl;
-        std::cout << "  Timeslot: " << timeslot << std::endl;
-      }
-
-      std::cout << "####################" << std::endl;
     }
 
     std::sort(generation.begin(), generation.end(),
@@ -377,6 +426,7 @@ namespace upvtc_ct::timetabler
 
   void Timetabler::applySimpleMove(Solution& solution)
   {
+    std::cout << "Applied a simple move." << std::endl;
     std::vector<size_t>& classGroups = solution.getClassGroups();
 
     const size_t numClassGroups = classGroups.size();
@@ -409,10 +459,20 @@ namespace upvtc_ct::timetabler
 
     solution.changeClassDay(classGroup, newDay);
     solution.changeClassTimeslot(classGroup, newTimeslot);
+
+    int numUninitializedClasses = 0;
+    for (auto& cls : solution.getAllClasses()) {
+      if (cls->day == -1 || cls->timeslot == -1) {
+        numUninitializedClasses++;
+      }
+    }
+
+    std::cout << numUninitializedClasses << std::endl;
   }
 
   void Timetabler::applySimpleSwap(Solution& solution)
   {
+    std::cout << "Applied a simple swap." << std::endl;
     std::vector<size_t>& classGroups = solution.getClassGroups();
 
     const size_t numClassGroups = classGroups.size();
@@ -439,6 +499,13 @@ namespace upvtc_ct::timetabler
                                  solution.getClassTimeslot(classGroupB));
     solution.changeClassDay(classGroupB, tempDay);
     solution.changeClassTimeslot(classGroupB, tempTimeslot);
+
+    int numUninitializedClasses = 0;
+    for (auto& cls : solution.getAllClasses()) {
+      if (cls->day == -1 || cls->timeslot == -1) {
+        numUninitializedClasses++;
+      }
+    }
   }
 
   int Timetabler::getHC0Cost(Solution& solution)
@@ -450,6 +517,7 @@ namespace upvtc_ct::timetabler
     // matter in typical usage of Solution objects. Doing so will also benefit
     // performance.
     auto classes = solution.getAllClasses();
+
     std::sort(classes.begin(), classes.end(),
               [] (const ds::Class* const clsA,
                   const ds::Class* const clsB) -> bool {
@@ -475,6 +543,7 @@ namespace upvtc_ct::timetabler
     // Hard Constraint 0
     // A teacher must not have classes that share timeslots.
     auto classes = solution.getAllClasses();
+
     std::sort(classes.begin(), classes.end(),
               [] (const ds::Class* const clsA,
                   const ds::Class* const clsB) -> bool {
@@ -505,6 +574,7 @@ namespace upvtc_ct::timetabler
     // Hard Constraint 2
     // A student must not have classes that share timeslots.
     auto classes = solution.getAllClasses();
+
     std::sort(classes.begin(), classes.end(),
               [] (const ds::Class* const clsA,
                   const ds::Class* const clsB) -> bool {
@@ -546,6 +616,7 @@ namespace upvtc_ct::timetabler
     // Note that we are assuming that all classes have been assigned a teacher
     // already.
     auto classes = solution.getAllClasses();
+
     int cost = 0;
     for (ds::Class* const cls : classes) {
       const unsigned int classDay = cls->day;
@@ -626,7 +697,7 @@ namespace upvtc_ct::timetabler
       for (auto* const cls : classes) {
         auto clsObj{std::make_unique<ds::Class>(cls->id, cls->classID,
                                                 cls->course, cls->teacher,
-                                                0, cls->room, 0)};
+                                                -1, cls->room, -1)};
         auto* clsObjPtr = clsObj.get();
         
         auto item = this->classGroupsToClassesMap.find(classGroup);
@@ -683,7 +754,13 @@ namespace upvtc_ct::timetabler
 
   Solution& Solution::operator=(const Solution& rhs)
   {
+    this->classGroups.clear();
+    this->classGroupsToClassesMap.clear();
+    this->classPtrs.clear();
+    this->classes.clear();
+
     this->cost = rhs.cost;
+
     for (const auto& [classGroup, classes] : rhs.classGroupsToClassesMap) {
       this->classGroups.push_back(classGroup);
       for (auto* const cls : classes) {
@@ -730,14 +807,14 @@ namespace upvtc_ct::timetabler
     return this->classPtrs;
   }
 
-  const unsigned int Solution::getClassDay(const size_t classGroup)
+  const int Solution::getClassDay(const size_t classGroup)
   {
     const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
     return cls->day;
   }
 
-  const unsigned int Solution::getClassTimeslot(const size_t classGroup)
+  const int Solution::getClassTimeslot(const size_t classGroup)
   {
     const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());

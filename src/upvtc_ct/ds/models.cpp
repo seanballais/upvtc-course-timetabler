@@ -208,8 +208,8 @@ namespace upvtc_ct::ds
   }
 
   Class::Class(const size_t id, const size_t classID, Course* const course,
-               Teacher* const teacher, const unsigned int day, Room* const room,
-               const unsigned int timeslot)
+               Teacher* const teacher, const int day, Room* const room,
+               const int timeslot)
     : id(id),
       classID(classID),
       course(course),

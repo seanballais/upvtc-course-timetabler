@@ -62,8 +62,8 @@ namespace upvtc_ct::timetabler
     std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
     std::vector<ds::Class*>& getAllClasses();
 
-    const unsigned int getClassDay(const size_t classGroup);
-    const unsigned int getClassTimeslot(const size_t classGroup);
+    const int getClassDay(const size_t classGroup);
+    const int getClassTimeslot(const size_t classGroup);
 
     long getCost() const;
 
