@@ -38,6 +38,9 @@ namespace upvtc_ct::timetabler
     for (int i = 0; i < numGenerations; i++) {
       std::cout << "|::| Generation #" << i + 1 << " Costs" << std::endl;
       std::cout << "  ";
+      for (auto& solution : generation) {
+        std::cout << solution.getCost() << " ";
+      }
       std::cout << std::endl << std::endl;
 
       std::cout << ":: Generation #" << i + 2 <<  std::endl;
@@ -322,9 +325,24 @@ namespace upvtc_ct::timetabler
 
   Solution Timetabler::generateRandomSolution()
   {
+    std::random_device randDevice;
+    std::mt19937 mt{randDevice()};
+
+    const utils::Config& config = this->dataManager.getConfig();
+    const unsigned int numUniqueDays = config.get<const unsigned int>(
+                                          "num_unique_days");
+    const unsigned int numTimeslots = config.get<const unsigned int>(
+                                          "num_timeslots");
+    std::uniform_int_distribution<int> daysDistrib(0, numUniqueDays - 1);
+    std::uniform_int_distribution<int> timeslotsDistrib(0, numTimeslots - 1);
+
     Solution solution = this->generateEmptySolution();
-    for (size_t i = 0; i < solution.getClassGroups().size(); i++) {
-      this->applySimpleMove(solution);
+    for (const size_t classGroup : solution.getClassGroups()) {
+      const unsigned int newDay = daysDistrib(mt);
+      const unsigned int newTimeslot = timeslotsDistrib(mt);
+
+      solution.changeClassDay(classGroup, newDay);
+      solution.changeClassTimeslot(classGroup, newTimeslot);
     }
 
     this->computeSolutionCost(solution);
