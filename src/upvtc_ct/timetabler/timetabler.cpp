@@ -1,5 +1,7 @@
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <climits>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -322,11 +324,10 @@ namespace upvtc_ct::timetabler
         inheriterParent = &parentB;
       }
 
-      auto day = inheriterParent->getClassDay(classGroup);
-      auto timeslot = inheriterParent->getClassTimeslot(classGroup);
-
-      child.changeClassDay(classGroup, day);
-      child.changeClassTimeslot(classGroup, timeslot);
+      auto newDay = inheriterParent->getClassDay(classGroup);
+      auto newTimeslot = inheriterParent->getClassStartingTimeslot(classGroup);
+      this->updateSolutionClassGroupDayAndTimeslot(child, classGroup, newDay,
+                                                   newTimeslot);
     }
 
     int numChildUninitializedClasses = 0;
@@ -395,9 +396,8 @@ namespace upvtc_ct::timetabler
     for (const size_t classGroup : solution.getClassGroups()) {
       const unsigned int newDay = daysDistrib(mt);
       const unsigned int newTimeslot = timeslotsDistrib(mt);
-
-      solution.changeClassDay(classGroup, newDay);
-      solution.changeClassTimeslot(classGroup, newTimeslot);
+      this->updateSolutionClassGroupDayAndTimeslot(solution, classGroup, newDay,
+                                                   newTimeslot);
     }
 
     this->computeSolutionCost(solution);
@@ -455,7 +455,8 @@ namespace upvtc_ct::timetabler
     std::uniform_int_distribution<int> timeslotsDistrib(0, numTimeslots - 1);
 
     const unsigned int prevDay = solution.getClassDay(classGroup);
-    const unsigned int prevTimeslot = solution.getClassTimeslot(classGroup);
+    const unsigned int prevTimeslot = solution.getClassStartingTimeslot(
+                                        classGroup);
     unsigned int newDay;
     unsigned int newTimeslot;
     do {
@@ -463,11 +464,11 @@ namespace upvtc_ct::timetabler
       newTimeslot = timeslotsDistrib(mt);
     } while (newDay == prevDay || newTimeslot == prevTimeslot);
 
-    solution.changeClassDay(classGroup, newDay);
-    solution.changeClassTimeslot(classGroup, newTimeslot);
+    this->updateSolutionClassGroupDayAndTimeslot(solution, classGroup, newDay,
+                                                 newTimeslot);
 
     int numUninitializedClasses = 0;
-    for (auto& cls : solution.getAllClasses()) {
+    for (auto* cls : solution.getAllClasses()) {
       if (cls->day == -1 || cls->timeslot == -1) {
         numUninitializedClasses++;
       }
@@ -499,12 +500,15 @@ namespace upvtc_ct::timetabler
     size_t classGroupB = classGroups[classGroupBIndex];
 
     unsigned int tempDay = solution.getClassDay(classGroupA);
-    unsigned int tempTimeslot = solution.getClassTimeslot(classGroupA);
-    solution.changeClassDay(classGroupA, solution.getClassDay(classGroupB));
-    solution.changeClassTimeslot(classGroupA,
-                                 solution.getClassTimeslot(classGroupB));
-    solution.changeClassDay(classGroupB, tempDay);
-    solution.changeClassTimeslot(classGroupB, tempTimeslot);
+    unsigned int tempTimeslot = solution.getClassStartingTimeslot(classGroupA);
+
+    this->updateSolutionClassGroupDayAndTimeslot(
+      solution, classGroupA,
+      solution.getClassDay(classGroupB),
+      solution.getClassStartingTimeslot(classGroupB));
+
+    this->updateSolutionClassGroupDayAndTimeslot(solution, classGroupB,
+                                                 tempDay, tempTimeslot);
 
     int numUninitializedClasses = 0;
     for (auto& cls : solution.getAllClasses()) {
@@ -624,7 +628,7 @@ namespace upvtc_ct::timetabler
     auto classes = solution.getAllClasses();
 
     int cost = 0;
-    for (ds::Class* const cls : classes) {
+    for (auto* cls : classes) {
       const unsigned int classDay = cls->day;
       const unsigned int classTimeslot = cls->timeslot;
       const auto& unpreferredTimeslots = cls->teacher->unpreferredTimeslots;
@@ -646,7 +650,7 @@ namespace upvtc_ct::timetabler
     auto classes = solution.getAllClasses();
     
     int cost = 0;
-    for (ds::Class* const cls : classes) {
+    for (auto* cls : classes) {
       auto item = this->discouragedTimeslots.find(cls->timeslot);
       if (item != this->discouragedTimeslots.end()) {
         // Class is given timeslots of which some or all are discouraged
@@ -693,11 +697,50 @@ namespace upvtc_ct::timetabler
     return cost;
   }
 
+  void Timetabler::updateSolutionClassGroupDayAndTimeslot(
+      Solution& solution,
+      const size_t classGroup,
+      const unsigned int newDay,
+      const unsigned int newTimeslot)
+  {
+    solution.changeClassDay(classGroup, newDay);
+
+    if (this->isDayDoubleTimeslot(newDay)
+        && !this->isDayDoubleTimeslot(solution.getClassDay(classGroup))) {
+      // New day is a double timeslot, and the previous day is not. So, we
+      // must double the classes of the current class group.
+      solution.increaseNumClassGroupClasses(
+        classGroup, solution.getClasses(classGroup).size());
+    } else if (!this->isDayDoubleTimeslot(newDay)
+               && this->isDayDoubleTimeslot(solution.getClassDay(classGroup))) {
+      // New day is not a double timeslot, and the previous day is. So, we
+      // must half the classes of the current class group.
+      solution.decreaseNumClassGroupClasses(
+        classGroup, solution.getClasses(classGroup).size());
+    }
+
+    solution.changeClassTimeslot(classGroup, newTimeslot);
+  }
+
+  bool Timetabler::isDayDoubleTimeslot(unsigned int day)
+  {
+    const utils::Config& config = this->dataManager.getConfig();
+    const auto& doubleTimeSlotDays = config
+                                       .get<const std::vector<unsigned int>>(
+                                         "days_with_double_timeslots");
+
+    const auto item = std::find(doubleTimeSlotDays.begin(),
+                                doubleTimeSlotDays.end(),
+                                day);
+    return item != doubleTimeSlotDays.end();
+  }
+
   Solution::Solution(
       const std::unordered_map<size_t, std::unordered_set<ds::Class*>>
         classGroupsToClassesMap)
-      : cost(0)
+      : cost(LONG_MAX)
   {
+    size_t classPtrIndex = 0;
     for (const auto& [classGroup, classes] : classGroupsToClassesMap) {
       this->classGroups.push_back(classGroup);
       for (auto* const cls : classes) {
@@ -712,9 +755,11 @@ namespace upvtc_ct::timetabler
         }
 
         this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
-
+        this->classPtrIndexMap[clsObjPtr] = classPtrIndex;
         this->classPtrs.push_back(clsObjPtr);
         this->classes.push_back(std::move(clsObj));
+
+        classPtrIndex++;
       }
     }
   }
@@ -723,6 +768,7 @@ namespace upvtc_ct::timetabler
       : classGroups(rhs.classGroups)
       , cost(rhs.cost)
   {
+    size_t classPtrIndex = 0;
     for (const auto& [classGroup, classes] : rhs.classGroupsToClassesMap) {
       for (auto* const cls : classes) {
         auto clsObj{std::make_unique<ds::Class>(cls->id, cls->classID,
@@ -737,25 +783,29 @@ namespace upvtc_ct::timetabler
         }
 
         this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
-
+        this->classPtrIndexMap[clsObjPtr] = classPtrIndex;
         this->classPtrs.push_back(clsObjPtr);
         this->classes.push_back(std::move(clsObj));
+
+        classPtrIndex++;
       }
     }
   }
 
   Solution::Solution(Solution&& rhs)
       : classGroups(rhs.classGroups)
-      , classPtrs(rhs.classPtrs)
       , classGroupsToClassesMap(rhs.classGroupsToClassesMap)
       , classes(std::move(rhs.classes))
+      , classPtrs(rhs.classPtrs)
+      , classPtrIndexMap(rhs.classPtrIndexMap)
       , cost(rhs.cost)
   {
     rhs.classGroups.clear();
-    rhs.classPtrs.clear();
     rhs.classGroupsToClassesMap.clear();
     rhs.classes.clear();
-    rhs.cost = 0;
+    rhs.classPtrs.clear();
+    rhs.classPtrIndexMap.clear();
+    rhs.cost = LONG_MAX;
   }
 
   Solution& Solution::operator=(const Solution& rhs)
@@ -763,10 +813,12 @@ namespace upvtc_ct::timetabler
     this->classGroups.clear();
     this->classGroupsToClassesMap.clear();
     this->classPtrs.clear();
+    this->classPtrIndexMap.clear();
     this->classes.clear();
 
     this->cost = rhs.cost;
 
+    size_t classPtrIndex = 0;
     for (const auto& [classGroup, classes] : rhs.classGroupsToClassesMap) {
       this->classGroups.push_back(classGroup);
       for (auto* const cls : classes) {
@@ -782,9 +834,11 @@ namespace upvtc_ct::timetabler
         }
 
         this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
-
+        this->classPtrIndexMap[clsObjPtr] = classPtrIndex;
         this->classPtrs.push_back(clsObjPtr);
         this->classes.push_back(std::move(clsObj));
+
+        classPtrIndex++;
       }
     }
 
@@ -813,6 +867,78 @@ namespace upvtc_ct::timetabler
     return this->classPtrs;
   }
 
+  void Solution::increaseNumClassGroupClasses(const size_t classGroup,
+                                              const int numAdditionalClasses)
+  {
+    // Find the first class in the specified class group, so that we can
+    // correctly determine what timeslot we will give the new class objects.
+    // Determining the other information doesn't need this process. Any class
+    // in the class group can be used to determine the day. Since we already
+    // have the first class, we can just simply use that for day determination.
+    ds::Class* firstClass = nullptr;
+    for (auto* cls : this->getClasses(classGroup)) {
+      if (firstClass == nullptr || cls->timeslot < firstClass->timeslot) {
+        firstClass = cls;
+      }
+    }
+
+    size_t classPtrIndex = this->classPtrs.size();
+    unsigned int currTimeslot = firstClass->timeslot + 1;
+    for (int i = 0; i < numAdditionalClasses; i++) {
+      auto clsObj{std::make_unique<ds::Class>(firstClass->id,
+                                              firstClass->classID,
+                                              firstClass->course,
+                                              firstClass->teacher,
+                                              firstClass->day,
+                                              firstClass->room,
+                                              currTimeslot)};
+      auto* clsObjPtr = clsObj.get();
+
+      this->classGroupsToClassesMap[classGroup].insert(clsObjPtr);
+      this->classPtrIndexMap[clsObjPtr] = classPtrIndex;
+      this->classPtrs.push_back(clsObjPtr);
+      this->classes.push_back(std::move(clsObj));
+
+      currTimeslot++;
+      classPtrIndex++;
+    }
+  }
+
+  void Solution::decreaseNumClassGroupClasses(const size_t classGroup,
+                                              const int numToBeRemovedClasses)
+  {
+    // We will delete the last classes, since they were not the original
+    // classes the class group had. They were only added after data generation.
+    ds::Class* toBeRemovedClasses[numToBeRemovedClasses] = {nullptr,
+                                                            nullptr,
+                                                            nullptr};
+    for (auto* cls : this->getClasses(classGroup)) {
+      if (toBeRemovedClasses[0] == nullptr
+          || toBeRemovedClasses[0]->timeslot < cls->timeslot) {
+        toBeRemovedClasses[2] = toBeRemovedClasses[1];
+        toBeRemovedClasses[1] = toBeRemovedClasses[0];
+        toBeRemovedClasses[0] = cls;
+      } else if (toBeRemovedClasses[1] == nullptr
+                 || toBeRemovedClasses[1]->timeslot < cls->timeslot) {
+        toBeRemovedClasses[2] = toBeRemovedClasses[1];
+        toBeRemovedClasses[1] = cls;
+      } else if (toBeRemovedClasses[2] == nullptr
+                 || toBeRemovedClasses[2]->timeslot < cls->timeslot) {
+        toBeRemovedClasses[2] = cls;
+      }
+    }
+
+    for (auto* cls : toBeRemovedClasses) {
+      this->classGroupsToClassesMap[classGroup].erase(cls);
+
+      const size_t classPtrIndex = this->classPtrIndexMap[cls];
+      this->classPtrs.erase(this->classPtrs.begin() + classPtrIndex);
+      this->classes.erase(this->classes.begin() + classPtrIndex);
+
+      this->classPtrIndexMap.erase(cls);
+    }
+  }
+
   const int Solution::getClassDay(const size_t classGroup)
   {
     const auto& classes = this->getClasses(classGroup);
@@ -820,7 +946,7 @@ namespace upvtc_ct::timetabler
     return cls->day;
   }
 
-  const int Solution::getClassTimeslot(const size_t classGroup)
+  const int Solution::getClassStartingTimeslot(const size_t classGroup)
   {
     const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
@@ -856,8 +982,11 @@ namespace upvtc_ct::timetabler
                                      const unsigned int timeslot)
   {
     auto& classes = this->getClasses(classGroup);
+
+    int currTimeslot = timeslot;
     for (ds::Class* cls : classes) {
-      cls->timeslot = timeslot;
+      cls->timeslot = currTimeslot;
+      currTimeslot++;
     }
   }
 

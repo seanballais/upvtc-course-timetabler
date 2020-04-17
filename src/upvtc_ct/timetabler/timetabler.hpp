@@ -44,6 +44,13 @@ namespace upvtc_ct::timetabler
     int getSC1Cost(Solution& solution);
     int getSC2Cost(Solution& solution);
 
+    void updateSolutionClassGroupDayAndTimeslot(Solution& solution,
+                                                const size_t classGroup,
+                                                const unsigned int newDay,
+                                                const unsigned int newTimeslot);
+
+    bool isDayDoubleTimeslot(unsigned int day);
+
     utils::DataManager& dataManager;
     const std::unordered_set<unsigned int> discouragedTimeslots;
   };
@@ -62,8 +69,13 @@ namespace upvtc_ct::timetabler
     std::unordered_set<ds::Class*>& getClasses(const size_t classGroup);
     std::vector<ds::Class*>& getAllClasses();
 
+    void increaseNumClassGroupClasses(const size_t classGroup,
+                                      const int numAdditionalClasses);
+    void decreaseNumClassGroupClasses(const size_t classGroup,
+                                      const int numToBeRemovedClasses);
+
     const int getClassDay(const size_t classGroup);
-    const int getClassTimeslot(const size_t classGroup);
+    const int getClassStartingTimeslot(const size_t classGroup);
 
     long getCost() const;
 
@@ -76,13 +88,15 @@ namespace upvtc_ct::timetabler
                              const unsigned int timeslot);
 
   private:
-    int cost;
+    long cost;
     std::vector<size_t> classGroups;
     std::vector<ds::Class*> classPtrs;
     std::unordered_map<size_t, std::unordered_set<ds::Class*>>
       classGroupsToClassesMap;
 
     std::vector<std::unique_ptr<ds::Class>> classes;
+
+    std::unordered_map<ds::Class*, size_t> classPtrIndexMap;
   };
 }
 #endif
