@@ -148,6 +148,12 @@ namespace upvtc_ct::timetabler
       double averageCost = static_cast<double>(total)
                            / static_cast<double>(generation.size());
       std::cout << "|| Average Generation Cost: " << averageCost << std::endl;
+
+      if (child.getCost() == 0) {
+        // No need to generate additional generations, since we've already
+        // found the one of the "perfect" solutions already.
+        break;
+      }
     }
 
     Solution* bestSolution = nullptr;
