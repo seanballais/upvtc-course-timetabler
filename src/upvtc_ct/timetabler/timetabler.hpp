@@ -25,6 +25,7 @@ namespace upvtc_ct::timetabler
 
   private:
     void assignTeachersToClasses();
+    void assignRoomsToClasses(Solution& solution);
     Solution& tournamentSelection(std::vector<Solution>& pop, const int k);
 
     Solution crossOverSolutions(Solution& parentA, Solution& parentB);
@@ -76,6 +77,7 @@ namespace upvtc_ct::timetabler
 
     const int getClassDay(const size_t classGroup);
     const int getClassStartingTimeslot(const size_t classGroup);
+    ds::Course* getClassCourse(const size_t classGroup);
 
     long getCost() const;
 

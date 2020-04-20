@@ -260,6 +260,37 @@ namespace upvtc_ct::timetabler
     }
   }
 
+  void Timetabler::assignRoomsToClasses(Solution& solution)
+  {
+    std::unordered_map<
+      ds::Room*,
+      std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction>> roomTimeslots;
+    for (size_t classGroup : solution.getClassGroups()) {
+      auto* course = solution.getClassCourse(classGroup);
+      unsigned int numClassGroupStudents = this->dataManager
+                                                .getClassGroupSize(classGroup);
+      
+      // Get all feasible rooms first.
+      std::vector<ds::Room*> feasibleRooms;
+      for (ds::Room* room : this->dataManager.getRooms()) {
+        bool isRoomFeasible = true;
+        for (auto* requiredFeature : course->roomRequirements) {
+          auto item = room->roomFeatures.find(requiredFeature);
+          if (item == room->roomFeatures.end()) {
+            // The room does not have all the features the course requires.
+            isRoomFeasible = false;
+          }
+        }
+
+        if (isRoomFeasible && numClassGroupStudents <= room->capacity) {
+          roomTimeslots[room] = {};
+        }
+      }
+
+      // 
+    }
+  }
+
   Solution& Timetabler::tournamentSelection(std::vector<Solution>& pop,
                                             const int k)
   {
@@ -631,10 +662,10 @@ namespace upvtc_ct::timetabler
     for (auto* cls : classes) {
       const unsigned int classDay = cls->day;
       const unsigned int classTimeslot = cls->timeslot;
-      const auto& unpreferredTimeslots = cls->teacher->unpreferredTimeslots;
+      const auto& timeslots = cls->teacher->timeslots;
 
-      auto item = unpreferredTimeslots.find({classDay, classTimeslot});
-      if (item != unpreferredTimeslots.end()) {
+      auto item = timeslots.find({classDay, classTimeslot});
+      if (item != timeslots.end()) {
         cost++;
       }
     }
@@ -951,6 +982,13 @@ namespace upvtc_ct::timetabler
     const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
     return cls->timeslot;
+  }
+
+  ds::Course* Solution::getClassCourse(const size_t classGroup)
+  {
+    const auto& classes = this->getClasses(classGroup);
+    ds::Class* cls = *(classes.begin());
+    return cls->course;
   }
 
   void Solution::changeClassTeacher(const size_t classGroup,

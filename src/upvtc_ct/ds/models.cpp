@@ -120,7 +120,7 @@ namespace upvtc_ct::ds
            && this->getNumMembers() == ssg.getNumMembers();
   }
 
-  bool UnpreferredTimeslot::operator==(const UnpreferredTimeslot& ut) const
+  bool Timeslot::operator==(const Timeslot& ut) const
   {
     return this->day == ut.day && this->timeslot == ut.timeslot;
   }
@@ -129,11 +129,11 @@ namespace upvtc_ct::ds
       const std::string name,
       const unsigned int previousLoad,
       const std::unordered_set<
-        UnpreferredTimeslot,
-        UnpreferredTimeslotHashFunction> unpreferredTimeslots)
+        Timeslot,
+        TimeslotHashFunction> timeslots)
     : name(name)
     , previousLoad(previousLoad)
-    , unpreferredTimeslots(unpreferredTimeslots)
+    , timeslots(timeslots)
     , hasSetCourses(false) {}
 
   bool Teacher::operator==(const Teacher& t) const
@@ -264,8 +264,8 @@ namespace upvtc_ct::ds
     return std::hash<std::string>()(objIdentifier.str());
   }
 
-  size_t UnpreferredTimeslotHashFunction::operator()(
-      const UnpreferredTimeslot& ut) const
+  size_t TimeslotHashFunction::operator()(
+      const Timeslot& ut) const
   {
     std::stringstream objIdentifier;
     objIdentifier << std::to_string(ut.day)

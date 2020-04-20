@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
               << teacher->previousLoad << std::endl;
 
     std::cout << "\tUnpreferred Timeslots:" << std::endl;
-    for (const auto& ut : teacher->unpreferredTimeslots) {
+    for (const auto& ut : teacher->timeslots) {
       std::cout << "\t  (" << ut.day << ", " << ut.timeslot << ")" << std::endl;
     }
 

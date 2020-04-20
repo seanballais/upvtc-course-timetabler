@@ -274,6 +274,17 @@ namespace upvtc_ct::utils
     this->classConflicts[classGroup].insert(conflictedGroup);
   }
 
+  void DataManager::setClassGroupSizes(
+      std::unordered_map<size_t, unsigned int> classGroupSizes)
+  {
+    this->classGroupSizes = classGroupSizes;
+  }
+
+  void DataManager::getClassGroupSize(const size_t classGroup)
+  {
+    return this->classGroupSizes[classGroup];
+  }
+
   const std::string DataManager::getBinFolderPath() const
   {
     // Note that this function is only guaranteed to work in Linux. Please refer
@@ -547,20 +558,20 @@ namespace upvtc_ct::utils
       const float previousLoad = teacher["previous_load"].get<float>();
 
       std::unordered_set<
-        ds::UnpreferredTimeslot, ds::UnpreferredTimeslotHashFunction>
-          unpreferredTimeslots;
+        ds::Timeslot, ds::TimeslotHashFunction>
+          timeslots;
 
-      const auto& unpreferredTimeslotsJSON = teacher["unpreferred_timeslots"];
-      for (const auto& [_, ut] : unpreferredTimeslotsJSON.items()) {
+      const auto& timeslotsJSON = teacher["unpreferred_timeslots"];
+      for (const auto& [_, ut] : timeslotsJSON.items()) {
         const unsigned int day = ut["day"].get<int>();
         const unsigned int timeslot = ut["timeslot"].get<int>();
 
-        ds::UnpreferredTimeslot utObj{ day, timeslot };
-        unpreferredTimeslots.insert(utObj);
+        ds::Timeslot utObj{ day, timeslot };
+        timeslots.insert(utObj);
       }
 
       auto teacherPtr{std::make_unique<ds::Teacher>(
-        teacherName, previousLoad, unpreferredTimeslots)};
+        teacherName, previousLoad, timeslots)};
       this->teacherNameToObject.insert({teacherName, teacherPtr.get()});
       this->teachers.insert(std::move(teacherPtr));
     }

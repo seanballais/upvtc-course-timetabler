@@ -95,6 +95,10 @@ namespace upvtc_ct::utils
     void addClassConflict(const size_t classGroup,
                           const size_t conflictedGroup);
 
+    void setClassGroupSizes(
+      std::unordered_map<size_t, unsigned int> classGroupSizes);
+    void getClassGroupSize(const size_t classGroup);
+
   private:
     const std::string getBinFolderPath() const;
     const std::string getDataFolderPath() const;
@@ -199,6 +203,8 @@ namespace upvtc_ct::utils
     std::unordered_map<std::string, ds::RoomFeature*> roomFeatureToObject;
     std::unordered_map<std::string, ds::Teacher*> teacherNameToObject;
     std::unordered_map<ds::Course*, ds::Course*> courseToLabObject;
+
+    std::unordered_map<size_t, unsigned int> classGroupSizes;
 
     // NOte that the key is the class group ID.
     std::unordered_map<size_t, std::unordered_set<ds::Class*>> classGroups;
