@@ -262,9 +262,18 @@ namespace upvtc_ct::timetabler
 
   void Timetabler::assignRoomsToClasses(Solution& solution)
   {
+    auto& classConflicts = this->dataManager.getClassConflicts();
+
     std::unordered_map<
       ds::Room*,
       std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction>> roomTimeslots;
+    for (ds::Room* room : this->dataManager.getRooms()) {
+      auto item = roomTimeslots.find(room);
+      if (item == roomTimeslots.end()) {
+        roomTimeslots[room] = {};
+      }
+    }
+
     for (size_t classGroup : solution.getClassGroups()) {
       auto* course = solution.getClassCourse(classGroup);
       unsigned int numClassGroupStudents = this->dataManager
@@ -273,21 +282,59 @@ namespace upvtc_ct::timetabler
       // Get all feasible rooms first.
       std::vector<ds::Room*> feasibleRooms;
       for (ds::Room* room : this->dataManager.getRooms()) {
+        auto item = roomTimeslots.find(room);
+        if (item == roomTimeslots.end()) {
+          roomTimeslots[room] = {}
+        }
+
         bool isRoomFeasible = true;
         for (auto* requiredFeature : course->roomRequirements) {
           auto item = room->roomFeatures.find(requiredFeature);
           if (item == room->roomFeatures.end()) {
             // The room does not have all the features the course requires.
             isRoomFeasible = false;
+            break;
           }
         }
 
         if (isRoomFeasible && numClassGroupStudents <= room->capacity) {
-          roomTimeslots[room] = {};
+          feasibleRooms.push_back(room);
         }
       }
 
-      // 
+      // Shuffle time.
+      const unsigned seed = std::chrono::system_clock::now().time_since_epoch()
+                                                          .count();
+      std::shuffle(feasibleRooms.begin(), feasibleRooms.end(),
+                   std::default_random_engine{seed});
+
+      // Find a room that, when a class is assigned to it, there will be no
+      // conflicts.
+      ds::Room* assignedRoom = nullptr;
+      for (ds::Room* room : feasibleRooms) {
+        // Check if the room has classes already assigned to the same timeslot
+        // as the current class.
+        bool isRoomFeasible = true;
+        for (auto& currTimeslot : solution.getClassTimeslots(classGroup)) {
+          auto item = roomTimeslots[room].find(currTimeslot);
+          if (item != roomTimeslots.[room].end()) {
+            // Overlapping of class timeslots!
+            isRoomFeasible = false;
+            break;
+          }
+        }
+
+        if (isRoomFeasible) {
+          solution.changeClassRoom(classGroup, room);
+
+          // Add the timeslots that have been assigned to the room.
+          for (auto& timeslot : solution.getClassTimeslots(classGroup)) {
+            roomTimeslots[room].insert(timeslot);
+          }
+
+          break;
+        }
+      }
     }
   }
 
@@ -989,6 +1036,25 @@ namespace upvtc_ct::timetabler
     const auto& classes = this->getClasses(classGroup);
     ds::Class* cls = *(classes.begin());
     return cls->course;
+  }
+
+  ds::Room* Solution::getClassRoom(const size_t classGroup)
+  {
+    const auto& classes = this->getClasses(classGroup);
+    ds::Class* cls = *(classes.begin());
+    return cls->room;
+  }
+
+  std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction>
+  Solution::getClassTimeslots(const size_t classGroup)
+  {
+    std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction> timeslots;
+    const auto& classes = this->getClasses(classGroup);
+    for (auto* cls : classes) {
+      timeslots.insert({cls->day, cls->timeslot});
+    }
+
+    return timeslots;
   }
 
   void Solution::changeClassTeacher(const size_t classGroup,

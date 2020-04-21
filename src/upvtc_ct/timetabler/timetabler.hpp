@@ -78,6 +78,9 @@ namespace upvtc_ct::timetabler
     const int getClassDay(const size_t classGroup);
     const int getClassStartingTimeslot(const size_t classGroup);
     ds::Course* getClassCourse(const size_t classGroup);
+    ds::Room* getClassRoom(const size_t classGroup);
+    std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction>
+      getClassTimeslots(const size_t classGroup);
 
     long getCost() const;
 
