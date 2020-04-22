@@ -168,6 +168,10 @@ namespace upvtc_ct::timetabler
 
     std::cout << "Best solution cost: " << bestSolution->getCost() << std::endl;
 
+    std::cout << "Assigning rooms to classes in solution..." << std::endl;
+
+    this->assignRoomsToClasses(*bestSolution);
+
     return *bestSolution;
   }
 
@@ -267,7 +271,8 @@ namespace upvtc_ct::timetabler
     std::unordered_map<
       ds::Room*,
       std::unordered_set<ds::Timeslot, ds::TimeslotHashFunction>> roomTimeslots;
-    for (ds::Room* room : this->dataManager.getRooms()) {
+    for (auto& roomUniq : this->dataManager.getRooms()) {
+      auto room = roomUniq.get();
       auto item = roomTimeslots.find(room);
       if (item == roomTimeslots.end()) {
         roomTimeslots[room] = {};
@@ -281,10 +286,11 @@ namespace upvtc_ct::timetabler
       
       // Get all feasible rooms first.
       std::vector<ds::Room*> feasibleRooms;
-      for (ds::Room* room : this->dataManager.getRooms()) {
+      for (auto& roomUniq : this->dataManager.getRooms()) {
+        auto room = roomUniq.get();
         auto item = roomTimeslots.find(room);
         if (item == roomTimeslots.end()) {
-          roomTimeslots[room] = {}
+          roomTimeslots[room] = {};
         }
 
         bool isRoomFeasible = true;
@@ -317,7 +323,7 @@ namespace upvtc_ct::timetabler
         bool isRoomFeasible = true;
         for (auto& currTimeslot : solution.getClassTimeslots(classGroup)) {
           auto item = roomTimeslots[room].find(currTimeslot);
-          if (item != roomTimeslots.[room].end()) {
+          if (item != roomTimeslots[room].end()) {
             // Overlapping of class timeslots!
             isRoomFeasible = false;
             break;
@@ -707,8 +713,8 @@ namespace upvtc_ct::timetabler
 
     int cost = 0;
     for (auto* cls : classes) {
-      const unsigned int classDay = cls->day;
-      const unsigned int classTimeslot = cls->timeslot;
+      const int classDay = cls->day;
+      const int classTimeslot = cls->timeslot;
       const auto& timeslots = cls->teacher->timeslots;
 
       auto item = timeslots.find({classDay, classTimeslot});

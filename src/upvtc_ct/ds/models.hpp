@@ -167,8 +167,8 @@ namespace upvtc_ct::ds
   {
     bool operator==(const Timeslot& ut) const;
 
-    const unsigned int day;
-    const unsigned int timeslot;
+    const int day;
+    const int timeslot;
   };
 
   class TimeslotHashFunction

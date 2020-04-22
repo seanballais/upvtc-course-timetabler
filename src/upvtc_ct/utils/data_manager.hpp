@@ -97,7 +97,7 @@ namespace upvtc_ct::utils
 
     void setClassGroupSizes(
       std::unordered_map<size_t, unsigned int> classGroupSizes);
-    void getClassGroupSize(const size_t classGroup);
+    unsigned int getClassGroupSize(const size_t classGroup);
 
   private:
     const std::string getBinFolderPath() const;

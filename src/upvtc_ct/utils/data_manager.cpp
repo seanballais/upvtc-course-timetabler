@@ -280,7 +280,7 @@ namespace upvtc_ct::utils
     this->classGroupSizes = classGroupSizes;
   }
 
-  void DataManager::getClassGroupSize(const size_t classGroup)
+  unsigned int DataManager::getClassGroupSize(const size_t classGroup)
   {
     return this->classGroupSizes[classGroup];
   }
