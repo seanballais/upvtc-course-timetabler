@@ -19,6 +19,11 @@ conan_basic_setup()
 set(CMAKE_CXX_STANDARD 17)
 
 ################################################################################
+# Set up other libraries that use CMake, and are not available in Conan.       #
+################################################################################
+add_subdirectory(libs/xlnt)
+
+################################################################################
 # Set up compilation of the app.                                               #
 ################################################################################
 include_directories("${CMAKE_SOURCE_DIR}/src")

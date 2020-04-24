@@ -12,3 +12,6 @@ target_sources(upvtc_ct-lib-timetabler
         timetabler.cpp
 )
 
+target_link_libraries(upvtc_ct-lib-timetabler
+    xlnt
+)
